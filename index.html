@@ -201,6 +201,7 @@
 
     <div class="actions">
       <button id="btnAnalyze">Analizar repo y redactar</button>
+      <button id="btnClearNote" class="secondary" type="button">Borrar nota</button>
     </div>
     <div id="analyzeStatus" class="status"></div>
     <div id="analyzeMsg" class="msg"></div>
@@ -571,6 +572,14 @@
   var BINARY_EXT = /\.(png|jpe?g|gif|svg|ico|webp|bmp|tiff?|pdf|zip|gz|tar|rar|7z|exe|dll|so|dylib|bin|woff2?|ttf|eot|otf|mp[34]|mov|avi|mkv|wav|ogg|class|jar|wasm|lock|map|min\.js|min\.css)$/i;
 
   function setStatus(text) { $("analyzeStatus").textContent = text; }
+
+  // Botón para borrar la nota escrita por el usuario.
+  $("btnClearNote").addEventListener("click", function () {
+    $("note").value = "";
+    hideMsg($("analyzeMsg"));
+    setStatus("");
+    $("note").focus();
+  });
 
   function b64ToUtf8(b64) {
     var clean = (b64 || "").replace(/\n/g, "");
