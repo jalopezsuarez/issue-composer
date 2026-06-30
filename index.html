@@ -183,7 +183,10 @@
     </select>
 
     <label for="repoManual">O escribe owner/repo (tiene prioridad)</label>
-    <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" />
+    <div class="row" style="align-items:stretch">
+      <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" style="flex:2" />
+      <button id="btnAddRepo" class="secondary" style="flex:none">➕ Añadir a la lista</button>
+    </div>
 
     <div id="repoMsg" class="msg"></div>
   </section>
@@ -506,6 +509,48 @@
     }).then(function () {
       btn.disabled = false;
       btn.textContent = "Conectar";
+    });
+  });
+
+  // Verifica un owner/repo con GET /repos/{owner}/{repo} y lo añade al <select>.
+  $("btnAddRepo").addEventListener("click", function () {
+    var btn = this;
+    var msg = $("repoMsg");
+    hideMsg(msg);
+    var full = $("repoManual").value.trim().replace(/^\/+|\/+$/g, "");
+    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu GitHub Personal Access Token."); return; }
+    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) {
+      showMsg(msg, "error", "Escribe el repositorio como owner/repo.");
+      return;
+    }
+    btn.disabled = true;
+    var prevLabel = btn.textContent;
+    btn.innerHTML = '<span class="spinner" style="border-top-color:var(--indigo)"></span>Verificando...';
+
+    ghFetch(GH_API + "/repos/" + full).then(function (r) {
+      // Inserta o actualiza en loadedRepos, evitando duplicados, y reordena.
+      var exists = loadedRepos.some(function (x) { return x.full_name === r.full_name; });
+      if (!exists) {
+        loadedRepos.push({ full_name: r.full_name, private: !!r.private });
+        loadedRepos.sort(function (a, b) {
+          return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase());
+        });
+      }
+      $("repoSearch").disabled = false;
+      $("repoSearch").value = "";       // limpia el filtro para garantizar que se vea
+      $("repoManual").value = "";       // pasa a usar la selección del <select>
+      renderRepoOptions();
+      $("repoSelect").value = r.full_name;
+      persist(LS_KEYS.repo, r.full_name);
+      showMsg(msg, exists ? "info" : "success",
+        (exists ? "Ya estaba en la lista: " : "Añadido a la lista: ") +
+        "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " 🔒" : "") + ".");
+    }).catch(function (err) {
+      showMsg(msg, "error", esc(err.message) +
+        " — comprueba el nombre, los permisos del token y, si la org usa SAML SSO, que el token esté autorizado.");
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
     });
   });
 
