@@ -423,19 +423,6 @@
         </div>
       </div>
 
-      <!-- 5. Estados del tablero (Kanban) -->
-      <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Estados del tablero (Kanban)</div>
-        <div class="group-hint" style="padding:0">Un estado por línea = una columna. Coinciden con tus etiquetas de GitHub por nombre. Opcional: <code>#color</code> (hex). Ej.: <code>DONE #1a7f37</code></div></div>
-        <div class="field">
-          <textarea id="statusCfg" rows="5" placeholder="PENDING&#10;PROGRESS&#10;DONE #1a7f37&#10;POSTPONED"></textarea>
-          <div class="actions" style="margin-top:10px">
-            <button id="btnSaveStatuses" class="block">Guardar estados</button>
-            <button id="btnResetStatuses" class="secondary block" type="button">Restablecer</button>
-          </div>
-          <div id="statusCfgMsg" class="msg"></div>
-        </div>
-      </div>
     </section>
 
   </main>
@@ -481,7 +468,7 @@
   var LS_KEYS = {
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
-    recent: "ic_recent", lang: "ic_lang", statuses: "ic_statuses"
+    recent: "ic_recent", lang: "ic_lang"
   };
   // NOTA DE SEGURIDAD: el GitHub PAT se persiste en localStorage a petición del
   // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
@@ -1261,42 +1248,34 @@
 
   // =================== KANBAN (tablero por estado, arrastrar para mover) ===================
   var KAN = { repo: null, loading: false, issues: [], dragging: false };
-  // Estados de flujo (columnas del Kanban) modelados con ETIQUETAS de GitHub por
-  // nombre — así puedes usar tus propias etiquetas existentes. Cada estado:
-  // { name, color, closes }. "closes" = al mover ahí, la incidencia se cierra
-  // (y al sacarla de una columna "closes", se reabre). Configurable en Ajustes.
-  function defaultStatuses() {
-    return [
-      { name: "pending",   color: "f4e8bb" },  // amarillo pastel
-      { name: "progress",  color: "cfe0f6" },  // azul pastel
-      { name: "done",      color: "d3ebd9" },  // verde pastel
-      { name: "postponed", color: "e8e8e8" }   // gris pastel
-    ];
-  }
-  // Nombre de estado SIEMPRE en minúsculas (pongas lo que pongas).
-  function normalizeStatus(s) { return { name: String(s.name || "").trim().toLowerCase(), color: String(s.color || "ededed").replace(/^#/, "") }; }
-  function loadStatuses() {
-    try { var a = JSON.parse(localStorage.getItem(LS_KEYS.statuses) || "null"); if (Array.isArray(a) && a.length) return a.map(normalizeStatus).filter(function (s) { return s.name; }); } catch (e) {}
-    return defaultStatuses();
-  }
-  var STATUSES = loadStatuses();
-  function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name.toLowerCase() === name) return STATUSES[i]; return null; }
-  function isStatusLabel(name) { return !!statusByName(name); }
+  // Estados FIJOS (no editables). En GitHub se guardan como etiqueta "status:<key>".
+  var STATUS_PREFIX = "status:";
+  var STATUSES = [
+    { name: "pending",   color: "f4e8bb" },  // amarillo pastel
+    { name: "progress",  color: "cfe0f6" },  // azul pastel
+    { name: "review",    color: "e7d9f7" },  // morado pastel
+    { name: "done",      color: "d3ebd9" },  // verde pastel
+    { name: "archive",   color: "e8e8e8" },  // gris pastel
+    { name: "resources", color: "f6ddc5" }   // naranja pastel
+  ];
+  function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name === name) return STATUSES[i]; return null; }
+  function statusLabelName(name) { return STATUS_PREFIX + name; }                 // "status:done"
+  function statusKeyOf(label) { var n = String(label == null ? "" : (label.name || label)).toLowerCase(); if (n.indexOf(STATUS_PREFIX) !== 0) return null; var k = n.slice(STATUS_PREFIX.length).trim(); return statusByName(k) ? k : null; }
+  function isStatusLabel(label) { return !!statusKeyOf(label); }
   function statusColor(name) { var s = statusByName(name); return s ? s.color : "ededed"; }
-  // Estado de una incidencia: primera etiqueta que coincide con una columna; si
-  // ninguna coincide, la primera columna (por defecto).
+  // Estado de una incidencia: primera etiqueta "status:<key>" reconocida; si no, la primera (pending).
   function statusOf(it) {
     var found = null;
-    (it.labels || []).forEach(function (l) { var s = statusByName(l.name || l); if (s && !found) found = s.name; });
+    (it.labels || []).forEach(function (l) { var k = statusKeyOf(l); if (k && !found) found = k; });
     return found || (STATUSES[0] && STATUSES[0].name) || "";
   }
-  // Tag coloreado del estado (usa el color de Ajustes).
+  // Tag coloreado del estado.
   function statusTag(it) {
     var s = statusByName(statusOf(it));
     if (!s) return "";
     return '<span class="sttag" style="background:#' + s.color + '">' + esc(s.name) + "</span>";
   }
-  // Refresca en sitio el estado en el detalle (botones + tag) sin recargar todo.
+  // Refresca en sitio el estado en el detalle (filas + tag) sin recargar todo.
   function refreshDetailStatus(it) {
     var cur = statusOf(it);
     var row = document.getElementById("statusRow");
@@ -1309,38 +1288,6 @@
     var s = statusByName(cur);
     if (tag && s) { tag.style.background = "#" + s.color; tag.textContent = s.name; }
   }
-  // Configuración de estados (Ajustes): texto <-> array.
-  function statusesToText(arr) {
-    return arr.map(function (s) { return s.name + " #" + s.color; }).join("\n");
-  }
-  function parseStatuses(text) {
-    var out = [], seen = {};
-    String(text || "").split("\n").forEach(function (line) {
-      var color = (line.match(/#([0-9a-fA-F]{6})\b/) || [])[1] || "ededed";
-      var name = line.replace(/#[0-9a-fA-F]{6}\b/g, "").trim();
-      if (!name) return;
-      var key = name.toLowerCase(); if (seen[key]) return; seen[key] = 1;
-      out.push({ name: name, color: color.toLowerCase() });
-    });
-    return out;
-  }
-  function fillStatusCfg() { var el = $("statusCfg"); if (el) el.value = statusesToText(STATUSES); }
-  $("btnSaveStatuses").addEventListener("click", function () {
-    var msg = $("statusCfgMsg"); hideMsg(msg);
-    var parsed = parseStatuses($("statusCfg").value);
-    if (!parsed.length) { showMsg(msg, "error", "Define al menos un estado (una línea con un nombre)."); return; }
-    STATUSES = parsed.map(normalizeStatus);
-    persist(LS_KEYS.statuses, JSON.stringify(STATUSES));
-    KAN.repo = null; // fuerza recarga del tablero con las nuevas columnas
-    fillStatusCfg();
-    showMsg(msg, "success", "Estados guardados (" + STATUSES.length + " columnas). Se aplican en el Kanban.");
-  });
-  $("btnResetStatuses").addEventListener("click", function () {
-    STATUSES = defaultStatuses();
-    persist(LS_KEYS.statuses, JSON.stringify(STATUSES));
-    KAN.repo = null; fillStatusCfg();
-    showMsg($("statusCfgMsg"), "info", "Estados restablecidos a los valores por defecto.");
-  });
 
   $("btnReloadKanban").innerHTML = svg("reload", 15);
   $("btnReloadKanban").addEventListener("click", loadKanban);
@@ -1496,20 +1443,16 @@
     }
   }
 
-  // Cambia el estado de flujo (etiqueta de columna) de una incidencia:
-  //  · quita la etiqueta de columna anterior y aplica la nueva (creándola si falta),
-  //  · si la columna destino "cierra", cierra la incidencia; si sale de una que
-  //    cerraba hacia otra que no, la reabre.
-  // Muta `it` (labels/state) de forma optimista y devuelve la promesa de la API.
   // Cambia el estado en UNA sola llamada: PUT reemplaza TODAS las etiquetas por
-  // (las que no son de columna) + la nueva de columna. Si la etiqueta no existe
-  // todavía (422), la crea y reintenta. Muta `it` de forma optimista.
+  // (las que no son de estado) + la etiqueta "status:<key>". Si la etiqueta no
+  // existe todavía (422), la crea y reintenta. Muta `it` de forma optimista.
   function applyStatus(repo, it, newName) {
     var target = statusByName(newName); if (!target) return Promise.resolve();
-    var keep = (it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }).map(function (l) { return l.name || l; });
-    var newLabels = keep.concat([target.name]);
-    it.labels = (it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); });
-    it.labels.push({ name: target.name, color: target.color });
+    var label = statusLabelName(target.name);   // "status:done"
+    var keep = (it.labels || []).filter(function (l) { return !isStatusLabel(l); }).map(function (l) { return l.name || l; });
+    var newLabels = keep.concat([label]);
+    it.labels = (it.labels || []).filter(function (l) { return !isStatusLabel(l); });
+    it.labels.push({ name: label, color: target.color });
 
     function putLabels() {
       return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", {
@@ -1517,10 +1460,10 @@
       });
     }
     return putLabels().catch(function (err) {
-      // 422 = la etiqueta de columna aún no existe en el repo: la creamos y reintentamos.
+      // 422 = la etiqueta de estado aún no existe en el repo: la creamos y reintentamos.
       if (/\b422\b/.test(err.message)) {
         return ghFetch(GH_API + "/repos/" + repo + "/labels", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: target.name, color: target.color })
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: label, color: target.color })
         }).catch(function () {}).then(putLabels);
       }
       throw err;
@@ -1655,7 +1598,6 @@
   loadSettings();
   buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; persist(LS_KEYS.tone, v); });
   setLang(currentLang);   // marca el idioma activo en el control
-  fillStatusCfg();        // rellena el editor de estados del Kanban
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   renderRecents();   // pinta la tabla de recientes guardados
   // Restaura la última pestaña usada (localStorage); si no hay, abre Crear (con repo) o Configuración.
