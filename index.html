@@ -150,6 +150,15 @@
 
   .pill { font-size: .72rem; background: var(--bg); color: var(--muted); padding: 2px 8px; border-radius: 999px; font-weight: 600; border: 1px solid var(--border); }
 
+  /* Chips de favoritos / recientes */
+  .chiprow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 8px 13px; font-size: .82rem; font-weight: 600; color: var(--text); cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+  .chip svg { width: 13px; height: 13px; color: var(--muted); flex: none; }
+  .chip:active { background: #e9ebee; }
+  .chip.sel { background: var(--black); color: #fff; border-color: var(--black); }
+  .chip.sel svg { color: #fff; }
+  .chiprow .empty { color: var(--muted); font-size: .82rem; }
+
   /* Banner de repo activo */
   .repo-banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; font-size: .84rem; color: var(--text); }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
@@ -307,21 +316,28 @@
 
     <!-- ====== CONFIGURACIÓN ====== -->
     <section class="view" id="view-config">
+      <!-- 1. Favoritos y recientes (arriba del todo) -->
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Configuración</div>
-        <div class="group-hint" style="padding:0">Token de GitHub y proveedor LLM compatible con OpenAI.</div></div>
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Repositorios favoritos y recientes</div></div>
         <div class="field">
-          <label for="ghToken">GitHub Personal Access Token <span class="pill">se guarda aquí</span></label>
-          <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
+          <label>Favoritos de GitHub <span class="pill">starred</span></label>
+          <div id="favList" class="chiprow"></div>
+          <div class="actions" style="margin-top:10px"><button id="btnLoadFavs" class="secondary block">Cargar favoritos</button></div>
         </div>
-        <div class="field"><label for="llmBaseUrl">LLM · Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
-        <div class="field"><label for="llmApiKey">LLM · API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
-        <div class="field"><label for="llmModel">LLM · Model</label><input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" /></div>
+        <div class="field">
+          <label>Recientes</label>
+          <div id="recentList" class="chiprow"></div>
+        </div>
       </div>
 
+      <!-- 2. GitHub: token + selección de repo -->
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Repositorio</div>
-        <div class="group-hint" style="padding:0">Conecta para listar tus repos, o escribe owner/repo a mano.</div></div>
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">GitHub</div>
+        <div class="group-hint" style="padding:0">Token y selección de repositorio.</div></div>
+        <div class="field">
+          <label for="ghToken">Personal Access Token <span class="pill">se guarda aquí</span></label>
+          <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
+        </div>
         <div class="field"><button id="btnConnect" class="block">Conectar</button></div>
         <div class="field">
           <label for="repoSearch">Buscar repositorio</label>
@@ -337,6 +353,15 @@
           <div class="actions" style="margin-top:10px"><button id="btnAddRepo" class="secondary block">Añadir a la lista</button></div>
         </div>
         <div id="repoMsg" class="msg"></div>
+      </div>
+
+      <!-- 3. Proveedor LLM (al fondo) -->
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Proveedor LLM</div>
+        <div class="group-hint" style="padding:0">Compatible con OpenAI.</div></div>
+        <div class="field"><label for="llmBaseUrl">Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
+        <div class="field"><label for="llmApiKey">API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
+        <div class="field"><label for="llmModel">Model</label><input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" /></div>
       </div>
     </section>
 
@@ -381,7 +406,8 @@
   var GH_API = "https://api.github.com";
   var LS_KEYS = {
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
-    llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab"
+    llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
+    favs: "ic_favs", recent: "ic_recent"
   };
   // NOTA DE SEGURIDAD: el GitHub PAT se persiste en localStorage a petición del
   // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
@@ -487,7 +513,7 @@
     return $("repoSelect").value.trim();
   }
   function rememberRepo() { var r = getSelectedRepo(); if (r) persist(LS_KEYS.repo, r); updateActiveRepoBanners(); }
-  $("repoSelect").addEventListener("change", function () { if (this.value) $("repoManual").value = ""; rememberRepo(); });
+  $("repoSelect").addEventListener("change", function () { if (this.value) { $("repoManual").value = ""; addRecent(this.value); } rememberRepo(); });
   $("repoManual").addEventListener("input", rememberRepo);
 
   function updateActiveRepoBanners() {
@@ -498,6 +524,57 @@
       else el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
     });
   }
+
+  // ----- Favoritos (starred de GitHub) y recientes (uso propio) -----
+  function lsGetArr(key) { try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch (e) { return []; } }
+  function getRecents() { return lsGetArr(LS_KEYS.recent); }
+  function getFavs() { return lsGetArr(LS_KEYS.favs); }
+  function addRecent(full) {
+    if (!full || full.indexOf("/") === -1) return;
+    var arr = getRecents().filter(function (x) { return x !== full; });
+    arr.unshift(full);
+    persist(LS_KEYS.recent, JSON.stringify(arr.slice(0, 8)));
+    renderRecents();
+  }
+  function selectRepo(full) {
+    $("repoManual").value = full;            // el manual tiene prioridad
+    persist(LS_KEYS.repo, full);
+    addRecent(full);
+    updateActiveRepoBanners();
+    renderFavRecent();                        // refresca el resaltado
+  }
+  function renderChips(id, list, emptyText) {
+    var el = $(id); if (!el) return;
+    el.innerHTML = "";
+    if (!list.length) { el.innerHTML = '<span class="empty">' + emptyText + "</span>"; return; }
+    var cur = getSelectedRepo();
+    list.forEach(function (full) {
+      var b = document.createElement("button");
+      b.className = "chip" + (full === cur ? " sel" : "");
+      b.innerHTML = svg("repo", 13) + "<span>" + esc(full) + "</span>";
+      b.addEventListener("click", function () { selectRepo(full); });
+      el.appendChild(b);
+    });
+  }
+  function renderFavorites() { renderChips("favList", getFavs(), "Pulsa “Cargar favoritos”."); }
+  function renderRecents() { renderChips("recentList", getRecents(), "Aún no has usado ningún repo."); }
+  function renderFavRecent() { renderFavorites(); renderRecents(); }
+
+  function loadFavorites(silent) {
+    var msg = $("repoMsg");
+    if (!ghTokenMem) { if (!silent) showMsg(msg, "error", "Introduce tu token de GitHub."); return; }
+    var btn = $("btnLoadFavs"); btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Cargando…';
+    fetchAllPages(function (page) { return GH_API + "/user/starred?per_page=100&page=" + page; })
+      .then(function (repos) {
+        var seen = {}, names = (repos || []).map(function (r) { return r && r.full_name; }).filter(function (n) { return n && !seen[n] && (seen[n] = 1); })
+          .sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
+        persist(LS_KEYS.favs, JSON.stringify(names));
+        renderFavorites();
+        if (!silent && !names.length) showMsg(msg, "info", "No tienes repositorios con estrella (favoritos) en GitHub.");
+      }).catch(function (err) { if (!silent) showMsg(msg, "error", esc(err.message)); })
+      .then(function () { btn.disabled = false; btn.textContent = prev; });
+  }
+  $("btnLoadFavs").addEventListener("click", function () { loadFavorites(false); });
 
   // ----- GitHub fetch -----
   function ghHeaders() {
@@ -610,6 +687,7 @@
         $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();
         var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
         showMsg(msg, "success", "Cargados " + loadedRepos.length + " repositorios." + (matched ? " Restaurado: <strong>" + esc(stored) + "</strong>." : ""));
+        loadFavorites(true);   // carga también los favoritos (starred) en silencio
       }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
       .then(function () { btn.disabled = false; btn.textContent = "Conectar"; });
   });
@@ -624,7 +702,7 @@
       var exists = loadedRepos.some(function (x) { return x.full_name === r.full_name; });
       if (!exists) { loadedRepos.push({ full_name: r.full_name, private: !!r.private }); loadedRepos.sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); }); }
       $("repoSearch").disabled = false; $("repoSearch").value = ""; $("repoManual").value = "";
-      renderRepoOptions(); $("repoSelect").value = r.full_name; persist(LS_KEYS.repo, r.full_name); updateActiveRepoBanners();
+      renderRepoOptions(); $("repoSelect").value = r.full_name; persist(LS_KEYS.repo, r.full_name); addRecent(r.full_name); updateActiveRepoBanners();
       showMsg(msg, exists ? "info" : "success", (exists ? "Ya estaba en la lista: " : "Añadido a la lista: ") + "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " (priv)" : "") + ".");
     }).catch(function (err) {
       var extra = /\b404\b/.test(err.message)
@@ -658,14 +736,14 @@
   function mdInline(s) {
     // s ya viene escapado. Protegemos el código inline para no formatear dentro.
     var codes = [];
-    s = s.replace(/`([^`]+)`/g, function (_, c) { codes.push(c); return " " + (codes.length - 1) + " "; });
+    s = s.replace(/`([^`]+)`/g, function (_, c) { codes.push(c); return "" + (codes.length - 1) + ""; });
     s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (_, t, u) {
       return '<a href="' + u + '" target="_blank" rel="noopener">' + t + "</a>";
     });
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     s = s.replace(/__([^_]+)__/g, "<strong>$1</strong>");
     s = s.replace(/\*([^*\s][^*]*)\*/g, "<em>$1</em>");
-    s = s.replace(/ (\d+) /g, function (_, n) { return "<code>" + codes[+n] + "</code>"; });
+    s = s.replace(/(\d+)/g, function (_, n) { return "<code>" + codes[+n] + "</code>"; });
     return s;
   }
   function mdToHtml(src) {
@@ -721,6 +799,7 @@
     if (!ghTokenMem) { showMsg($("issuesMsg"), "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg($("issuesMsg"), "error", "Selecciona un repositorio en Configuración."); return; }
     issuesState.repo = repo;
+    if (issuesState.page === 0) addRecent(repo);   // usar el repo cuenta como reciente
     issuesState.loading = true;
     var page = issuesState.page + 1;
     var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Cargando…';
@@ -937,7 +1016,7 @@
     if (!ghTokenMem) { showMsg($("kanbanMsg"), "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg($("kanbanMsg"), "error", "Selecciona un repositorio en Configuración."); return; }
     hideMsg($("kanbanMsg"));
-    KAN.repo = repo; KAN.loading = true;
+    KAN.repo = repo; KAN.loading = true; addRecent(repo);
     $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Cargando tablero…</div>';
     ghFetch(GH_API + "/repos/" + repo + "/issues?state=all&per_page=100&sort=updated&direction=desc")
       .then(function (items) {
@@ -1137,7 +1216,7 @@
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
     if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configura Base URL, API key y Model del LLM."); return; }
 
-    rememberRepo(); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando…';
+    rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando…';
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
     var ctx;
 
@@ -1172,7 +1251,7 @@
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
     if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
-    rememberRepo(); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Publicando…';
+    rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Publicando…';
     var parts = repo.split("/");
     ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
@@ -1203,6 +1282,7 @@
   loadSettings();
   buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; persist(LS_KEYS.tone, v); });
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
+  renderFavRecent();   // pinta favoritos (caché) y recientes guardados
   // Restaura la última pestaña usada (localStorage); si no hay, abre Crear (con repo) o Configuración.
   (function restoreTab() {
     var saved = ""; try { saved = localStorage.getItem(LS_KEYS.tab) || ""; } catch (e) {}
