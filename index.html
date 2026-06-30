@@ -210,8 +210,11 @@
 
   /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
      así el arrastre entre columnas no compite con el pan del scroller) ===== */
-  .kanban { display: flex; gap: 10px; padding: 10px; align-items: stretch; overflow-x: hidden; }
-  .kcol { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+  .kanban { display: flex; gap: 10px; padding: 10px; align-items: stretch; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Mientras se arrastra, el scroll horizontal se desactiva (clase .dragging) para
+     que el pan del tablero no robe el gesto del drag. */
+  .kanban.dragging { overflow-x: hidden; }
+  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
   .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); border-radius: 12px 12px 0 0; }
   .kcol-body { padding: 10px; min-height: 40px; }
   .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
@@ -1027,6 +1030,7 @@
     function beginDrag() {
       if (dragging) return;
       dragging = true; KAN.dragging = true;   // bloquea el scroll táctil (touchmove)
+      $("kanbanBoard").classList.add("dragging");  // desactiva el scroll horizontal del tablero
       var rect = card.getBoundingClientRect();
       grabX = lastX - rect.left; grabY = lastY - rect.top;
       try { card.setPointerCapture(pointerId); } catch (_) {}
@@ -1039,6 +1043,7 @@
       KAN.dragging = false;
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       var board = $("kanbanBoard");
+      board.classList.remove("dragging");
       var el = document.elementFromPoint(lastX, lastY);
       var target = el ? el.closest(".kcol") : null;
       var cols = board.querySelectorAll(".kcol");
