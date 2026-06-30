@@ -50,10 +50,10 @@
   .navbar {
     position: absolute; top: 0; left: 0; right: 0; z-index: 20;
     color: #fff;
-    background: rgba(18,18,20,.32);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,.12);
+    background: transparent;                 /* navbar 100% transparente */
+    backdrop-filter: saturate(180%) blur(18px);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    border-bottom: none;
     padding-top: env(safe-area-inset-top);
     height: calc(var(--nav-h) + env(safe-area-inset-top));
     display: grid; grid-template-columns: 60px 1fr 84px; align-items: center;
