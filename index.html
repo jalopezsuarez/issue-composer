@@ -74,7 +74,7 @@
 
   /* ===== Tab bar inferior ===== */
   .tabbar {
-    flex: none; background: rgba(255,255,255,.01);  /* 1% + blur, sin separador */
+    flex: none; background: rgba(255,255,255,.6);   /* translúcido + blur, sin separador */
     backdrop-filter: saturate(180%) blur(22px);
     -webkit-backdrop-filter: saturate(180%) blur(22px);
     border-top: none;
@@ -237,6 +237,8 @@
   .triage .trow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .triage .tag { font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
   .triage .reason { color: var(--muted); font-size: .83rem; margin: 8px 0 0; }
+  .stbtn { font-size: .74rem; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; }
+  .stbtn.on { background: var(--black); color: #fff; border-color: var(--black); }
 
   /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
      así el arrastre entre columnas no compite con el pan del scroller) ===== */
@@ -392,6 +394,20 @@
           </div>
         </div>
       </div>
+
+      <!-- 5. Estados del tablero (Kanban) -->
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Estados del tablero (Kanban)</div>
+        <div class="group-hint" style="padding:0">Un estado por línea = una columna. Coinciden con tus etiquetas de GitHub por nombre. Opcional: <code>#color</code> (hex) y <code>*</code> para marcar la columna que cierra la incidencia. Ej.: <code>LISTO #1a7f37 *</code></div></div>
+        <div class="field">
+          <textarea id="statusCfg" rows="5" placeholder="PENDIENTE&#10;PROGRESO&#10;LISTO #1a7f37 *&#10;APLAZADO"></textarea>
+          <div class="actions" style="margin-top:10px">
+            <button id="btnSaveStatuses" class="block">Guardar estados</button>
+            <button id="btnResetStatuses" class="secondary block" type="button">Restablecer</button>
+          </div>
+          <div id="statusCfgMsg" class="msg"></div>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -437,7 +453,7 @@
   var LS_KEYS = {
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
-    recent: "ic_recent", lang: "ic_lang"
+    recent: "ic_recent", lang: "ic_lang", statuses: "ic_statuses"
   };
   // NOTA DE SEGURIDAD: el GitHub PAT se persiste en localStorage a petición del
   // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
@@ -918,8 +934,12 @@
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
             "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
-          labelsHtml(issue.labels) +
+          labelsHtml((issue.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
+          '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
+            '<div class="lblrow" id="statusRow">' + STATUSES.map(function (s) {
+              return '<button type="button" class="stbtn' + (statusOf(issue) === s.name ? " on" : "") + '" data-st="' + esc(s.name) + '">' + esc(s.name) + "</button>";
+            }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
             '<button id="btnTriage" class="secondary">Triage IA</button>' +
@@ -957,6 +977,15 @@
       // wiring del detalle
       $("btnToggleState").addEventListener("click", toggleIssueState);
       $("btnTriage").addEventListener("click", function () { runTriage(issue); });
+      var stbtns = box.querySelectorAll("#statusRow .stbtn");
+      for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
+        var name = this.getAttribute("data-st");
+        if (name === statusOf(issue)) return;
+        this.disabled = true;
+        applyStatus(repo, issue, name)
+          .then(function () { issuesState.repo = null; KAN.repo = null; openIssue(repo, number, detailOrigin); })
+          .catch(function (err) { alert(err.message); openIssue(repo, number, detailOrigin); });
+      });
       buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
       $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
       $("btnPostComment").addEventListener("click", function () { postComment(repo, number); });
@@ -1120,25 +1149,67 @@
 
   // =================== KANBAN (tablero por estado, arrastrar para mover) ===================
   var KAN = { repo: null, loading: false, issues: [], dragging: false };
-  // Estados de flujo modelados con etiquetas "status: <key>" (GitHub solo tiene open/closed).
-  var STATUS_PREFIX = "status: ";
-  var STATUSES = [
-    { key: "pendiente", label: "PENDIENTE", color: "ededed" },
-    { key: "progreso",  label: "PROGRESO",  color: "0969da" },
-    { key: "listo",     label: "LISTO",     color: "1a7f37" },
-    { key: "aplazado",  label: "APLAZADO",  color: "9a6700" }
-  ];
-  var STATUS_BY_KEY = {}; STATUSES.forEach(function (s) { STATUS_BY_KEY[s.key] = s; });
-  function statusColor(key) { return (STATUS_BY_KEY[key] || {}).color || "ededed"; }
-  // Estado de una incidencia según su etiqueta "status:"; sin etiqueta => pendiente.
+  // Estados de flujo (columnas del Kanban) modelados con ETIQUETAS de GitHub por
+  // nombre — así puedes usar tus propias etiquetas existentes. Cada estado:
+  // { name, color, closes }. "closes" = al mover ahí, la incidencia se cierra
+  // (y al sacarla de una columna "closes", se reabre). Configurable en Ajustes.
+  function defaultStatuses() {
+    return [
+      { name: "PENDIENTE", color: "ededed", closes: false },
+      { name: "PROGRESO",  color: "0969da", closes: false },
+      { name: "LISTO",     color: "1a7f37", closes: true  },
+      { name: "APLAZADO",  color: "9a6700", closes: false }
+    ];
+  }
+  function normalizeStatus(s) { return { name: String(s.name || "").trim(), color: String(s.color || "ededed").replace(/^#/, ""), closes: !!s.closes }; }
+  function loadStatuses() {
+    try { var a = JSON.parse(localStorage.getItem(LS_KEYS.statuses) || "null"); if (Array.isArray(a) && a.length) return a.map(normalizeStatus).filter(function (s) { return s.name; }); } catch (e) {}
+    return defaultStatuses();
+  }
+  var STATUSES = loadStatuses();
+  function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name.toLowerCase() === name) return STATUSES[i]; return null; }
+  function isStatusLabel(name) { return !!statusByName(name); }
+  function statusColor(name) { var s = statusByName(name); return s ? s.color : "ededed"; }
+  // Estado de una incidencia: primera etiqueta que coincide con una columna; si
+  // ninguna coincide, la primera columna (por defecto).
   function statusOf(it) {
     var found = null;
-    (it.labels || []).forEach(function (l) {
-      var n = String(l.name || l).toLowerCase();
-      if (n.indexOf(STATUS_PREFIX) === 0) { var k = n.slice(STATUS_PREFIX.length).trim(); if (STATUS_BY_KEY[k] && !found) found = k; }
-    });
-    return found || "pendiente";
+    (it.labels || []).forEach(function (l) { var s = statusByName(l.name || l); if (s && !found) found = s.name; });
+    return found || (STATUSES[0] && STATUSES[0].name) || "";
   }
+  // Configuración de estados (Ajustes): texto <-> array.
+  function statusesToText(arr) {
+    return arr.map(function (s) { return s.name + " #" + s.color + (s.closes ? " *" : ""); }).join("\n");
+  }
+  function parseStatuses(text) {
+    var out = [], seen = {};
+    String(text || "").split("\n").forEach(function (line) {
+      var closes = /(^|\s)\*(\s|$)/.test(line);
+      var color = (line.match(/#([0-9a-fA-F]{6})\b/) || [])[1] || "ededed";
+      var name = line.replace(/#[0-9a-fA-F]{6}\b/g, "").replace(/\*/g, "").trim();
+      if (!name) return;
+      var key = name.toLowerCase(); if (seen[key]) return; seen[key] = 1;
+      out.push({ name: name, color: color.toLowerCase(), closes: closes });
+    });
+    return out;
+  }
+  function fillStatusCfg() { var el = $("statusCfg"); if (el) el.value = statusesToText(STATUSES); }
+  $("btnSaveStatuses").addEventListener("click", function () {
+    var msg = $("statusCfgMsg"); hideMsg(msg);
+    var parsed = parseStatuses($("statusCfg").value);
+    if (!parsed.length) { showMsg(msg, "error", "Define al menos un estado (una línea con un nombre)."); return; }
+    STATUSES = parsed.map(normalizeStatus);
+    persist(LS_KEYS.statuses, JSON.stringify(STATUSES));
+    KAN.repo = null; // fuerza recarga del tablero con las nuevas columnas
+    fillStatusCfg();
+    showMsg(msg, "success", "Estados guardados (" + STATUSES.length + " columnas). Se aplican en el Kanban.");
+  });
+  $("btnResetStatuses").addEventListener("click", function () {
+    STATUSES = defaultStatuses();
+    persist(LS_KEYS.statuses, JSON.stringify(STATUSES));
+    KAN.repo = null; fillStatusCfg();
+    showMsg($("statusCfgMsg"), "info", "Estados restablecidos a los valores por defecto.");
+  });
 
   $("btnReloadKanban").innerHTML = svg("reload", 15);
   $("btnReloadKanban").addEventListener("click", loadKanban);
@@ -1169,15 +1240,15 @@
   function renderKanban() {
     var board = $("kanbanBoard"); board.innerHTML = "";
     STATUSES.forEach(function (col) {
-      var list = KAN.issues.filter(function (it) { return statusOf(it) === col.key; });
-      // Abiertas primero (por actualización desc), cerradas al fondo.
+      var list = KAN.issues.filter(function (it) { return statusOf(it) === col.name; });
+      // Abiertas primero, cerradas al fondo.
       list.sort(function (a, b) {
         if ((a.state === "closed") !== (b.state === "closed")) return a.state === "closed" ? 1 : -1;
         return 0;
       });
       var colEl = document.createElement("div");
-      colEl.className = "kcol"; colEl.setAttribute("data-status", col.key);
-      colEl.innerHTML = '<div class="kcol-head"><span>' + col.label + '</span><span class="pill kcount">' + list.length + "</span></div><div class=\"kcol-body\"></div>";
+      colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
+      colEl.innerHTML = '<div class="kcol-head"><span>' + esc(col.name) + '</span><span class="pill kcount">' + list.length + "</span></div><div class=\"kcol-body\"></div>";
       var body = colEl.querySelector(".kcol-body");
       list.forEach(function (it) { body.appendChild(makeCard(it)); });
       board.appendChild(colEl);
@@ -1197,7 +1268,7 @@
     var closedTag = it.state === "closed" ? '<span class="kclosed">cerrada</span> ' : "";
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
       '<div class="ksub">' + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
-      labelsHtml((it.labels || []).filter(function (l) { return String(l.name || l).toLowerCase().indexOf(STATUS_PREFIX) !== 0; }));
+      labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }));
     attachCardInteractions(card, it);
     return card;
   }
@@ -1283,36 +1354,44 @@
       card.classList.remove("kdrag-src");
       try { card.releasePointerCapture(pointerId); } catch (_) {}
       if (target) {
-        var newKey = target.getAttribute("data-status");
-        if (newKey && newKey !== statusOf(it)) setIssueStatus(it, newKey);
+        var newName = target.getAttribute("data-status");
+        if (newName && newName !== statusOf(it)) {
+          applyStatus(KAN.repo, it, newName).then(function () { issuesState.repo = null; })
+            .catch(function (err) { showMsg($("kanbanMsg"), "error", "No se pudo mover #" + it.number + ": " + esc(err.message)); loadKanban(); });
+          renderKanban(); // optimista (applyStatus ya mutó it)
+        }
       }
     }
   }
 
-  // Cambia el estado de flujo de una incidencia (etiqueta "status: <key>"):
-  // quita la etiqueta de estado anterior y aplica la nueva (creándola si falta).
-  function setIssueStatus(it, newKey) {
-    var repo = KAN.repo, number = it.number;
-    var newName = STATUS_PREFIX + newKey;
-    var oldStatusLabels = (it.labels || []).filter(function (l) { return String(l.name || l).toLowerCase().indexOf(STATUS_PREFIX) === 0; });
-    // Actualización optimista local + re-render.
-    it.labels = (it.labels || []).filter(function (l) { return String(l.name || l).toLowerCase().indexOf(STATUS_PREFIX) !== 0; });
-    it.labels.push({ name: newName, color: statusColor(newKey) });
-    renderKanban();
-    // API: borra etiquetas de estado previas, crea la nueva (ignora si existe) y la añade.
-    var chain = oldStatusLabels.reduce(function (p, l) {
-      return p.then(function () { return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels/" + encodeURIComponent(l.name || l), { method: "DELETE" }).catch(function () {}); });
+  // Cambia el estado de flujo (etiqueta de columna) de una incidencia:
+  //  · quita la etiqueta de columna anterior y aplica la nueva (creándola si falta),
+  //  · si la columna destino "cierra", cierra la incidencia; si sale de una que
+  //    cerraba hacia otra que no, la reabre.
+  // Muta `it` (labels/state) de forma optimista y devuelve la promesa de la API.
+  function applyStatus(repo, it, newName) {
+    var target = statusByName(newName); if (!target) return Promise.resolve();
+    var oldColLabels = (it.labels || []).filter(function (l) { return isStatusLabel(l.name || l); });
+    var wasCloses = oldColLabels.some(function (l) { var s = statusByName(l.name || l); return s && s.closes; });
+    it.labels = (it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); });
+    it.labels.push({ name: target.name, color: target.color });
+    var stateChange = null;
+    if (target.closes && it.state !== "closed") stateChange = "closed";
+    else if (!target.closes && wasCloses && it.state === "closed") stateChange = "open";
+    if (stateChange) it.state = stateChange;
+
+    var chain = oldColLabels.reduce(function (p, l) {
+      return p.then(function () { return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels/" + encodeURIComponent(l.name || l), { method: "DELETE" }).catch(function () {}); });
     }, Promise.resolve());
-    chain.then(function () {
-      return ghFetch(GH_API + "/repos/" + repo + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName, color: statusColor(newKey) }) }).catch(function () {});
+    chain = chain.then(function () {
+      return ghFetch(GH_API + "/repos/" + repo + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: target.name, color: target.color }) }).catch(function () {});
     }).then(function () {
-      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: [newName] }) });
-    }).then(function () {
-      issuesState.repo = null; // invalida el listado
-    }).catch(function (err) {
-      showMsg($("kanbanMsg"), "error", "No se pudo mover #" + number + ": " + esc(err.message));
-      loadKanban(); // recarga estado real
+      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: [target.name] }) });
     });
+    if (stateChange) chain = chain.then(function () {
+      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: stateChange }) });
+    });
+    return chain;
   }
 
   // =================== COMPOSER: ANALIZAR Y REDACTAR ===================
@@ -1443,6 +1522,7 @@
   loadSettings();
   buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; persist(LS_KEYS.tone, v); });
   setLang(currentLang);   // marca el idioma activo en el control
+  fillStatusCfg();        // rellena el editor de estados del Kanban
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   renderRecents();   // pinta la tabla de recientes guardados
   // Restaura la última pestaña usada (localStorage); si no hay, abre Crear (con repo) o Configuración.
