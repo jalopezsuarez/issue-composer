@@ -185,7 +185,27 @@
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
   .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-  .md { white-space: pre-wrap; word-break: break-word; font-size: .9rem; line-height: 1.55; }
+  .md { word-break: break-word; font-size: .9rem; line-height: 1.55; }
+  .md p { margin: 0 0 10px; }
+  .md p:last-child { margin-bottom: 0; }
+  .mh { font-weight: 700; margin: 14px 0 8px; line-height: 1.3; }
+  .mh1 { font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+  .mh2 { font-size: 1.05rem; border-bottom: 1px solid var(--border-soft); padding-bottom: 4px; }
+  .mh3 { font-size: .98rem; }
+  .mh4, .mh5, .mh6 { font-size: .9rem; color: var(--muted); }
+  .md ul, .md ol { margin: 0 0 10px; padding-left: 22px; }
+  .md li { margin: 2px 0; }
+  .md ul.task { list-style: none; padding-left: 4px; }
+  .md ul.task li { display: flex; align-items: flex-start; gap: 8px; }
+  .md .chk { flex: none; width: 15px; height: 15px; border: 1px solid var(--border); border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; color: #fff; background: #fff; }
+  .md .chk.on { background: var(--black); border-color: var(--black); }
+  .md .chk svg { width: 11px; height: 11px; }
+  .md code { background: var(--bg); border: 1px solid var(--border-soft); border-radius: 5px; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; }
+  .md pre { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 0 0 10px; }
+  .md pre code { background: none; border: none; padding: 0; font-size: .82rem; white-space: pre; }
+  .md blockquote { margin: 0 0 10px; padding: 2px 0 2px 12px; border-left: 3px solid var(--border); color: var(--muted); }
+  .md a { text-decoration: underline; }
+  .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; background: #fff; }
 </style>
 </head>
@@ -596,7 +616,57 @@
     $("navTitle").textContent = "GH Issue Composer"; $("navBack").hidden = true; $("navUpd").hidden = true;
     updateActiveRepoBanners();
   }
-  function renderMd(text) { return '<div class="md">' + esc(text || "").replace(/\r\n/g, "\n") + "</div>"; }
+  // ---- Mini-render de Markdown seguro (sin dependencias). El texto se escapa
+  // primero y luego se aplican transformaciones, de modo que no hay riesgo de HTML
+  // inyectado. Cubre: encabezados, negrita/cursiva, código inline y en bloque,
+  // enlaces (solo http/https), listas, checklists, citas y reglas horizontales. ----
+  function mdInline(s) {
+    // s ya viene escapado. Protegemos el código inline para no formatear dentro.
+    var codes = [];
+    s = s.replace(/`([^`]+)`/g, function (_, c) { codes.push(c); return " " + (codes.length - 1) + " "; });
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (_, t, u) {
+      return '<a href="' + u + '" target="_blank" rel="noopener">' + t + "</a>";
+    });
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/__([^_]+)__/g, "<strong>$1</strong>");
+    s = s.replace(/\*([^*\s][^*]*)\*/g, "<em>$1</em>");
+    s = s.replace(/ (\d+) /g, function (_, n) { return "<code>" + codes[+n] + "</code>"; });
+    return s;
+  }
+  function mdToHtml(src) {
+    var lines = esc(String(src == null ? "" : src).replace(/\r\n/g, "\n")).split("\n");
+    var out = [], i = 0, listType = null, listTask = false, items = [], para = [];
+    var chkOn = '<span class="chk on">' + svg("check", 11) + "</span>", chkOff = '<span class="chk"></span>';
+    function flushList() { if (listType) { out.push("<" + listType + (listTask ? ' class="task"' : "") + ">" + items.join("") + "</" + listType + ">"); items = []; listType = null; listTask = false; } }
+    function flushPara() { if (para.length) { out.push("<p>" + mdInline(para.join(" ")) + "</p>"); para = []; } }
+    while (i < lines.length) {
+      var line = lines[i];
+      if (/^```/.test(line)) {
+        flushList(); flushPara();
+        var code = []; i++;
+        while (i < lines.length && !/^```/.test(lines[i])) { code.push(lines[i]); i++; }
+        i++;
+        out.push("<pre><code>" + code.join("\n") + "</code></pre>");
+        continue;
+      }
+      if (/^\s*$/.test(line)) { flushList(); flushPara(); i++; continue; }
+      if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { flushList(); flushPara(); out.push("<hr>"); i++; continue; }
+      var h = line.match(/^(#{1,6})\s+(.*)$/);
+      if (h) { flushList(); flushPara(); var lvl = h[1].length; out.push('<div class="mh mh' + lvl + '">' + mdInline(h[2]) + "</div>"); i++; continue; }
+      var task = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/);
+      if (task) { flushPara(); if (listType !== "ul" || !listTask) { flushList(); listType = "ul"; listTask = true; } items.push("<li>" + (/[xX]/.test(task[1]) ? chkOn : chkOff) + "<span>" + mdInline(task[2]) + "</span></li>"); i++; continue; }
+      var bullet = line.match(/^\s*[-*]\s+(.*)$/);
+      if (bullet) { flushPara(); if (listType !== "ul" || listTask) { flushList(); listType = "ul"; listTask = false; } items.push("<li>" + mdInline(bullet[1]) + "</li>"); i++; continue; }
+      var ol = line.match(/^\s*\d+\.\s+(.*)$/);
+      if (ol) { flushPara(); if (listType !== "ol") { flushList(); listType = "ol"; } items.push("<li>" + mdInline(ol[1]) + "</li>"); i++; continue; }
+      var bq = line.match(/^&gt;\s?(.*)$/);  // ">" ya viene escapado como "&gt;"
+      if (bq) { flushList(); flushPara(); out.push("<blockquote>" + mdInline(bq[1]) + "</blockquote>"); i++; continue; }
+      para.push(line.trim()); i++;
+    }
+    flushList(); flushPara();
+    return out.join("");
+  }
+  function renderMd(text) { return '<div class="md">' + mdToHtml(text) + "</div>"; }
 
   function resetAndLoadIssues() {
     issuesState.page = 0; issuesState.done = false; issuesState.loading = false; issuesState.count = 0;
@@ -755,27 +825,37 @@
     if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configura el LLM en Configuración."); return; }
     if (!note) { showMsg(msg, "error", "Escribe un texto propuesto para el comentario."); return; }
     var btn = $("btnGenComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Generando…';
-    $("commentGenStatus").textContent = "Redactando comentario (tono " + commentTone + ")…";
+    function setStat(t) { $("commentGenStatus").textContent = t; }
 
     var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
-    var msgs = [
-      { role: "system", content:
-        "Eres un asistente que redacta comentarios para issues de GitHub. " +
-        "Responde SOLO con el texto del comentario en Markdown, sin fences ni JSON. " +
-        toneInstruction(commentTone) + " Mantén el MISMO idioma del texto propuesto." },
-      { role: "user", content:
-        "Incidencia #" + issue.number + ": " + issue.title +
-        "\n\nDescripción:\n" + (issue.body || "(sin descripción)") +
-        "\n\nÚltimos comentarios:\n" + (thread || "(ninguno)") +
-        "\n\nTexto propuesto por el usuario:\n" + note +
-        "\n\nRedacta el comentario final." }
-    ];
-    llmComplete(msgs).then(function (content) {
+    var parts = (currentIssue ? currentIssue.repo : "/").split("/"), owner = parts[0], name = parts[1];
+    // Revisa el código base antes de redactar (como el composer de issues),
+    // usando la incidencia + el texto propuesto como contexto de búsqueda.
+    var query = "Incidencia: " + issue.title + "\n" + (issue.body || "") + "\n\nComentario propuesto:\n" + note;
+
+    reviewCodebase(owner, name, query, setStat).then(function (ctx) {
+      setStat("Redactando comentario (tono " + commentTone + ")…");
+      return llmComplete([
+        { role: "system", content:
+          "Eres un asistente que redacta comentarios para issues de GitHub. " +
+          "Responde SOLO con el texto del comentario en Markdown, sin fences ni JSON. " +
+          "Tienes acceso al código real revisado del repositorio: básate en él para ser preciso y no inventes rutas ni comportamientos. " +
+          toneInstruction(commentTone) + " Mantén el MISMO idioma del texto propuesto." },
+        { role: "user", content:
+          "Incidencia #" + issue.number + ": " + issue.title +
+          "\n\nDescripción:\n" + (issue.body || "(sin descripción)") +
+          "\n\nÚltimos comentarios:\n" + (thread || "(ninguno)") +
+          "\n\nREADME:\n" + (ctx.readme || "(sin README)") +
+          "\n\nCódigo revisado:\n" + (ctx.codeBlob || "(no se seleccionó código)") +
+          "\n\nTexto propuesto por el usuario:\n" + note +
+          "\n\nRedacta el comentario final." }
+      ]);
+    }).then(function (content) {
       $("commentGenerated").value = cleanText(content);
-      $("commentGenStatus").textContent = "";
-      showMsg(msg, "success", "Comentario generado. Edítalo si quieres y pulsa Publicar.");
+      setStat("");
+      showMsg(msg, "success", "Comentario generado revisando el código. Edítalo si quieres y pulsa Publicar.");
     }).catch(function (err) {
-      $("commentGenStatus").textContent = ""; showMsg(msg, "error", esc(err.message));
+      setStat(""); showMsg(msg, "error", esc(err.message));
     }).then(function () { btn.disabled = false; btn.textContent = "Generar con IA"; });
   }
 
@@ -807,6 +887,47 @@
     return new TextDecoder("utf-8").decode(bytes);
   }
 
+  // Revisa el código base de un repo y devuelve {branch, readme, codeBlob}.
+  // 1) rama por defecto, 2) README, 3) árbol, 4) el LLM elige hasta 5 rutas
+  // relevantes a `query`, 5) descarga y recorta esos ficheros. Reutilizable por
+  // el composer de issues y por el generador de comentarios.
+  function reviewCodebase(owner, name, query, setStat) {
+    var ctx = { branch: "main", readme: "", tree: [], codeBlob: "" };
+    setStat("Detectando rama por defecto…");
+    return ghFetch(GH_API + "/repos/" + owner + "/" + name).then(function (info) {
+      ctx.branch = info.default_branch || "main";
+      setStat("Leyendo README…");
+      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/readme?ref=" + ctx.branch)
+        .then(function (rd) { try { ctx.readme = b64ToUtf8(rd.content).slice(0, 5000); } catch (e) {} })
+        .catch(function () {});
+    }).then(function () {
+      setStat("Obteniendo árbol de ficheros…");
+      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/git/trees/" + ctx.branch + "?recursive=1");
+    }).then(function (tree) {
+      var files = (tree.tree || []).filter(function (t) { return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path); }).map(function (t) { return t.path; });
+      ctx.tree = files;
+      setStat("Eligiendo rutas relevantes (" + files.length + " ficheros)…");
+      return llmComplete([
+        { role: "system", content: "Eres un asistente que localiza el código relevante para una nota/incidencia. Respondes SOLO con un array JSON de rutas (strings), sin texto adicional, sin fences." },
+        { role: "user", content: "Contexto:\n" + query + "\n\nFicheros (rama " + ctx.branch + "):\n" + files.slice(0, 800).join("\n") + "\n\nDevuelve un array JSON con HASTA 5 rutas EXACTAS de esa lista más relevantes. Solo el array JSON." }
+      ]);
+    }).then(function (content) {
+      var paths = [];
+      try { var parsed = parseLooseJSON(content); if (Array.isArray(parsed)) paths = parsed; else if (parsed && Array.isArray(parsed.paths)) paths = parsed.paths; } catch (e) { paths = []; }
+      paths = paths.filter(function (p) { return ctx.tree.indexOf(p) !== -1; }).slice(0, 5);
+      if (paths.length === 0) return [];
+      setStat("Revisando " + paths.length + " fichero(s) del código base…");
+      return Promise.all(paths.map(function (p) {
+        return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/contents/" + encodeURIComponent(p).replace(/%2F/g, "/") + "?ref=" + ctx.branch)
+          .then(function (c) { var text = ""; try { text = b64ToUtf8(c.content).slice(0, 5000); } catch (e) { text = "(no se pudo decodificar)"; } return { path: p, content: text }; })
+          .catch(function () { return { path: p, content: "(no disponible)" }; });
+      }));
+    }).then(function (codeFiles) {
+      ctx.codeBlob = (codeFiles || []).map(function (f) { return "=== " + f.path + " ===\n" + f.content; }).join("\n\n");
+      return ctx;
+    });
+  }
+
   $("btnAnalyze").addEventListener("click", function () {
     var btn = this, msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
     var repo = getSelectedRepo(), note = $("note").value.trim();
@@ -818,41 +939,12 @@
 
     rememberRepo(); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando…';
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
-    var ctx = { branch: "main", readme: "", tree: [] };
+    var ctx;
 
-    setStatus("Detectando rama por defecto…");
-    ghFetch(GH_API + "/repos/" + owner + "/" + name).then(function (info) {
-      ctx.branch = info.default_branch || "main";
-      setStatus("Leyendo README…");
-      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/readme?ref=" + ctx.branch)
-        .then(function (rd) { try { ctx.readme = b64ToUtf8(rd.content).slice(0, 5000); } catch (e) { ctx.readme = ""; } })
-        .catch(function () { ctx.readme = ""; });
-    }).then(function () {
-      setStatus("Obteniendo árbol de ficheros…");
-      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/git/trees/" + ctx.branch + "?recursive=1");
-    }).then(function (tree) {
-      var files = (tree.tree || []).filter(function (t) { return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path); }).map(function (t) { return t.path; });
-      ctx.tree = files;
-      setStatus("Pidiendo al LLM las rutas relevantes (" + files.length + " ficheros)…");
-      var fileList = files.slice(0, 800).join("\n");
-      return llmComplete([
-        { role: "system", content: "Eres un asistente que ayuda a localizar el código relevante para una nota/incidencia. Respondes SOLO con un array JSON de rutas (strings), sin texto adicional, sin fences." },
-        { role: "user", content: "Nota del usuario:\n" + note + "\n\nLista de ficheros (rama " + ctx.branch + "):\n" + fileList + "\n\nDevuelve un array JSON con HASTA 5 rutas EXACTAS de esa lista más relevantes para la nota. Solo el array JSON." }
-      ]);
-    }).then(function (content) {
-      var paths = [];
-      try { var parsed = parseLooseJSON(content); if (Array.isArray(parsed)) paths = parsed; else if (parsed && Array.isArray(parsed.paths)) paths = parsed.paths; } catch (e) { paths = []; }
-      paths = paths.filter(function (p) { return ctx.tree.indexOf(p) !== -1; }).slice(0, 5);
-      if (paths.length === 0) return [];
-      setStatus("Revisando " + paths.length + " fichero(s) del código base…");
-      return Promise.all(paths.map(function (p) {
-        return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/contents/" + encodeURIComponent(p).replace(/%2F/g, "/") + "?ref=" + ctx.branch)
-          .then(function (c) { var text = ""; try { text = b64ToUtf8(c.content).slice(0, 5000); } catch (e) { text = "(no se pudo decodificar)"; } return { path: p, content: text }; })
-          .catch(function () { return { path: p, content: "(no disponible)" }; });
-      }));
-    }).then(function (codeFiles) {
+    reviewCodebase(owner, name, "Nota del usuario:\n" + note, setStatus).then(function (c) {
+      ctx = c;
       setStatus("Redactando el issue con la IA (tono " + currentTone + ")…");
-      var codeBlob = (codeFiles || []).map(function (f) { return "=== " + f.path + " ===\n" + f.content; }).join("\n\n");
+      var codeBlob = ctx.codeBlob;
       return llmComplete([
         { role: "system", content:
           "Eres un asistente experto que redacta issues de GitHub claros y accionables. " +
