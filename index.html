@@ -1163,10 +1163,10 @@
   // (y al sacarla de una columna "closes", se reabre). Configurable en Ajustes.
   function defaultStatuses() {
     return [
-      { name: "PENDING",   color: "e9edf2" },  // gris pastel
-      { name: "PROGRESS",  color: "cfe3fb" },  // azul pastel
-      { name: "DONE",      color: "d6f0dd" },  // verde pastel
-      { name: "POSTPONED", color: "fde9c7" }   // ámbar pastel
+      { name: "PENDING",   color: "f4e8bb" },  // amarillo pastel (Sin empezar)
+      { name: "PROGRESS",  color: "cfe0f6" },  // azul pastel (En progreso)
+      { name: "DONE",      color: "d3ebd9" },  // verde pastel (Listo)
+      { name: "POSTPONED", color: "e8e8e8" }   // gris pastel (Aplazado)
     ];
   }
   function normalizeStatus(s) { return { name: String(s.name || "").trim(), color: String(s.color || "ededed").replace(/^#/, "") }; }
