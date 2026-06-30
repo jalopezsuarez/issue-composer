@@ -46,37 +46,27 @@
     background: var(--bg); position: relative; overflow: hidden;
   }
 
-  /* ===== Navigation bar glass (translúcida, el contenido pasa por debajo) ===== */
-  .navbar {
-    position: absolute; top: 0; left: 0; right: 0; z-index: 20;
-    color: #000;
-    background: transparent;                 /* 0% opacidad de fondo */
-    border-bottom: none;
-    padding-top: env(safe-area-inset-top);
-    height: calc(var(--nav-h) + env(safe-area-inset-top));
-    display: grid; grid-template-columns: 60px 1fr 84px; align-items: center;
-  }
-  .nav-left, .nav-right { display: flex; align-items: center; }
-  .nav-left { justify-content: flex-start; padding-left: 10px; }
-  .nav-right { justify-content: flex-end; padding-right: 12px; text-align: right; }
-  .nav-title { text-align: center; font-size: 1.02rem; font-weight: 700; letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #000; }
-  /* Back en círculo, icono negro, sin borde ni sombra */
-  .nav-back {
-    background: rgba(0,0,0,.06);
-    border: none;
+  /* ===== Back flotante glass (sólo cuando hay que volver) ===== */
+  .fab-back {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 10px); left: 12px; z-index: 60;
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,.6);
+    backdrop-filter: saturate(180%) blur(18px);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    border: 1px solid rgba(0,0,0,.08);
+    box-shadow: 0 4px 14px rgba(0,0,0,.18);
     color: #000; cursor: pointer;
-    width: 34px; height: 34px; border-radius: 50%;
-    padding: 0; display: inline-flex; align-items: center; justify-content: center;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
-  .nav-back:active { background: rgba(0,0,0,.14); }
-  .nav-back svg { width: 24px; height: 24px; margin-left: -2px; }
-  .nav-back[hidden] { display: none; }
-  .nav-upd { font-size: .66rem; line-height: 1.15; color: #000; }
-  .nav-upd b { color: #000; font-weight: 700; }
-  .nav-upd[hidden] { display: none; }
+  .fab-back:active { background: rgba(255,255,255,.8); }
+  .fab-back svg { width: 32px; height: 32px; margin-left: -3px; }
+  .fab-back[hidden] { display: none; }
 
-  /* ===== Contenido scrollable (deja hueco bajo la navbar glass) ===== */
-  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: calc(var(--nav-h) + env(safe-area-inset-top)); }
+  /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); }
+  /* En el detalle dejamos hueco arriba para no solapar el back flotante */
+  #issueDetailWrap { padding-top: 56px; }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -238,13 +228,8 @@
 </head>
 <body>
 <div class="app">
-  <header class="navbar">
-    <div class="nav-left">
-      <button id="navBack" class="nav-back" hidden aria-label="Atrás"></button>
-    </div>
-    <div class="nav-title" id="navTitle">GH Issue Composer</div>
-    <div class="nav-right"><div class="nav-upd" id="navUpd" hidden></div></div>
-  </header>
+  <!-- Back flotante glass: sólo visible cuando hay que volver (detalle) -->
+  <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
 
   <main class="content" id="content">
 
@@ -442,8 +427,8 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("content").classList.toggle("kanban-mode", name === "kanban");
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
-    else if (name === "kanban") { $("navTitle").textContent = "GH Issue Composer"; $("navBack").hidden = true; $("navUpd").hidden = true; maybeAutoLoadKanban(); }
-    else { $("navTitle").textContent = "GH Issue Composer"; $("navBack").hidden = true; $("navUpd").hidden = true; }
+    else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
+    else { $("navBack").hidden = true; }
     persist(LS_KEYS.tab, name);  // recuerda la última pestaña
     $("content").scrollTop = 0;
     updateActiveRepoBanners();
@@ -660,7 +645,7 @@
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
-    $("navTitle").textContent = "GH Issue Composer"; $("navBack").hidden = true; $("navUpd").hidden = true;
+    $("navBack").hidden = true;
     updateActiveRepoBanners();
   }
   // ---- Mini-render de Markdown seguro (sin dependencias). El texto se escapa
@@ -794,7 +779,7 @@
     activateIssuesContainer();
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navTitle").textContent = "#" + number; $("navBack").hidden = false;
+    $("navBack").hidden = false;
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando incidencia…</div>';
 
@@ -805,17 +790,14 @@
       var issue = res[0], comments = Array.isArray(res[1]) ? res[1] : [];
       currentIssue = { repo: repo, number: number, state: issue.state };
 
-      // Última actualización arriba a la derecha.
-      $("navUpd").hidden = false;
-      $("navUpd").innerHTML = "actualizado<br><b>" + esc(fmtShort(issue.updated_at)) + "</b>";
-
       var html =
         '<div class="detail-head">' +
-          '<h3>' + esc(issue.title) + "</h3>" +
+          '<h3>#' + issue.number + " · " + esc(issue.title) + "</h3>" +
           '<div class="detail-meta">' +
             '<span class="state ' + (issue.state === "open" ? "open" : "closed") + '">' + esc(issue.state) + "</span>" +
-            "<span>#" + issue.number + " · " + esc(issue.user ? issue.user.login : "?") + "</span>" +
+            "<span>" + esc(issue.user ? issue.user.login : "?") + "</span>" +
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
+            "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div class="actions" style="margin-top:14px">' +
