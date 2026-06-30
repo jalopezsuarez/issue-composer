@@ -240,8 +240,15 @@
   .triage .trow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .triage .tag { font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
   .triage .reason { color: var(--muted); font-size: .83rem; margin: 8px 0 0; }
-  .stbtn { font-size: .74rem; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--border); background: #fff; color: var(--text); cursor: pointer; }
-  .stbtn.on { background: var(--black); color: #fff; border-color: var(--black); }
+  /* Zona de estado en filas a todo el ancho */
+  .strows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .strow { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; color: var(--text); font-weight: 600; font-size: .9rem; cursor: pointer; }
+  .strow:last-child { border-bottom: none; }
+  .strow .stdot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); flex: none; }
+  .strow .stname { flex: 1; text-align: left; }
+  .strow .stcheck { flex: none; display: none; color: var(--black); }
+  .strow.on { background: var(--bg); }
+  .strow.on .stcheck { display: flex; }
 
   /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
      así el arrastre entre columnas no compite con el pan del scroller) ===== */
@@ -957,8 +964,11 @@
             '<span class="chev">' + svg("chevright", 16) + "</span></button>" +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
-            '<div class="lblrow" id="statusRow">' + STATUSES.map(function (s) {
-              return '<button type="button" class="stbtn' + (statusOf(issue) === s.name ? " on" : "") + '" data-st="' + esc(s.name) + '">' + esc(s.name) + "</button>";
+            '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
+              return '<button type="button" class="strow' + (statusOf(issue) === s.name ? " on" : "") + '" data-st="' + esc(s.name) + '">' +
+                '<span class="stdot" style="background:#' + s.color + '"></span>' +
+                '<span class="stname">' + esc(s.name) + "</span>" +
+                '<span class="stcheck">' + svg("check", 16) + "</span></button>";
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
@@ -1000,7 +1010,7 @@
       $("btnTags").addEventListener("click", function () {
         openTags(repo, number, (issue.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }));
       });
-      var stbtns = box.querySelectorAll("#statusRow .stbtn");
+      var stbtns = box.querySelectorAll("#statusRow .strow");
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
         if (name === statusOf(issue)) return;
@@ -1276,7 +1286,7 @@
     var cur = statusOf(it);
     var row = document.getElementById("statusRow");
     if (row) {
-      var bs = row.querySelectorAll(".stbtn");
+      var bs = row.querySelectorAll(".strow");
       for (var i = 0; i < bs.length; i++) { bs[i].classList.toggle("on", bs[i].getAttribute("data-st") === cur); bs[i].disabled = false; }
     }
     var meta = document.querySelector(".detail-meta");
