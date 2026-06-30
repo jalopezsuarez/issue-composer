@@ -299,7 +299,12 @@
     var r = getSelectedRepo();
     if (r) persist(LS_KEYS.repo, r);
   }
-  $("repoSelect").addEventListener("change", rememberRepo);
+  // Al elegir explícitamente del <select>, vaciamos el campo manual para que la
+  // selección de la lista tenga efecto (el manual tiene prioridad sobre el select).
+  $("repoSelect").addEventListener("change", function () {
+    if (this.value) $("repoManual").value = "";
+    rememberRepo();
+  });
   $("repoManual").addEventListener("input", rememberRepo);
 
   // ----- GitHub fetch helper -----
@@ -675,17 +680,16 @@
 
   // ----- Init -----
   loadSettings();
-  // Restaurar repo previo en el select aunque aún no se haya conectado:
-  // se mostrará como opción seleccionada tras "Conectar". Mientras tanto,
-  // si el usuario lo tenía escrito a mano lo dejamos vacío para no confundir.
-  (function restoreRepoHint() {
+  // Restaurar el repo seleccionado desde localStorage. Lo escribimos en el campo
+  // manual (que tiene prioridad), de modo que sobrevive a las recargas y queda
+  // listo para usar SIN necesidad de "Conectar" y AUNQUE no aparezca en la lista
+  // (p. ej. repos donde solo eres colaborador externo, como trezeestudio/wefitgo).
+  // Si luego conectas y eliges otro repo del <select>, esa nueva selección se
+  // guarda y, al recargar, será la que se restaure aquí.
+  (function restoreSelectedRepo() {
     var stored = getStoredRepo();
     if (stored) {
-      // Lo dejamos preparado en el campo manual para no perder la selección.
-      // El select se rellenará al conectar y restaurará la selección si existe.
-      // No autocompletamos el manual para respetar la prioridad del select tras conectar,
-      // pero sí lo mostramos como placeholder informativo.
-      $("repoManual").setAttribute("placeholder", "owner/repo (previo: " + stored + ")");
+      $("repoManual").value = stored;
     }
   })();
 })();
