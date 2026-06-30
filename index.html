@@ -961,6 +961,7 @@
     $("content").classList.add("detail-mode");   // quita la safe-area en el detalle
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando incidencia…</div>';
+    showBusy("Cargando incidencia…");
 
     Promise.all([
       ghFetch(GH_API + "/repos/" + repo + "/issues/" + number),
@@ -1039,7 +1040,7 @@
       $("btnPostComment").addEventListener("click", function () { postComment(repo, number); });
     }).catch(function (err) {
       box.innerHTML = '<div class="msg show error">' + esc(err.message) + "</div>";
-    });
+    }).then(function () { hideBusy(); });
   }
 
   // Actualiza en sitio la zona de estado (badge open/closed + texto del botón).
