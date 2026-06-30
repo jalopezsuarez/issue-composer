@@ -405,9 +405,9 @@
       <!-- 5. Estados del tablero (Kanban) -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Estados del tablero (Kanban)</div>
-        <div class="group-hint" style="padding:0">Un estado por línea = una columna. Coinciden con tus etiquetas de GitHub por nombre. Opcional: <code>#color</code> (hex). Ej.: <code>LISTO #1a7f37</code></div></div>
+        <div class="group-hint" style="padding:0">Un estado por línea = una columna. Coinciden con tus etiquetas de GitHub por nombre. Opcional: <code>#color</code> (hex). Ej.: <code>DONE #1a7f37</code></div></div>
         <div class="field">
-          <textarea id="statusCfg" rows="5" placeholder="PENDIENTE&#10;PROGRESO&#10;LISTO #1a7f37&#10;APLAZADO"></textarea>
+          <textarea id="statusCfg" rows="5" placeholder="PENDING&#10;PROGRESS&#10;DONE #1a7f37&#10;POSTPONED"></textarea>
           <div class="actions" style="margin-top:10px">
             <button id="btnSaveStatuses" class="block">Guardar estados</button>
             <button id="btnResetStatuses" class="secondary block" type="button">Restablecer</button>
@@ -1163,10 +1163,10 @@
   // (y al sacarla de una columna "closes", se reabre). Configurable en Ajustes.
   function defaultStatuses() {
     return [
-      { name: "PENDIENTE", color: "e9edf2" },  // gris pastel
-      { name: "PROGRESO",  color: "cfe3fb" },  // azul pastel
-      { name: "LISTO",     color: "d6f0dd" },  // verde pastel
-      { name: "APLAZADO",  color: "fde9c7" }   // ámbar pastel
+      { name: "PENDING",   color: "e9edf2" },  // gris pastel
+      { name: "PROGRESS",  color: "cfe3fb" },  // azul pastel
+      { name: "DONE",      color: "d6f0dd" },  // verde pastel
+      { name: "POSTPONED", color: "fde9c7" }   // ámbar pastel
     ];
   }
   function normalizeStatus(s) { return { name: String(s.name || "").trim(), color: String(s.color || "ededed").replace(/^#/, "") }; }
