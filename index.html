@@ -865,6 +865,9 @@
     return out.join("");
   }
   function renderMd(text) { return '<div class="md">' + mdToHtml(text) + "</div>"; }
+  function renderComment(c) {
+    return '<div class="comment"><div class="who">' + esc(c.user ? c.user.login : "?") + " · " + esc(fmtShort(c.created_at)) + "</div>" + renderMd(c.body) + "</div>";
+  }
 
   function renderIssueRow(it) {
     var li = document.createElement("li");
@@ -990,12 +993,12 @@
             '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
           "</div>" +
         "</div>" +
-        '<div class="pad"><div class="group-title" style="padding:0">Comentarios (' + comments.length + ")</div></div>";
+        '<div class="pad"><div class="group-title" style="padding:0">Comentarios (<span id="commentsCount">' + comments.length + "</span>)</div></div>";
 
-      if (comments.length === 0) html += '<div class="empty-state">Sin comentarios.</div>';
-      else comments.forEach(function (c) {
-        html += '<div class="comment"><div class="who">' + esc(c.user ? c.user.login : "?") + " · " + esc(fmtShort(c.created_at)) + "</div>" + renderMd(c.body) + "</div>";
-      });
+      html += '<div id="commentsList">';
+      if (comments.length === 0) html += '<div class="empty-state" id="noComments">Sin comentarios.</div>';
+      else comments.forEach(function (c) { html += renderComment(c); });
+      html += "</div>";
 
       // ---- Compositor de comentario con IA (texto propuesto + tono + generado editable) ----
       html +=
@@ -1120,10 +1123,17 @@
     showBusy("Publicando comentario…");
     ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body })
-    }).then(function () {
-      syncIssue(repo, number, { commentsInc: 1 });   // refleja +1 comentario en las cachés
+    }).then(function (created) {
+      // Inserta el comentario devuelto directamente (sin recargar; evita la
+      // consistencia eventual de GitHub que hacía que no apareciera al refrescar).
+      var no = $("noComments"); if (no) no.parentNode.removeChild(no);
+      var lst = $("commentsList"); if (lst && created && created.body !== undefined) lst.insertAdjacentHTML("beforeend", renderComment(created));
+      var cc = $("commentsCount"); if (cc) cc.textContent = (parseInt(cc.textContent, 10) || 0) + 1;
+      $("commentGenerated").value = ""; $("commentNote").value = "";
+      syncIssue(repo, number, { commentsInc: 1 });
       hideBusy();
-      openIssue(repo, number, detailOrigin);          // recarga el detalle con el nuevo comentario
+      showMsg(msg, "success", "Comentario publicado.");
+      $("content").scrollTop = $("content").scrollHeight;   // baja al comentario nuevo
     }).catch(function (err) {
       hideBusy(); showMsg(msg, "error", esc(err.message));
     });
