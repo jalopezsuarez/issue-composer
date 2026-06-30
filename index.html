@@ -2,33 +2,30 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<!-- Viewport fijo de móvil: desactiva el pinch-zoom (maximum-scale=1, user-scalable=no)
-     y respeta las safe-areas del iPhone (viewport-fit=cover). -->
+<!-- Viewport fijo de móvil: sin zoom (ni pinch-in ni pinch-out) y con safe-areas del iPhone. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <title>GH Issue Composer</title>
 <style>
   :root {
-    --indigo: #4f46e5;
-    --indigo-dark: #4338ca;
-    --indigo-light: #eef2ff;
-    --bg: #f2f2f7;            /* gris iOS */
-    --card: #ffffff;
-    --border: #e2e8f0;
-    --text: #1e293b;
-    --muted: #64748b;
-    --danger: #dc2626;
-    --danger-bg: #fef2f2;
-    --success: #16a34a;
-    --success-bg: #f0fdf4;
-    --radius: 12px;
-    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-    --nav-h: 50px;
-    --tab-h: 60px;
+    /* Paleta estilo GitHub: negros, grises y blancos (monocromo) */
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --text: #1f2328;
+    --muted: #656d76;
+    --border: #d0d7de;
+    --border-soft: #eaeef2;
+    --black: #1f2328;
+    --danger: #cf222e;
+    --danger-bg: #fff1f0;
+    --ok: #1f2328;
+    --ok-bg: #f6f8fa;
+    --nav-h: 48px;
+    --tab-h: 58px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  /* Tipografía 2 puntos más grande (base 18px en lugar de 16px). */
+  /* Tipografía 2 puntos más grande que el por defecto (18px en vez de 16). */
   html { font-size: 18px; }
   html, body { height: 100%; }
   body {
@@ -37,66 +34,43 @@
     background: #000;
     color: var(--text);
     line-height: 1.5;
-    /* App fija de móvil: el body no hace scroll ni rebota; el scroll vive dentro de .content */
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
+    position: fixed; inset: 0; overflow: hidden;       /* app fija de móvil */
     overscroll-behavior: none;
-    touch-action: manipulation;        /* evita doble-tap-zoom */
+    touch-action: pan-y;                                /* permite scroll vertical, bloquea pinch/zoom */
     -webkit-text-size-adjust: 100%;
   }
 
-  /* ---- Carcasa de la app ---- */
   .app {
-    max-width: 480px;
-    margin: 0 auto;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg);
-    position: relative;
-    overflow: hidden;
+    max-width: 480px; margin: 0 auto; height: 100%;
+    display: flex; flex-direction: column;
+    background: var(--bg); position: relative; overflow: hidden;
   }
 
-  /* ---- Navigation bar negra con letras blancas ---- */
+  /* ===== Navigation bar negra, texto blanco ===== */
   .navbar {
-    flex: none;
-    background: #000;
-    color: #fff;
+    flex: none; background: #000; color: #fff;
     padding-top: env(safe-area-inset-top);
     height: calc(var(--nav-h) + env(safe-area-inset-top));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+    display: grid; grid-template-columns: 56px 1fr 84px; align-items: center;
   }
-  .nav-title { font-size: 1.05rem; font-weight: 700; letter-spacing: .2px; }
-  .nav-back {
-    position: absolute; left: 6px; bottom: 0;
-    height: var(--nav-h);
-    background: none; border: none; color: #fff;
-    font-size: 1rem; font-weight: 600;
-    display: flex; align-items: center; gap: 2px;
-    padding: 0 12px; cursor: pointer;
-  }
-  .nav-back .chevbig { font-size: 1.5rem; line-height: 1; }
+  .nav-left, .nav-right { display: flex; align-items: center; }
+  .nav-left { justify-content: flex-start; }
+  .nav-right { justify-content: flex-end; padding-right: 12px; text-align: right; }
+  .nav-title { text-align: center; font-size: 1.02rem; font-weight: 700; letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-back { background: none; border: none; color: #fff; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; }
   .nav-back[hidden] { display: none; }
+  .nav-upd { font-size: .66rem; line-height: 1.15; color: #c9d1d9; }
+  .nav-upd b { color: #fff; font-weight: 600; }
+  .nav-upd[hidden] { display: none; }
 
-  /* ---- Contenido scrollable ---- */
-  .content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    padding: 16px;
-  }
+  /* ===== Contenido scrollable ===== */
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
   .view { display: none; }
   .view.active { display: block; }
 
-  /* ---- Tab bar inferior (iOS) ---- */
+  /* ===== Tab bar inferior ===== */
   .tabbar {
-    flex: none;
-    background: rgba(255,255,255,.96);
+    flex: none; background: rgba(255,255,255,.97);
     backdrop-filter: saturate(180%) blur(12px);
     border-top: 1px solid var(--border);
     padding-bottom: env(safe-area-inset-bottom);
@@ -104,187 +78,166 @@
     display: flex;
   }
   .tab {
-    flex: 1;
-    background: none; border: none;
-    color: var(--muted);
-    font-size: .68rem; font-weight: 600;
+    flex: 1; background: none; border: none; color: var(--muted);
+    font-size: .66rem; font-weight: 600;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 3px; padding: 6px 0; cursor: pointer;
   }
-  .tab .ico { font-size: 1.35rem; line-height: 1; }
-  .tab.active { color: var(--indigo); }
+  .tab svg { width: 24px; height: 24px; }
+  .tab.active { color: var(--black); }
 
-  /* ---- Tarjetas y formularios ---- */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 14px;
-    box-shadow: var(--shadow);
-  }
-  .card h2 {
-    margin: 0 0 4px;
-    font-size: 1.02rem;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .card .step {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; border-radius: 50%;
-    background: var(--indigo); color: #fff; font-size: .8rem; font-weight: 700; flex: none;
-  }
-  .card .hint { color: var(--muted); font-size: .85rem; margin: 0 0 12px; }
-  .section-title { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 4px 4px 8px; }
-
-  label { display: block; font-weight: 600; font-size: .85rem; margin: 12px 0 4px; }
+  /* ===== Grupos full-width estilo iOS (sin tarjetas) ===== */
+  .group { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 22px; }
+  .group:first-child { margin-top: 14px; }
+  .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 7px; }
+  .group-hint { font-size: .8rem; color: var(--muted); padding: 0 16px 10px; }
+  .field { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); }
+  .field:last-child { border-bottom: none; }
+  label { display: block; font-weight: 600; font-size: .82rem; margin: 0 0 6px; color: var(--text); }
   input, select, textarea {
-    width: 100%;
-    padding: 11px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: .95rem;
-    font-family: inherit;
-    background: #fff;
-    color: var(--text);
+    width: 100%; padding: 11px 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: .95rem; font-family: inherit; background: #fff; color: var(--text);
     transition: border-color .15s, box-shadow .15s;
   }
   input:focus, select:focus, textarea:focus {
-    outline: none; border-color: var(--indigo);
-    box-shadow: 0 0 0 3px rgba(79,70,229,.15);
+    outline: none; border-color: var(--black);
+    box-shadow: 0 0 0 3px rgba(31,35,40,.12);
   }
   textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88rem; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .row > * { flex: 1; min-width: 150px; }
+  .pad { padding: 12px 16px; }
 
   button {
-    appearance: none; border: none;
-    background: var(--indigo); color: #fff;
-    padding: 12px 18px; border-radius: 10px;
-    font-size: .92rem; font-weight: 600; cursor: pointer;
-    transition: background .15s, opacity .15s;
+    appearance: none; border: 1px solid var(--black);
+    background: var(--black); color: #fff;
+    padding: 12px 16px; border-radius: 9px;
+    font-size: .9rem; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    transition: opacity .15s;
   }
-  button:active { background: var(--indigo-dark); }
-  button:disabled { opacity: .55; cursor: not-allowed; }
-  button.secondary { background: #fff; color: var(--indigo); border: 1px solid var(--indigo); }
+  button:active { opacity: .75; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--black); border: 1px solid var(--border); }
   button.block { width: 100%; }
-  .actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button svg { width: 17px; height: 17px; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-  /* Segmented control (tono) */
-  .segmented { display: flex; border: 1px solid var(--indigo); border-radius: 10px; overflow: hidden; }
+  /* Segmented control (tono) monocromo */
+  .segmented { display: flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
   .segmented button {
-    flex: 1; background: #fff; color: var(--indigo);
-    border: none; border-right: 1px solid var(--indigo);
-    border-radius: 0; padding: 9px 6px; font-size: .85rem; font-weight: 600;
+    flex: 1; background: #fff; color: var(--text);
+    border: none; border-right: 1px solid var(--border); border-radius: 0;
+    padding: 9px 6px; font-size: .85rem; font-weight: 600;
   }
   .segmented button:last-child { border-right: none; }
-  .segmented button.active { background: var(--indigo); color: #fff; }
+  .segmented button.active { background: var(--black); color: #fff; }
 
-  .msg { padding: 10px 14px; border-radius: 10px; font-size: .88rem; margin-top: 12px; display: none; }
+  .msg { padding: 10px 14px; border-radius: 8px; font-size: .86rem; margin: 12px 16px 0; display: none; }
   .msg.show { display: block; }
-  .msg.error { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
-  .msg.success { background: var(--success-bg); color: var(--success); border: 1px solid #bbf7d0; }
-  .msg.info { background: var(--indigo-light); color: var(--indigo-dark); border: 1px solid #c7d2fe; }
-  .status { font-size: .85rem; color: var(--muted); margin-top: 8px; min-height: 1.2em; }
+  .msg.error { background: var(--danger-bg); color: var(--danger); border: 1px solid #ffccc7; }
+  .msg.success { background: var(--ok-bg); color: var(--text); border: 1px solid var(--border); }
+  .msg.info { background: var(--ok-bg); color: var(--muted); border: 1px solid var(--border); }
+  .status { font-size: .82rem; color: var(--muted); padding: 8px 16px 0; min-height: 1.1em; }
 
   .spinner {
     display: inline-block; width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
-    border-radius: 50%; animation: spin .7s linear infinite;
-    vertical-align: -2px; margin-right: 6px;
+    border: 2px solid currentColor; border-right-color: transparent;
+    border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 6px;
+    opacity: .9;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  a { color: var(--indigo); }
-  .issue-link {
-    display: inline-block; margin-top: 12px; padding: 10px 16px;
-    background: var(--success-bg); color: var(--success);
-    border: 1px solid #bbf7d0; border-radius: 10px; text-decoration: none; font-weight: 600;
-  }
-  .pill { font-size: .72rem; background: var(--indigo-light); color: var(--indigo-dark); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  a { color: var(--text); }
+
+  .pill { font-size: .72rem; background: var(--bg); color: var(--muted); padding: 2px 8px; border-radius: 999px; font-weight: 600; border: 1px solid var(--border); }
 
   /* Banner de repo activo */
-  .repo-banner {
-    display: flex; align-items: center; gap: 8px;
-    background: #fff; border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px 12px; margin-bottom: 12px; font-size: .85rem;
-  }
-  .repo-banner .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex: none; }
-  .repo-banner.empty .dot { background: var(--muted); }
-  .repo-banner b { color: var(--text); }
+  .repo-banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; font-size: .84rem; color: var(--text); }
+  .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
+  .repo-banner b { font-weight: 700; }
 
-  /* Lista de incidencias */
-  .list { list-style: none; margin: 0; padding: 0; }
-  .list-row {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px; background: #fff; border: 1px solid var(--border);
-    border-radius: 12px; margin-bottom: 8px; cursor: pointer;
-  }
-  .list-row:active { background: #f8fafc; }
+  /* Barra de orden en incidencias */
+  .list-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .list-toolbar button { flex: 1; background: #fff; color: var(--text); border: 1px solid var(--border); padding: 9px 10px; font-size: .82rem; }
+  .list-toolbar button svg { width: 15px; height: 15px; }
+
+  /* Lista de incidencias full-width */
+  .list { list-style: none; margin: 0; padding: 0; background: var(--surface); }
+  .list-row { display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-bottom: 1px solid var(--border-soft); cursor: pointer; }
+  .list-row:active { background: var(--bg); }
+  .list-row .lead { color: var(--muted); flex: none; display: flex; }
+  .list-row .lead svg { width: 18px; height: 18px; }
   .list-row .meta { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: .92rem; word-break: break-word; }
-  .row-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
-  .state { font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; flex: none; }
-  .state.open { background: #dcfce7; color: #15803d; }
-  .state.closed { background: #f3e8ff; color: #7e22ce; }
-  .chev { color: #c7c7cc; font-size: 1.3rem; flex: none; }
+  .row-sub { font-size: .76rem; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .row-sub svg { width: 13px; height: 13px; vertical-align: -2px; }
+  .chev { color: #afb8c1; flex: none; display: flex; }
+  .chev svg { width: 16px; height: 16px; }
+  .state { font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; flex: none; border: 1px solid var(--border); }
+  .state.open { background: var(--black); color: #fff; border-color: var(--black); }
+  .state.closed { background: #fff; color: var(--muted); }
+
+  .loader { text-align: center; color: var(--muted); padding: 18px; font-size: .85rem; }
+  .empty-state { text-align: center; color: var(--muted); padding: 44px 16px; font-size: .9rem; }
 
   /* Detalle de incidencia + comentarios */
-  .detail-head { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  .detail-head h3 { margin: 0 0 8px; font-size: 1.1rem; }
-  .comment { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
-  .comment .who { font-size: .82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .detail-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px; }
+  .detail-head h3 { margin: 0 0 8px; font-size: 1.12rem; }
+  .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
+  .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
   .md { white-space: pre-wrap; word-break: break-word; font-size: .9rem; line-height: 1.55; }
-  .empty-state { text-align: center; color: var(--muted); padding: 40px 16px; font-size: .9rem; }
+  .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; background: #fff; }
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- ===== NAVIGATION BAR ===== -->
   <header class="navbar">
-    <button id="navBack" class="nav-back" hidden><span class="chevbig">‹</span><span id="navBackLabel">Atrás</span></button>
-    <span class="nav-title" id="navTitle">GH Issue Composer</span>
+    <div class="nav-left">
+      <button id="navBack" class="nav-back" hidden aria-label="Atrás"></button>
+    </div>
+    <div class="nav-title" id="navTitle">GH Issue Composer</div>
+    <div class="nav-right"><div class="nav-upd" id="navUpd" hidden></div></div>
   </header>
 
-  <!-- ===== CONTENIDO ===== -->
   <main class="content" id="content">
 
-    <!-- ========== VISTA: INCIDENCIAS ========== -->
+    <!-- ====== INCIDENCIAS ====== -->
     <section class="view" id="view-issues">
-      <!-- Sub-vista: listado -->
       <div id="issuesListWrap">
-        <div class="repo-banner empty" id="repoBannerIssues"><span class="dot"></span><span>Sin repo seleccionado</span></div>
-        <div class="actions" style="margin-top:0">
-          <button id="btnLoadIssues" class="block">Cargar incidencias</button>
+        <div class="repo-banner" id="repoBannerIssues"></div>
+        <div class="list-toolbar">
+          <button id="btnSort" class="secondary"></button>
+          <button id="btnReloadIssues" class="secondary" aria-label="Recargar"></button>
         </div>
-        <div id="issuesStatus" class="status"></div>
         <div id="issuesMsg" class="msg"></div>
         <ul class="list" id="issuesList"></ul>
+        <div id="issuesLoader" class="loader" style="display:none"></div>
       </div>
-      <!-- Sub-vista: detalle + comentarios -->
       <div id="issueDetailWrap" style="display:none">
         <div id="issueDetail"></div>
       </div>
     </section>
 
-    <!-- ========== VISTA: CREAR (COMPOSER IA) ========== -->
+    <!-- ====== CREAR (COMPOSER IA) ====== -->
     <section class="view" id="view-composer">
-      <div class="repo-banner empty" id="repoBannerComposer"><span class="dot"></span><span>Sin repo seleccionado</span></div>
+      <div class="repo-banner" id="repoBannerComposer"></div>
 
-      <!-- Notas y análisis de código -->
-      <div class="card">
-        <h2><span class="step">1</span> Nota y análisis del código</h2>
-        <p class="hint">Describe la incidencia. La IA revisa el código base del repo antes de redactar para ser más precisa.</p>
-
-        <label for="note">Nota</label>
-        <textarea id="note" rows="5" placeholder="Ej.: El botón de login no responde en móvil. Creo que el handler de submit no se registra..."></textarea>
-
-        <label>Tono del texto</label>
-        <div class="segmented" id="toneControl">
-          <button type="button" data-tone="tecnico">Técnico</button>
-          <button type="button" data-tone="conciso">Conciso</button>
-          <button type="button" data-tone="profundo">Profundo</button>
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Nota y análisis del código</div>
+        <div class="group-hint" style="padding:0 0 10px">La IA revisa el código base del repo antes de redactar para ser más precisa.</div></div>
+        <div class="field">
+          <label for="note">Nota</label>
+          <textarea id="note" rows="5" placeholder="Ej.: El botón de login no responde en móvil…"></textarea>
         </div>
-
-        <div class="actions">
+        <div class="field">
+          <label>Tono del texto</label>
+          <div class="segmented" id="toneControl">
+            <button type="button" data-tone="tecnico">Técnico</button>
+            <button type="button" data-tone="conciso">Conciso</button>
+            <button type="button" data-tone="profundo">Profundo</button>
+          </div>
+        </div>
+        <div class="field actions">
           <button id="btnAnalyze" class="block">Analizar repo y redactar</button>
           <button id="btnClearNote" class="secondary block" type="button">Borrar nota</button>
         </div>
@@ -292,75 +245,62 @@
         <div id="analyzeMsg" class="msg"></div>
       </div>
 
-      <!-- Revisar y publicar -->
-      <div class="card">
-        <h2><span class="step">2</span> Revisar y publicar</h2>
-        <p class="hint">Edita el título y el cuerpo antes de publicar.</p>
-
-        <label for="issueTitle">Título</label>
-        <input type="text" id="issueTitle" placeholder="Título del issue" />
-
-        <label for="issueBody">Cuerpo (Markdown)</label>
-        <textarea id="issueBody" rows="12" placeholder="Cuerpo del issue en Markdown..."></textarea>
-
-        <div class="actions">
-          <button id="btnPublish" class="block">Publicar issue</button>
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0">Revisar y publicar</div></div>
+        <div class="field">
+          <label for="issueTitle">Título</label>
+          <input type="text" id="issueTitle" placeholder="Título del issue" />
         </div>
+        <div class="field">
+          <label for="issueBody">Cuerpo (Markdown)</label>
+          <textarea id="issueBody" rows="12" placeholder="Cuerpo del issue en Markdown…"></textarea>
+        </div>
+        <div class="field"><button id="btnPublish" class="block">Publicar issue</button></div>
         <div id="publishMsg" class="msg"></div>
       </div>
     </section>
 
-    <!-- ========== VISTA: CONFIGURACIÓN ========== -->
+    <!-- ====== CONFIGURACIÓN ====== -->
     <section class="view" id="view-config">
-      <div class="card">
-        <h2><span class="step">1</span> Configuración</h2>
-        <p class="hint">Token de GitHub y proveedor LLM compatible con OpenAI.</p>
-
-        <label for="ghToken">GitHub Personal Access Token <span class="pill">se guarda en este navegador</span></label>
-        <input type="password" id="ghToken" placeholder="ghp_..." autocomplete="off" />
-
-        <label>Proveedor LLM (compatible con OpenAI)</label>
-        <label for="llmBaseUrl" style="margin-top:6px">Base URL</label>
-        <input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" />
-        <label for="llmApiKey">API key</label>
-        <input type="password" id="llmApiKey" placeholder="sk-..." autocomplete="off" />
-        <label for="llmModel">Model</label>
-        <input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" />
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Configuración</div>
+        <div class="group-hint" style="padding:0">Token de GitHub y proveedor LLM compatible con OpenAI.</div></div>
+        <div class="field">
+          <label for="ghToken">GitHub Personal Access Token <span class="pill">se guarda aquí</span></label>
+          <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
+        </div>
+        <div class="field"><label for="llmBaseUrl">LLM · Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
+        <div class="field"><label for="llmApiKey">LLM · API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
+        <div class="field"><label for="llmModel">LLM · Model</label><input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" /></div>
       </div>
 
-      <div class="card">
-        <h2><span class="step">2</span> Repositorio</h2>
-        <p class="hint">Conecta para listar tus repos, o escribe <code>owner/repo</code> a mano.</p>
-
-        <div class="actions" style="margin-top:0">
-          <button id="btnConnect" class="block">Conectar</button>
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Repositorio</div>
+        <div class="group-hint" style="padding:0">Conecta para listar tus repos, o escribe owner/repo a mano.</div></div>
+        <div class="field"><button id="btnConnect" class="block">Conectar</button></div>
+        <div class="field">
+          <label for="repoSearch">Buscar repositorio</label>
+          <input type="text" id="repoSearch" placeholder="Filtra por nombre…" autocomplete="off" disabled />
         </div>
-
-        <label for="repoSearch">Buscar repositorio</label>
-        <input type="text" id="repoSearch" placeholder="Filtra por nombre…" autocomplete="off" disabled />
-
-        <label for="repoSelect">Selecciona un repositorio <span id="repoCount" class="pill" style="display:none"></span></label>
-        <select id="repoSelect">
-          <option value="">— Conecta para cargar tus repos —</option>
-        </select>
-
-        <label for="repoManual">O escribe owner/repo (tiene prioridad)</label>
-        <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" />
-        <div class="actions">
-          <button id="btnAddRepo" class="secondary block">➕ Añadir a la lista</button>
+        <div class="field">
+          <label for="repoSelect">Selecciona un repositorio <span id="repoCount" class="pill" style="display:none"></span></label>
+          <select id="repoSelect"><option value="">— Conecta para cargar tus repos —</option></select>
         </div>
-
+        <div class="field">
+          <label for="repoManual">O escribe owner/repo (tiene prioridad)</label>
+          <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" />
+          <div class="actions" style="margin-top:10px"><button id="btnAddRepo" class="secondary block">Añadir a la lista</button></div>
+        </div>
         <div id="repoMsg" class="msg"></div>
       </div>
     </section>
 
   </main>
 
-  <!-- ===== TAB BAR (izquierda → derecha: Incidencias · Crear · Configuración) ===== -->
   <nav class="tabbar" id="tabbar">
-    <button class="tab" data-view="issues"><span class="ico">📋</span><span>Incidencias</span></button>
-    <button class="tab" data-view="composer"><span class="ico">✏️</span><span>Crear</span></button>
-    <button class="tab" data-view="config"><span class="ico">⚙️</span><span>Configuración</span></button>
+    <button class="tab" data-view="issues"><span class="ico" data-icon="issue"></span><span>Incidencias</span></button>
+    <button class="tab" data-view="composer"><span class="ico" data-icon="pencil"></span><span>Crear</span></button>
+    <button class="tab" data-view="config"><span class="ico" data-icon="gear"></span><span>Configuración</span></button>
   </nav>
 </div>
 
@@ -368,24 +308,39 @@
 (function () {
   "use strict";
 
+  // ===== Iconos SVG monocromos (octicons, fill currentColor) =====
+  var PATHS = {
+    issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
+    pencil: "M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z",
+    gear: "M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.039.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.364-1.891l.814-.806c.049-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c-.01-.147.039-.246.088-.294l.814-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm0 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z",
+    chevleft: "M9.78 12.78a.75.75 0 0 1-1.06 0L4.47 8.53a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 1 1 1.06 1.06L6.06 8l3.72 3.72a.75.75 0 0 1 0 1.06Z",
+    chevright: "M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z",
+    comment: "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
+    sort: "M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 13.25V4.56l1.22 1.22a.75.75 0 1 0 1.06-1.06l-2.5-2.5a.75.75 0 0 0-1.06 0l-2.5 2.5a.75.75 0 0 0 1.06 1.06l1.22-1.22v8.69a.75.75 0 0 0 1.5 0Z",
+    reload: "M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z",
+    external: "M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.06-1.06l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z",
+    check: "M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L1.72 8.78a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z",
+    repo: "M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"
+  };
+  function svg(name, size) {
+    size = size || 24;
+    var d = PATHS[name] || "";
+    var ps = d.split("|").map(function (p) { return '<path d="' + p + '"></path>'; }).join("");
+    return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" fill="currentColor" aria-hidden="true">' + ps + "</svg>";
+  }
+
   // ----- Constantes -----
   var GH_API = "https://api.github.com";
   var LS_KEYS = {
-    ghToken: "ic_gh_token",
-    llmApiKey: "ic_llm_api_key",
-    llmBaseUrl: "ic_llm_base_url",
-    llmModel: "ic_llm_model",
-    repo: "ic_repo",
-    tone: "ic_tone"
+    ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
+    llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone"
   };
-  // NOTA DE SEGURIDAD: a petición del usuario, el GitHub PAT se persiste en
-  // localStorage para no tener que reintroducirlo en cada sesión. ATENCIÓN: esto
-  // implica que el token queda guardado en el disco del navegador y accesible a
-  // cualquier script del mismo origen (riesgo en caso de XSS o equipo compartido).
-  // Úsalo solo en un equipo de confianza y, preferiblemente, con un token de
-  // permisos mínimos (scope `repo`). Sigue viviendo también en memoria para las llamadas.
+  // NOTA DE SEGURIDAD: el GitHub PAT se persiste en localStorage a petición del
+  // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
+  // Úsalo en equipo de confianza y con permisos mínimos (scope repo).
   var ghTokenMem = "";
   var currentTone = "tecnico";
+  var commentTone = "tecnico";
 
   // ----- Helpers DOM -----
   function $(id) { return document.getElementById(id); }
@@ -396,129 +351,102 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
   }
+  function cleanText(t) {
+    return String(t == null ? "" : t).replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/i, "").trim();
+  }
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  function fmtShort(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString([], { day: "2-digit", month: "short" }) + " " +
+           d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  // ===== Pintar iconos estáticos (tab bar, back, toolbar) =====
+  (function paintIcons() {
+    var icoEls = document.querySelectorAll("[data-icon]");
+    for (var i = 0; i < icoEls.length; i++) icoEls[i].innerHTML = svg(icoEls[i].getAttribute("data-icon"), 24);
+    $("navBack").innerHTML = svg("chevleft", 26);
+  })();
 
   // ====================== NAVEGACIÓN ENTRE VISTAS ======================
-  var TITLES = { issues: "GH Issue Composer", composer: "GH Issue Composer", config: "GH Issue Composer" };
   function showView(name) {
-    ["issues", "composer", "config"].forEach(function (v) {
-      $("view-" + v).classList.toggle("active", v === name);
-    });
-    var tabs = $("tabbar").querySelectorAll(".tab");
-    for (var i = 0; i < tabs.length; i++) {
-      tabs[i].classList.toggle("active", tabs[i].getAttribute("data-view") === name);
-    }
-    // Al entrar en Incidencias siempre mostramos el listado (no el detalle).
-    if (name === "issues") showIssuesList();
-    $("navTitle").textContent = TITLES[name] || "GH Issue Composer";
-    $("navBack").hidden = true;
+    ["issues", "composer", "config"].forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
+    var tb = $("tabbar").querySelectorAll(".tab");
+    for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
+    if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
+    else { $("navTitle").textContent = "GH Issue Composer"; $("navBack").hidden = true; $("navUpd").hidden = true; }
     $("content").scrollTop = 0;
     updateActiveRepoBanners();
   }
-  var tabs = $("tabbar").querySelectorAll(".tab");
-  for (var i = 0; i < tabs.length; i++) {
-    tabs[i].addEventListener("click", function () { showView(this.getAttribute("data-view")); });
-  }
+  (function wireTabs() {
+    var tb = $("tabbar").querySelectorAll(".tab");
+    for (var i = 0; i < tb.length; i++) tb[i].addEventListener("click", function () { showView(this.getAttribute("data-view")); });
+  })();
   $("navBack").addEventListener("click", function () { showIssuesList(); });
 
-  // ----- localStorage: cargar / guardar -----
+  // ----- localStorage -----
   function loadSettings() {
     try {
-      var t = localStorage.getItem(LS_KEYS.ghToken);
-      var k = localStorage.getItem(LS_KEYS.llmApiKey);
-      var b = localStorage.getItem(LS_KEYS.llmBaseUrl);
-      var m = localStorage.getItem(LS_KEYS.llmModel);
-      var tone = localStorage.getItem(LS_KEYS.tone);
+      var t = localStorage.getItem(LS_KEYS.ghToken), k = localStorage.getItem(LS_KEYS.llmApiKey),
+          b = localStorage.getItem(LS_KEYS.llmBaseUrl), m = localStorage.getItem(LS_KEYS.llmModel),
+          tone = localStorage.getItem(LS_KEYS.tone);
       if (t) { $("ghToken").value = t; ghTokenMem = t; }
       if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
-      if (tone) currentTone = tone;
-    } catch (e) { /* localStorage no disponible */ }
+      if (tone) { currentTone = tone; commentTone = tone; }
+    } catch (e) {}
   }
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
   function getStoredRepo() { try { return localStorage.getItem(LS_KEYS.repo) || ""; } catch (e) { return ""; } }
 
-  // Persistir LLM al editar
   $("llmApiKey").addEventListener("input", function () { persist(LS_KEYS.llmApiKey, this.value.trim()); });
   $("llmBaseUrl").addEventListener("input", function () { persist(LS_KEYS.llmBaseUrl, this.value.trim()); });
   $("llmModel").addEventListener("input", function () { persist(LS_KEYS.llmModel, this.value.trim()); });
-  // El token de GitHub se guarda en localStorage (ver NOTA DE SEGURIDAD arriba) y en memoria.
-  $("ghToken").addEventListener("input", function () {
-    ghTokenMem = this.value.trim();
-    persist(LS_KEYS.ghToken, ghTokenMem);
-  });
+  $("ghToken").addEventListener("input", function () { ghTokenMem = this.value.trim(); persist(LS_KEYS.ghToken, ghTokenMem); });
 
-  // ----- Tono (segmented control) -----
-  function setTone(tone) {
-    currentTone = tone;
-    persist(LS_KEYS.tone, tone);
-    var btns = $("toneControl").querySelectorAll("button");
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].classList.toggle("active", btns[i].getAttribute("data-tone") === tone);
-    }
+  // ----- Tono -----
+  function buildToneControl(el, getVal, setVal) {
+    var btns = el.querySelectorAll("button");
+    function paint() { for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("active", btns[i].getAttribute("data-tone") === getVal()); }
+    for (var i = 0; i < btns.length; i++) btns[i].addEventListener("click", function () { setVal(this.getAttribute("data-tone")); paint(); });
+    paint();
   }
-  (function wireTone() {
-    var btns = $("toneControl").querySelectorAll("button");
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].addEventListener("click", function () { setTone(this.getAttribute("data-tone")); });
-    }
-  })();
-  // Instrucción de prompt según el tono elegido.
   function toneInstruction(tone) {
-    if (tone === "conciso") {
-      return "TONO CONCISO: ve directo al grano. Frases cortas, mínimo texto, solo lo esencial. " +
-             "Evita relleno y explicaciones largas.";
-    }
-    if (tone === "profundo") {
-      return "TONO PROFUNDO: análisis exhaustivo. Incluye contexto, causa raíz probable, impacto, " +
-             "casos límite y propuestas de solución detalladas, fundamentando todo en el código revisado.";
-    }
-    return "TONO TÉCNICO: lenguaje preciso de ingeniería. Usa terminología adecuada, menciona símbolos, " +
-           "funciones, módulos y rutas reales, y detalles de implementación basados en el código revisado.";
+    if (tone === "conciso") return "TONO CONCISO: directo al grano, frases cortas, solo lo esencial, sin relleno.";
+    if (tone === "profundo") return "TONO PROFUNDO: análisis exhaustivo con contexto, causa raíz, impacto, casos límite y propuestas detalladas, fundamentado en el código revisado.";
+    return "TONO TÉCNICO: lenguaje preciso de ingeniería, terminología adecuada, referencias a símbolos/funciones/módulos/rutas reales y detalles de implementación.";
   }
 
-  // ----- Selección de repo efectiva (manual tiene prioridad) -----
+  // ----- Selección de repo -----
   function getSelectedRepo() {
     var manual = $("repoManual").value.trim();
     if (manual) return manual;
     return $("repoSelect").value.trim();
   }
-  function rememberRepo() {
-    var r = getSelectedRepo();
-    if (r) persist(LS_KEYS.repo, r);
-    updateActiveRepoBanners();
-  }
-  // Al elegir explícitamente del <select>, vaciamos el campo manual para que la
-  // selección de la lista tenga efecto (el manual tiene prioridad sobre el select).
-  $("repoSelect").addEventListener("change", function () {
-    if (this.value) $("repoManual").value = "";
-    rememberRepo();
-  });
+  function rememberRepo() { var r = getSelectedRepo(); if (r) persist(LS_KEYS.repo, r); updateActiveRepoBanners(); }
+  $("repoSelect").addEventListener("change", function () { if (this.value) $("repoManual").value = ""; rememberRepo(); });
   $("repoManual").addEventListener("input", rememberRepo);
 
-  // Banner de repo activo en las vistas Incidencias y Crear.
   function updateActiveRepoBanners() {
     var repo = getSelectedRepo();
-    [["repoBannerIssues"], ["repoBannerComposer"]].forEach(function (pair) {
-      var el = $(pair[0]);
-      if (!el) return;
-      if (repo && repo.indexOf("/") !== -1) {
-        el.classList.remove("empty");
-        el.innerHTML = '<span class="dot"></span><span>Repo activo: <b>' + esc(repo) + "</b></span>";
-      } else {
-        el.classList.add("empty");
-        el.innerHTML = '<span class="dot"></span><span>Sin repo seleccionado — elígelo en <b>Configuración</b></span>';
-      }
+    ["repoBannerIssues", "repoBannerComposer"].forEach(function (id) {
+      var el = $(id); if (!el) return;
+      if (repo && repo.indexOf("/") !== -1) el.innerHTML = svg("repo", 16) + "<span>Repo activo: <b>" + esc(repo) + "</b></span>";
+      else el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
     });
   }
 
-  // ----- GitHub fetch helper -----
+  // ----- GitHub fetch -----
   function ghHeaders() {
-    return {
-      "Authorization": "Bearer " + ghTokenMem,
-      "Accept": "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28"
-    };
+    return { "Authorization": "Bearer " + ghTokenMem, "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" };
   }
   function ghFetch(url, opts) {
     opts = opts || {};
@@ -527,75 +455,51 @@
       return res.text().then(function (txt) {
         var data = null;
         try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
-        if (!res.ok) {
-          var m = (data && data.message) ? data.message : txt || res.statusText;
-          throw new Error("GitHub " + res.status + ": " + m);
-        }
+        if (!res.ok) { var m = (data && data.message) ? data.message : txt || res.statusText; throw new Error("GitHub " + res.status + ": " + m); }
         return data;
       });
     });
   }
 
-  // ----- Parseo tolerante de JSON del LLM -----
+  // ----- JSON tolerante -----
   function parseLooseJSON(text) {
     if (text == null) throw new Error("Respuesta vacía del LLM");
-    var s = String(text).trim();
-    s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-    s = s.replace(/^`+|`+$/g, "").trim();
-    try {
-      return JSON.parse(s);
-    } catch (e) {
-      var firstObj = s.indexOf("{"), firstArr = s.indexOf("[");
-      var start = -1, closeCh;
-      if (firstArr !== -1 && (firstObj === -1 || firstArr < firstObj)) { start = firstArr; closeCh = "]"; }
-      else if (firstObj !== -1) { start = firstObj; closeCh = "}"; }
-      if (start !== -1) {
-        var last = s.lastIndexOf(closeCh);
-        if (last > start) return JSON.parse(s.slice(start, last + 1));
-      }
+    var s = String(text).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim().replace(/^`+|`+$/g, "").trim();
+    try { return JSON.parse(s); }
+    catch (e) {
+      var fo = s.indexOf("{"), fa = s.indexOf("["), start = -1, close;
+      if (fa !== -1 && (fo === -1 || fa < fo)) { start = fa; close = "]"; }
+      else if (fo !== -1) { start = fo; close = "}"; }
+      if (start !== -1) { var last = s.lastIndexOf(close); if (last > start) return JSON.parse(s.slice(start, last + 1)); }
       throw new Error("No se pudo parsear JSON del LLM: " + e.message);
     }
   }
 
-  // ----- LLM helper (compatible OpenAI) -----
+  // ----- LLM -----
   function llmComplete(messages) {
-    var baseUrl = $("llmBaseUrl").value.trim();
-    var apiKey = $("llmApiKey").value.trim();
-    var model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) {
-      return Promise.reject(new Error("Configura Base URL, API key y Model del LLM."));
-    }
+    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
+    if (!baseUrl || !apiKey || !model) return Promise.reject(new Error("Configura Base URL, API key y Model del LLM."));
     var url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
-    var body = { model: model, messages: messages, max_tokens: 1500, temperature: 0.3 };
     return fetch(url, {
       method: "POST",
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ model: model, messages: messages, max_tokens: 1500, temperature: 0.3 })
     }).then(function (res) {
       return res.text().then(function (txt) {
         var data = null;
         try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
-        if (!res.ok) {
-          var m = (data && data.error && data.error.message) ? data.error.message : (txt || res.statusText);
-          throw new Error("LLM " + res.status + ": " + m);
-        }
-        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
-          throw new Error("Respuesta del LLM sin choices[0].message");
-        }
+        if (!res.ok) { var m = (data && data.error && data.error.message) ? data.error.message : (txt || res.statusText); throw new Error("LLM " + res.status + ": " + m); }
+        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) throw new Error("Respuesta del LLM sin choices[0].message");
         return data.choices[0].message.content;
       });
     }).catch(function (err) {
-      if (err && /Failed to fetch/i.test(err.message)) {
-        throw new Error("No se pudo contactar con el endpoint LLM (\"Failed to fetch\"). " +
-          "Asegúrate de que el endpoint tenga CORS habilitado para este origen.");
-      }
+      if (err && /Failed to fetch/i.test(err.message)) throw new Error("No se pudo contactar con el endpoint LLM (\"Failed to fetch\"). Habilita CORS para este origen.");
       throw err;
     });
   }
 
-  // =================== CONFIG: CONECTAR REPOS ===================
+  // =================== CONFIG: REPOS ===================
   var loadedRepos = [];
-
   function fetchAllPages(buildUrl) {
     var acc = [];
     function go(page) {
@@ -608,400 +512,402 @@
     }
     return go(1);
   }
-
   function renderRepoOptions() {
-    var sel = $("repoSelect");
-    var filter = $("repoSearch").value.trim().toLowerCase();
-    var stored = getStoredRepo();
-    var prev = sel.value;
-    var list = loadedRepos.filter(function (r) {
-      return !filter || r.full_name.toLowerCase().indexOf(filter) !== -1;
-    });
+    var sel = $("repoSelect"), filter = $("repoSearch").value.trim().toLowerCase(), stored = getStoredRepo(), prev = sel.value;
+    var list = loadedRepos.filter(function (r) { return !filter || r.full_name.toLowerCase().indexOf(filter) !== -1; });
     sel.innerHTML = '<option value="">— Selecciona un repositorio —</option>';
     var toSelect = "";
     list.forEach(function (r) {
       var opt = document.createElement("option");
       opt.value = r.full_name;
-      opt.textContent = r.full_name + (r.private ? " 🔒" : "");
+      opt.textContent = r.full_name + (r.private ? " (priv)" : "");
       sel.appendChild(opt);
       if (r.full_name === prev) toSelect = r.full_name;
       else if (!toSelect && !prev && r.full_name === stored) toSelect = r.full_name;
     });
     if (toSelect) sel.value = toSelect;
-    var count = $("repoCount");
-    count.style.display = "inline-block";
-    count.textContent = list.length + (filter ? " de " + loadedRepos.length : "") + " repos";
+    var c = $("repoCount"); c.style.display = "inline-block";
+    c.textContent = list.length + (filter ? " de " + loadedRepos.length : "") + " repos";
   }
-
   $("repoSearch").addEventListener("input", renderRepoOptions);
 
   $("btnConnect").addEventListener("click", function () {
-    var btn = this, msg = $("repoMsg");
-    hideMsg(msg);
+    var btn = this, msg = $("repoMsg"); hideMsg(msg);
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu GitHub Personal Access Token."); return; }
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Conectando...';
-
-    fetchAllPages(function (page) {
-      return GH_API + "/user/repos?per_page=100&affiliation=owner,collaborator,organization_member&page=" + page;
-    }).then(function (userRepos) {
-      return ghFetch(GH_API + "/user/orgs?per_page=100").then(function (orgs) {
-        orgs = Array.isArray(orgs) ? orgs : [];
-        var byOrg = [];
-        var chain = orgs.reduce(function (p, org) {
-          return p.then(function () {
-            return fetchAllPages(function (page) {
-              return GH_API + "/orgs/" + encodeURIComponent(org.login) + "/repos?per_page=100&page=" + page;
-            }).then(function (rs) { byOrg = byOrg.concat(rs); }).catch(function () {});
-          });
-        }, Promise.resolve());
-        return chain.then(function () { return userRepos.concat(byOrg); });
-      }).catch(function () { return userRepos; });
-    }).then(function (allRepos) {
-      var seen = {};
-      loadedRepos = allRepos.filter(function (r) {
-        if (!r || !r.full_name || seen[r.full_name]) return false;
-        seen[r.full_name] = true; return true;
-      }).sort(function (a, b) {
-        return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase());
-      });
-      $("repoSearch").disabled = false;
-      renderRepoOptions();
-      updateActiveRepoBanners();
-      var stored = getStoredRepo();
-      var matched = loadedRepos.some(function (r) { return r.full_name === stored; });
-      showMsg(msg, "success", "Cargados " + loadedRepos.length + " repositorios." +
-        (matched ? " Restaurado: <strong>" + esc(stored) + "</strong>." : ""));
-    }).catch(function (err) {
-      showMsg(msg, "error", esc(err.message));
-    }).then(function () {
-      btn.disabled = false; btn.textContent = "Conectar";
-    });
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Conectando…';
+    fetchAllPages(function (page) { return GH_API + "/user/repos?per_page=100&affiliation=owner,collaborator,organization_member&page=" + page; })
+      .then(function (userRepos) {
+        return ghFetch(GH_API + "/user/orgs?per_page=100").then(function (orgs) {
+          orgs = Array.isArray(orgs) ? orgs : [];
+          var byOrg = [];
+          var chain = orgs.reduce(function (p, org) {
+            return p.then(function () {
+              return fetchAllPages(function (page) { return GH_API + "/orgs/" + encodeURIComponent(org.login) + "/repos?per_page=100&page=" + page; })
+                .then(function (rs) { byOrg = byOrg.concat(rs); }).catch(function () {});
+            });
+          }, Promise.resolve());
+          return chain.then(function () { return userRepos.concat(byOrg); });
+        }).catch(function () { return userRepos; });
+      }).then(function (allRepos) {
+        var seen = {};
+        loadedRepos = allRepos.filter(function (r) { if (!r || !r.full_name || seen[r.full_name]) return false; seen[r.full_name] = true; return true; })
+          .sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); });
+        $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();
+        var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
+        showMsg(msg, "success", "Cargados " + loadedRepos.length + " repositorios." + (matched ? " Restaurado: <strong>" + esc(stored) + "</strong>." : ""));
+      }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
+      .then(function () { btn.disabled = false; btn.textContent = "Conectar"; });
   });
 
-  // Verifica un owner/repo y lo añade al <select>.
   $("btnAddRepo").addEventListener("click", function () {
-    var btn = this, msg = $("repoMsg");
-    hideMsg(msg);
+    var btn = this, msg = $("repoMsg"); hideMsg(msg);
     var full = $("repoManual").value.trim().replace(/^\/+|\/+$/g, "");
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu GitHub Personal Access Token."); return; }
-    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) {
-      showMsg(msg, "error", "Escribe el repositorio como owner/repo."); return;
-    }
-    btn.disabled = true;
-    var prevLabel = btn.textContent;
-    btn.innerHTML = '<span class="spinner" style="border-top-color:var(--indigo)"></span>Verificando...';
-
+    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) { showMsg(msg, "error", "Escribe el repositorio como owner/repo."); return; }
+    btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Verificando…';
     ghFetch(GH_API + "/repos/" + full).then(function (r) {
       var exists = loadedRepos.some(function (x) { return x.full_name === r.full_name; });
-      if (!exists) {
-        loadedRepos.push({ full_name: r.full_name, private: !!r.private });
-        loadedRepos.sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); });
-      }
-      $("repoSearch").disabled = false;
-      $("repoSearch").value = "";
-      $("repoManual").value = "";
-      renderRepoOptions();
-      $("repoSelect").value = r.full_name;
-      persist(LS_KEYS.repo, r.full_name);
-      updateActiveRepoBanners();
-      showMsg(msg, exists ? "info" : "success",
-        (exists ? "Ya estaba en la lista: " : "Añadido a la lista: ") +
-        "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " 🔒" : "") + ".");
+      if (!exists) { loadedRepos.push({ full_name: r.full_name, private: !!r.private }); loadedRepos.sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); }); }
+      $("repoSearch").disabled = false; $("repoSearch").value = ""; $("repoManual").value = "";
+      renderRepoOptions(); $("repoSelect").value = r.full_name; persist(LS_KEYS.repo, r.full_name); updateActiveRepoBanners();
+      showMsg(msg, exists ? "info" : "success", (exists ? "Ya estaba en la lista: " : "Añadido a la lista: ") + "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " (priv)" : "") + ".");
     }).catch(function (err) {
-      var extra;
-      if (/\b404\b/.test(err.message)) {
-        extra = " — un 404 normalmente significa que tu token NO puede ver este repo: " +
-          "(1) si es un token fine-grained, debe incluir explícitamente este repositorio/organización en su acceso; " +
-          "(2) si es un token classic, necesita el scope <strong>repo</strong>; " +
-          "(3) si la org usa SAML SSO, autoriza el token para esa organización (Configure SSO); " +
-          "(4) revisa que owner/repo sea exacto (mayúsculas/minúsculas incluidas).";
-      } else {
-        extra = " — comprueba el nombre, los permisos del token y, si la org usa SAML SSO, que el token esté autorizado.";
-      }
+      var extra = /\b404\b/.test(err.message)
+        ? " — un 404 suele significar que tu token NO puede ver este repo: (1) token fine-grained sin acceso al repo/org; (2) token classic sin scope repo; (3) SAML SSO sin autorizar; (4) owner/repo mal escrito."
+        : " — comprueba el nombre, los permisos del token y la autorización SAML SSO si aplica.";
       showMsg(msg, "error", esc(err.message) + extra);
-    }).then(function () {
-      btn.disabled = false; btn.textContent = prevLabel;
-    });
+    }).then(function () { btn.disabled = false; btn.textContent = prev; });
   });
 
-  // =================== INCIDENCIAS: LISTA + DETALLE ===================
-  var issuesLoadedFor = null; // repo del que ya cargamos la lista
+  // =================== INCIDENCIAS: LISTA + SCROLL INFINITO ===================
+  var PER_PAGE = 25;
+  var issuesState = { repo: null, dir: "desc", page: 0, loading: false, done: false, count: 0 };
+
+  function sortLabel() { return issuesState.dir === "asc" ? "Más antiguas primero" : "Más recientes primero"; }
+  function paintSortBtn() { $("btnSort").innerHTML = svg("sort", 15) + "<span>" + sortLabel() + "</span>"; }
+  $("btnReloadIssues").innerHTML = svg("reload", 15);
+  paintSortBtn();
+
+  $("btnSort").addEventListener("click", function () { issuesState.dir = issuesState.dir === "asc" ? "desc" : "asc"; paintSortBtn(); resetAndLoadIssues(); });
+  $("btnReloadIssues").addEventListener("click", function () { resetAndLoadIssues(); });
 
   function showIssuesList() {
-    $("issuesListWrap").style.display = "";
-    $("issueDetailWrap").style.display = "none";
-    $("navTitle").textContent = "GH Issue Composer";
-    $("navBack").hidden = true;
+    $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
+    $("navTitle").textContent = "GH Issue Composer"; $("navBack").hidden = true; $("navUpd").hidden = true;
     updateActiveRepoBanners();
   }
+  function renderMd(text) { return '<div class="md">' + esc(text || "").replace(/\r\n/g, "\n") + "</div>"; }
 
-  // Renderiza un texto tipo markdown de forma segura (escapado + saltos de línea).
-  function renderMd(text) {
-    return '<div class="md">' + esc(text || "").replace(/\r\n/g, "\n") + "</div>";
+  function resetAndLoadIssues() {
+    issuesState.page = 0; issuesState.done = false; issuesState.loading = false; issuesState.count = 0;
+    $("issuesList").innerHTML = ""; hideMsg($("issuesMsg"));
+    loadMoreIssues();
   }
-  function fmtDate(iso) {
-    if (!iso) return "";
-    var d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function loadIssues() {
-    var msg = $("issuesMsg");
-    hideMsg(msg);
+  function maybeAutoLoadIssues() {
     var repo = getSelectedRepo();
-    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
-
-    var btn = $("btnLoadIssues");
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Cargando...';
-    $("issuesStatus").textContent = "Obteniendo incidencias de " + repo + "...";
-    $("issuesList").innerHTML = "";
-
-    ghFetch(GH_API + "/repos/" + repo + "/issues?state=all&per_page=50&sort=updated&direction=desc")
-      .then(function (items) {
-        items = Array.isArray(items) ? items : [];
-        // El endpoint /issues incluye PRs; los filtramos.
-        var issues = items.filter(function (it) { return !it.pull_request; });
-        issuesLoadedFor = repo;
-        $("issuesStatus").textContent = "";
-        var ul = $("issuesList");
-        if (issues.length === 0) {
-          ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>';
-          return;
-        }
-        ul.innerHTML = "";
-        issues.forEach(function (it) {
-          var li = document.createElement("li");
-          li.className = "list-row";
-          var sub = "#" + it.number + " · " + esc(it.user ? it.user.login : "?") +
-                    " · 💬 " + (it.comments || 0);
-          li.innerHTML =
-            '<div class="meta">' +
-              '<div class="row-title">' + esc(it.title) + "</div>" +
-              '<div class="row-sub">' + sub + "</div>" +
-            "</div>" +
-            '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
-            '<span class="chev">›</span>';
-          li.addEventListener("click", function () { openIssue(repo, it.number); });
-          ul.appendChild(li);
-        });
-      })
-      .catch(function (err) { $("issuesStatus").textContent = ""; showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Cargar incidencias"; });
+    if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) return;
+    if (issuesState.repo !== repo) { issuesState.repo = repo; resetAndLoadIssues(); }
+    else if (issuesState.page === 0 && !issuesState.loading) resetAndLoadIssues();
   }
-  $("btnLoadIssues").addEventListener("click", loadIssues);
+
+  function loadMoreIssues() {
+    if (issuesState.loading || issuesState.done) return;
+    var repo = getSelectedRepo();
+    if (!ghTokenMem) { showMsg($("issuesMsg"), "error", "Introduce tu token en Configuración."); return; }
+    if (!repo || repo.indexOf("/") === -1) { showMsg($("issuesMsg"), "error", "Selecciona un repositorio en Configuración."); return; }
+    issuesState.repo = repo;
+    issuesState.loading = true;
+    var page = issuesState.page + 1;
+    var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Cargando…';
+
+    var url = GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + PER_PAGE + "&sort=updated&direction=" + issuesState.dir + "&page=" + page;
+    ghFetch(url).then(function (items) {
+      items = Array.isArray(items) ? items : [];
+      if (items.length < PER_PAGE) issuesState.done = true;
+      issuesState.page = page;
+      var issues = items.filter(function (it) { return !it.pull_request; });
+      var ul = $("issuesList");
+      issues.forEach(function (it) {
+        issuesState.count++;
+        var li = document.createElement("li");
+        li.className = "list-row";
+        li.innerHTML =
+          '<span class="lead">' + svg("issue", 18) + "</span>" +
+          '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
+            '<div class="row-sub">#' + it.number + " · " + esc(it.user ? it.user.login : "?") +
+              " · " + svg("comment", 13) + " " + (it.comments || 0) +
+              " · act. " + esc(fmtShort(it.updated_at)) + "</div></div>" +
+          '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
+          '<span class="chev">' + svg("chevright", 16) + "</span>";
+        li.addEventListener("click", function () { openIssue(repo, it.number); });
+        ul.appendChild(li);
+      });
+      if (issuesState.count === 0 && issuesState.done) ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>';
+    }).catch(function (err) {
+      showMsg($("issuesMsg"), "error", esc(err.message)); issuesState.done = true;
+    }).then(function () {
+      issuesState.loading = false;
+      $("issuesLoader").style.display = issuesState.done ? "none" : "";
+      $("issuesLoader").innerHTML = "";
+    });
+  }
+
+  // Scroll infinito sobre el contenedor de contenido.
+  $("content").addEventListener("scroll", function () {
+    if (!$("view-issues").classList.contains("active")) return;
+    if ($("issuesListWrap").style.display === "none") return;
+    var el = this;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) loadMoreIssues();
+  });
+
+  // =================== DETALLE + COMENTARIOS ===================
+  var currentIssue = null; // {repo, number, state}
 
   function openIssue(repo, number) {
     var box = $("issueDetail");
-    $("issuesListWrap").style.display = "none";
-    $("issueDetailWrap").style.display = "";
-    $("navTitle").textContent = "#" + number;
-    $("navBack").hidden = false;
-    $("navBackLabel").textContent = "Incidencias";
+    $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
+    $("navTitle").textContent = "#" + number; $("navBack").hidden = false;
     $("content").scrollTop = 0;
-    box.innerHTML = '<div class="empty-state"><span class="spinner" style="border-top-color:var(--indigo)"></span>Cargando incidencia…</div>';
+    box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando incidencia…</div>';
 
     Promise.all([
       ghFetch(GH_API + "/repos/" + repo + "/issues/" + number),
       ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments?per_page=100").catch(function () { return []; })
     ]).then(function (res) {
       var issue = res[0], comments = Array.isArray(res[1]) ? res[1] : [];
+      currentIssue = { repo: repo, number: number, state: issue.state };
+
+      // Última actualización arriba a la derecha.
+      $("navUpd").hidden = false;
+      $("navUpd").innerHTML = "actualizado<br><b>" + esc(fmtShort(issue.updated_at)) + "</b>";
+
       var html =
         '<div class="detail-head">' +
           '<h3>' + esc(issue.title) + "</h3>" +
-          '<div class="row-sub">' +
-            '<span class="state ' + (issue.state === "open" ? "open" : "closed") + '">' + esc(issue.state) + "</span> " +
-            " #" + issue.number + " · " + esc(issue.user ? issue.user.login : "?") + " · " + fmtDate(issue.created_at) +
+          '<div class="detail-meta">' +
+            '<span class="state ' + (issue.state === "open" ? "open" : "closed") + '">' + esc(issue.state) + "</span>" +
+            "<span>#" + issue.number + " · " + esc(issue.user ? issue.user.login : "?") + "</span>" +
+            "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
           "</div>" +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
-          '<div style="margin-top:12px"><a class="issue-link" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">Abrir en GitHub</a></div>' +
+          '<div class="actions" style="margin-top:14px">' +
+            '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
+            '<button id="btnToggleState" class="secondary">' + (issue.state === "open" ? "Cerrar incidencia" : "Reabrir incidencia") + "</button>" +
+          "</div>" +
         "</div>" +
-        '<div class="section-title">Comentarios (' + comments.length + ")</div>";
+        '<div class="pad"><div class="group-title" style="padding:0">Comentarios (' + comments.length + ")</div></div>";
 
-      if (comments.length === 0) {
-        html += '<div class="empty-state">Sin comentarios.</div>';
-      } else {
-        comments.forEach(function (c) {
-          html += '<div class="comment"><div class="who">' + esc(c.user ? c.user.login : "?") +
-                  " · " + fmtDate(c.created_at) + "</div>" + renderMd(c.body) + "</div>";
-        });
-      }
+      if (comments.length === 0) html += '<div class="empty-state">Sin comentarios.</div>';
+      else comments.forEach(function (c) {
+        html += '<div class="comment"><div class="who">' + esc(c.user ? c.user.login : "?") + " · " + esc(fmtShort(c.created_at)) + "</div>" + renderMd(c.body) + "</div>";
+      });
+
+      // ---- Compositor de comentario con IA (texto propuesto + tono + generado editable) ----
+      html +=
+        '<div class="group" style="margin-top:14px">' +
+          '<div class="pad"><div class="group-title" style="padding:0">Nuevo comentario con IA</div></div>' +
+          '<div class="field"><label for="commentNote">Texto propuesto</label>' +
+            '<textarea id="commentNote" rows="3" placeholder="Idea / borrador de lo que quieres comentar…"></textarea></div>' +
+          '<div class="field"><label>Tono</label><div class="segmented" id="commentToneControl">' +
+            '<button type="button" data-tone="tecnico">Técnico</button>' +
+            '<button type="button" data-tone="conciso">Conciso</button>' +
+            '<button type="button" data-tone="profundo">Profundo</button></div></div>' +
+          '<div class="field actions"><button id="btnGenComment" class="block">Generar con IA</button></div>' +
+          '<div id="commentGenStatus" class="status"></div>' +
+          '<div class="field"><label for="commentGenerated">Texto generado (editable, es lo que se publica)</label>' +
+            '<textarea id="commentGenerated" rows="5" placeholder="Aquí aparece el comentario generado; edítalo si quieres…"></textarea></div>' +
+          '<div class="field"><button id="btnPostComment" class="block">Publicar comentario</button></div>' +
+          '<div id="commentMsg" class="msg"></div>' +
+        "</div>";
+
       box.innerHTML = html;
+
+      // wiring del detalle
+      $("btnToggleState").addEventListener("click", toggleIssueState);
+      buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
+      $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
+      $("btnPostComment").addEventListener("click", function () { postComment(repo, number); });
     }).catch(function (err) {
       box.innerHTML = '<div class="msg show error">' + esc(err.message) + "</div>";
+    });
+  }
+
+  function toggleIssueState() {
+    if (!currentIssue) return;
+    var btn = $("btnToggleState");
+    var newState = currentIssue.state === "open" ? "closed" : "open";
+    btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Aplicando…';
+    ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/" + currentIssue.number, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: newState })
+    }).then(function () {
+      issuesState.repo = null; // invalida la lista para recargar
+      openIssue(currentIssue.repo, currentIssue.number);
+    }).catch(function (err) {
+      btn.disabled = false; btn.textContent = prev;
+      alert(err.message);
+    });
+  }
+
+  function generateComment(issue, comments) {
+    var msg = $("commentMsg"); hideMsg(msg);
+    var note = $("commentNote").value.trim();
+    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
+    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configura el LLM en Configuración."); return; }
+    if (!note) { showMsg(msg, "error", "Escribe un texto propuesto para el comentario."); return; }
+    var btn = $("btnGenComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Generando…';
+    $("commentGenStatus").textContent = "Redactando comentario (tono " + commentTone + ")…";
+
+    var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
+    var msgs = [
+      { role: "system", content:
+        "Eres un asistente que redacta comentarios para issues de GitHub. " +
+        "Responde SOLO con el texto del comentario en Markdown, sin fences ni JSON. " +
+        toneInstruction(commentTone) + " Mantén el MISMO idioma del texto propuesto." },
+      { role: "user", content:
+        "Incidencia #" + issue.number + ": " + issue.title +
+        "\n\nDescripción:\n" + (issue.body || "(sin descripción)") +
+        "\n\nÚltimos comentarios:\n" + (thread || "(ninguno)") +
+        "\n\nTexto propuesto por el usuario:\n" + note +
+        "\n\nRedacta el comentario final." }
+    ];
+    llmComplete(msgs).then(function (content) {
+      $("commentGenerated").value = cleanText(content);
+      $("commentGenStatus").textContent = "";
+      showMsg(msg, "success", "Comentario generado. Edítalo si quieres y pulsa Publicar.");
+    }).catch(function (err) {
+      $("commentGenStatus").textContent = ""; showMsg(msg, "error", esc(err.message));
+    }).then(function () { btn.disabled = false; btn.textContent = "Generar con IA"; });
+  }
+
+  function postComment(repo, number) {
+    var msg = $("commentMsg"); hideMsg(msg);
+    var body = $("commentGenerated").value.trim();
+    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
+    if (!body) { showMsg(msg, "error", "No hay texto generado que publicar."); return; }
+    var btn = $("btnPostComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Publicando…';
+    ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body })
+    }).then(function () {
+      issuesState.repo = null;            // la lista se recargará (updated_at cambia)
+      openIssue(repo, number);            // recarga el detalle con el nuevo comentario
+    }).catch(function (err) {
+      btn.disabled = false; btn.textContent = "Publicar comentario"; showMsg(msg, "error", esc(err.message));
     });
   }
 
   // =================== COMPOSER: ANALIZAR Y REDACTAR ===================
   var IGNORE_DIRS = /(^|\/)(node_modules|\.git|dist|build|vendor|\.next|coverage)(\/|$)/;
   var BINARY_EXT = /\.(png|jpe?g|gif|svg|ico|webp|bmp|tiff?|pdf|zip|gz|tar|rar|7z|exe|dll|so|dylib|bin|woff2?|ttf|eot|otf|mp[34]|mov|avi|mkv|wav|ogg|class|jar|wasm|lock|map|min\.js|min\.css)$/i;
-
   function setStatus(text) { $("analyzeStatus").textContent = text; }
-
-  $("btnClearNote").addEventListener("click", function () {
-    $("note").value = "";
-    hideMsg($("analyzeMsg"));
-    setStatus("");
-    $("note").focus();
-  });
+  $("btnClearNote").addEventListener("click", function () { $("note").value = ""; hideMsg($("analyzeMsg")); setStatus(""); $("note").focus(); });
 
   function b64ToUtf8(b64) {
-    var clean = (b64 || "").replace(/\n/g, "");
-    var bin = atob(clean);
-    var bytes = new Uint8Array(bin.length);
+    var clean = (b64 || "").replace(/\n/g, ""), bin = atob(clean), bytes = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new TextDecoder("utf-8").decode(bytes);
   }
 
   $("btnAnalyze").addEventListener("click", function () {
-    var btn = this, msg = $("analyzeMsg");
-    hideMsg(msg); setStatus("");
-
-    var repo = getSelectedRepo();
-    var note = $("note").value.trim();
-
+    var btn = this, msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
+    var repo = getSelectedRepo(), note = $("note").value.trim();
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
     if (!note) { showMsg(msg, "error", "Escribe una nota describiendo el issue."); return; }
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
     if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configura Base URL, API key y Model del LLM."); return; }
 
-    rememberRepo();
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Analizando...';
-
-    var parts = repo.split("/");
-    var owner = parts[0], name = parts[1];
+    rememberRepo(); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando…';
+    var parts = repo.split("/"), owner = parts[0], name = parts[1];
     var ctx = { branch: "main", readme: "", tree: [] };
 
-    setStatus("Detectando rama por defecto...");
+    setStatus("Detectando rama por defecto…");
     ghFetch(GH_API + "/repos/" + owner + "/" + name).then(function (info) {
       ctx.branch = info.default_branch || "main";
-      setStatus("Leyendo README...");
+      setStatus("Leyendo README…");
       return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/readme?ref=" + ctx.branch)
         .then(function (rd) { try { ctx.readme = b64ToUtf8(rd.content).slice(0, 5000); } catch (e) { ctx.readme = ""; } })
         .catch(function () { ctx.readme = ""; });
     }).then(function () {
-      setStatus("Obteniendo árbol de ficheros...");
+      setStatus("Obteniendo árbol de ficheros…");
       return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/git/trees/" + ctx.branch + "?recursive=1");
     }).then(function (tree) {
-      var files = (tree.tree || []).filter(function (t) {
-        return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path);
-      }).map(function (t) { return t.path; });
+      var files = (tree.tree || []).filter(function (t) { return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path); }).map(function (t) { return t.path; });
       ctx.tree = files;
-      setStatus("Pidiendo al LLM las rutas relevantes (" + files.length + " ficheros)...");
+      setStatus("Pidiendo al LLM las rutas relevantes (" + files.length + " ficheros)…");
       var fileList = files.slice(0, 800).join("\n");
-      var msgs = [
+      return llmComplete([
         { role: "system", content: "Eres un asistente que ayuda a localizar el código relevante para una nota/incidencia. Respondes SOLO con un array JSON de rutas (strings), sin texto adicional, sin fences." },
-        { role: "user", content:
-          "Nota del usuario:\n" + note +
-          "\n\nLista de ficheros del repositorio (rama " + ctx.branch + "):\n" + fileList +
-          "\n\nDevuelve un array JSON con HASTA 5 rutas EXACTAS de esa lista que sean más relevantes para la nota. Ejemplo: [\"src/app.js\",\"README.md\"]. Solo el array JSON." }
-      ];
-      return llmComplete(msgs);
+        { role: "user", content: "Nota del usuario:\n" + note + "\n\nLista de ficheros (rama " + ctx.branch + "):\n" + fileList + "\n\nDevuelve un array JSON con HASTA 5 rutas EXACTAS de esa lista más relevantes para la nota. Solo el array JSON." }
+      ]);
     }).then(function (content) {
       var paths = [];
-      try {
-        var parsed = parseLooseJSON(content);
-        if (Array.isArray(parsed)) paths = parsed;
-        else if (parsed && Array.isArray(parsed.paths)) paths = parsed.paths;
-      } catch (e) { paths = []; }
+      try { var parsed = parseLooseJSON(content); if (Array.isArray(parsed)) paths = parsed; else if (parsed && Array.isArray(parsed.paths)) paths = parsed.paths; } catch (e) { paths = []; }
       paths = paths.filter(function (p) { return ctx.tree.indexOf(p) !== -1; }).slice(0, 5);
-      if (paths.length === 0) { return []; }
-      setStatus("Revisando " + paths.length + " fichero(s) del código base...");
+      if (paths.length === 0) return [];
+      setStatus("Revisando " + paths.length + " fichero(s) del código base…");
       return Promise.all(paths.map(function (p) {
         return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/contents/" + encodeURIComponent(p).replace(/%2F/g, "/") + "?ref=" + ctx.branch)
-          .then(function (c) {
-            var text = "";
-            try { text = b64ToUtf8(c.content).slice(0, 5000); } catch (e) { text = "(no se pudo decodificar)"; }
-            return { path: p, content: text };
-          })
+          .then(function (c) { var text = ""; try { text = b64ToUtf8(c.content).slice(0, 5000); } catch (e) { text = "(no se pudo decodificar)"; } return { path: p, content: text }; })
           .catch(function () { return { path: p, content: "(no disponible)" }; });
       }));
     }).then(function (codeFiles) {
-      setStatus("Redactando el issue con la IA (tono " + currentTone + ")...");
+      setStatus("Redactando el issue con la IA (tono " + currentTone + ")…");
       var codeBlob = (codeFiles || []).map(function (f) { return "=== " + f.path + " ===\n" + f.content; }).join("\n\n");
-      var msgs = [
+      return llmComplete([
         { role: "system", content:
           "Eres un asistente experto que redacta issues de GitHub claros y accionables. " +
           "Respondes SOLO con un objeto JSON válido con las claves \"title\" y \"body\", sin texto adicional ni fences. " +
-          "Reglas: 'title' conciso, menos de 70 caracteres, sin punto final. " +
-          "'body' en Markdown, incluye una checklist con items '- [ ]' y referencias a rutas reales del repositorio. " +
-          "IMPORTANTE: básate SIEMPRE en el código real revisado que se te proporciona; sé preciso y no inventes rutas ni comportamientos. " +
-          toneInstruction(currentTone) + " " +
-          "Mantén el MISMO idioma que la nota del usuario." },
-        { role: "user", content:
-          "Nota del usuario:\n" + note +
-          "\n\nREADME del repositorio:\n" + (ctx.readme || "(sin README)") +
-          "\n\nCódigo relevante revisado:\n" + (codeBlob || "(no se seleccionó código)") +
-          "\n\nDevuelve SOLO el JSON {\"title\":\"...\",\"body\":\"...\"}." }
-      ];
-      return llmComplete(msgs);
+          "Reglas: 'title' conciso, < 70 caracteres, sin punto final. 'body' en Markdown con checklist '- [ ]' y referencias a rutas reales. " +
+          "IMPORTANTE: básate SIEMPRE en el código real revisado; sé preciso y no inventes rutas ni comportamientos. " +
+          toneInstruction(currentTone) + " Mantén el MISMO idioma que la nota del usuario." },
+        { role: "user", content: "Nota del usuario:\n" + note + "\n\nREADME:\n" + (ctx.readme || "(sin README)") + "\n\nCódigo revisado:\n" + (codeBlob || "(no se seleccionó código)") + "\n\nDevuelve SOLO el JSON {\"title\":\"...\",\"body\":\"...\"}." }
+      ]);
     }).then(function (content) {
       var obj = parseLooseJSON(content);
-      var title = (obj && obj.title) ? String(obj.title) : "";
-      var body = (obj && obj.body) ? String(obj.body) : "";
+      var title = (obj && obj.title) ? String(obj.title) : "", body = (obj && obj.body) ? String(obj.body) : "";
       if (!title && !body) throw new Error("El LLM no devolvió title/body.");
-      $("issueTitle").value = title;
-      $("issueBody").value = body;
-      setStatus("");
+      $("issueTitle").value = title; $("issueBody").value = body; setStatus("");
       showMsg(msg, "success", "Issue redactado. Revísalo abajo y publícalo.");
       $("issueTitle").scrollIntoView({ behavior: "smooth", block: "center" });
-    }).catch(function (err) {
-      setStatus("");
-      showMsg(msg, "error", esc(err.message));
-    }).then(function () {
-      btn.disabled = false; btn.textContent = "Analizar repo y redactar";
-    });
+    }).catch(function (err) { setStatus(""); showMsg(msg, "error", esc(err.message)); })
+      .then(function () { btn.disabled = false; btn.textContent = "Analizar repo y redactar"; });
   });
 
   // =================== COMPOSER: PUBLICAR ===================
   $("btnPublish").addEventListener("click", function () {
-    var btn = this, msg = $("publishMsg");
-    hideMsg(msg);
-    var repo = getSelectedRepo();
-    var title = $("issueTitle").value.trim();
-    var body = $("issueBody").value;
-
+    var btn = this, msg = $("publishMsg"); hideMsg(msg);
+    var repo = getSelectedRepo(), title = $("issueTitle").value.trim(), body = $("issueBody").value;
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
     if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
-
-    rememberRepo();
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Publicando...';
-
+    rememberRepo(); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Publicando…';
     var parts = repo.split("/");
     ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: title, body: body })
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
     }).then(function (issue) {
-      issuesLoadedFor = null; // forzar recarga del listado la próxima vez
-      showMsg(msg, "success",
-        "✅ Issue #" + issue.number + " creado: " +
-        '<a class="issue-link" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' +
-        esc(issue.html_url) + "</a>");
-    }).catch(function (err) {
-      showMsg(msg, "error", esc(err.message));
-    }).then(function () {
-      btn.disabled = false; btn.textContent = "Publicar issue";
-    });
+      issuesState.repo = null;
+      showMsg(msg, "success", "Issue #" + issue.number + " creado: " + '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + esc(issue.html_url) + "</a>");
+    }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
+      .then(function () { btn.disabled = false; btn.textContent = "Publicar issue"; });
   });
+
+  // ===== Bloqueo de pinch-zoom (in y out) en iOS Safari =====
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+  });
+  document.addEventListener("touchmove", function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  // Evita el doble-tap-zoom.
+  var lastTouch = 0;
+  document.addEventListener("touchend", function (e) {
+    var now = Date.now();
+    if (now - lastTouch <= 300) e.preventDefault();
+    lastTouch = now;
+  }, { passive: false });
 
   // ----- Init -----
   loadSettings();
-  setTone(currentTone);
-  // Restaurar el repo seleccionado desde localStorage en el campo manual (prioritario),
-  // para que sobreviva a recargas y funcione aunque no aparezca en la lista.
-  (function restoreSelectedRepo() {
-    var stored = getStoredRepo();
-    if (stored) $("repoManual").value = stored;
-  })();
-  // Arrancamos en la pestaña central (Crear) si hay repo; si no, en Configuración.
+  buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; persist(LS_KEYS.tone, v); });
+  (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   showView(getSelectedRepo() ? "composer" : "config");
 })();
 </script>
