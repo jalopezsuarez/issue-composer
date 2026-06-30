@@ -64,6 +64,25 @@
   .fab-back:active { background: rgba(255,255,255,.8); }
   .fab-back svg { width: 32px; height: 32px; margin-left: -3px; }
   .fab-back[hidden] { display: none; }
+  /* Recargar flotante (detalle), arriba a la derecha */
+  .fab-reload {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px); right: 12px; z-index: 60;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,.6);
+    backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid rgba(0,0,0,.06); box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    color: #000; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .fab-reload:active { background: rgba(255,255,255,.85); }
+  .fab-reload svg { width: 20px; height: 20px; }
+  .fab-reload[hidden] { display: none; }
+
+  /* ===== Spinner modal centrado (bloquea durante un cambio) ===== */
+  .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+  .busy[hidden] { display: none; }
+  .busy-box { display: flex; align-items: center; gap: 10px; background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; font-size: .9rem; font-weight: 600; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  .busy-box .spinner { width: 18px; height: 18px; }
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
   .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
@@ -175,9 +194,14 @@
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
 
   /* Banner de repo activo */
-  .repo-banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; font-size: .84rem; color: var(--text); }
+  .repo-banner { display: flex; align-items: center; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 10px 8px 16px; font-size: .84rem; color: var(--text); }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
   .repo-banner b { font-weight: 700; }
+  .repo-banner .bn-text { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; }
+  .repo-banner .bn-text span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .banner-reload { flex: none; width: 34px; height: 34px; border-radius: 8px; background: #fff; border: 1px solid var(--border); color: var(--text); display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+  .banner-reload:active { background: var(--bg); }
+  .banner-reload svg { width: 16px; height: 16px; }
 
   /* Barra de orden en incidencias */
   .list-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
@@ -235,14 +259,10 @@
   .btnstate.close { background: #fff1f0; color: #cf222e; border: 1px solid #ffccc7; }
   .btnstate.reopen { background: #eaf7ee; color: #1a7f37; border: 1px solid #bce8c7; }
 
-  /* Etiquetas + triage */
+  /* Etiquetas (solo lectura) */
   .lblrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .list-row .lblrow, .kcard .lblrow { margin-top: 7px; }
   .lbl { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(0,0,0,.15); color: var(--text); }
-  .triage { margin-top: 12px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
-  .triage .trow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .triage .tag { font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
-  .triage .reason { color: var(--muted); font-size: .83rem; margin: 8px 0 0; }
   /* Zona de estado en filas a todo el ancho */
   .strows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .strow { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; color: var(--text); font-weight: 600; font-size: .9rem; cursor: pointer; }
@@ -275,18 +295,8 @@
   .kcard.closed { background: #fff; }   /* cerrada: fondo blanco */
   .kcard.closed .ktitle { color: var(--muted); }   /* tareas terminadas: título en gris */
   .kclosed { font-size: .66rem; font-weight: 700; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; }
-  /* Tag de estado (color del estado en Ajustes) */
+  /* Tag de estado (color del estado) */
   .sttag { font-size: .66rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); color: #1f2328; }
-  /* Zona de etiquetas pulsable en el detalle */
-  .tagszone { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-top: 12px; padding: 10px 12px; background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-weight: 400; cursor: pointer; }
-  .tagszone .lblrow { margin: 0; flex: 1; }
-  .tagszone .tz-empty { flex: 1; text-align: left; color: var(--muted); font-size: .85rem; }
-  .tagszone .chev { flex: none; display: flex; color: #afb8c1; }
-  .rtable td.repo .lbl { white-space: normal; }
-  .rtable tr.tagrow { cursor: pointer; }
-  .rtable tr.tagrow:active { background: var(--bg); }
-  .rtable tr.tagrow .rdel { display: inline-flex; color: var(--muted); }
-  .rtable tr.tagrow:active .rdel { color: var(--danger); }
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
@@ -294,16 +304,14 @@
 <div class="app">
   <!-- Back flotante glass: sólo visible cuando hay que volver (detalle) -->
   <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
+  <!-- Recargar flotante (detalle) -->
+  <button id="detailReload" class="fab-reload" hidden aria-label="Recargar"></button>
 
   <main class="content" id="content">
 
     <!-- ====== KANBAN ====== -->
     <section class="view" id="view-kanban">
       <div class="repo-banner" id="repoBannerKanban"></div>
-      <div class="list-toolbar">
-        <div style="flex:1;font-size:.78rem;color:var(--muted);padding:4px 2px">Mantén pulsada una tarjeta para arrastrarla entre columnas.</div>
-        <button id="btnReloadKanban" class="secondary" aria-label="Recargar" style="flex:none"></button>
-      </div>
       <div id="kanbanMsg" class="msg"></div>
       <div class="kanban" id="kanbanBoard"></div>
     </section>
@@ -314,7 +322,6 @@
         <div class="repo-banner" id="repoBannerIssues"></div>
         <div class="list-toolbar">
           <button id="btnSort" class="secondary"></button>
-          <button id="btnReloadIssues" class="secondary" aria-label="Recargar"></button>
         </div>
         <div id="issuesMsg" class="msg"></div>
         <ul class="list" id="issuesList"></ul>
@@ -433,6 +440,9 @@
     <button class="tab" data-view="composer" aria-label="Crear"><span class="ico" data-icon="pencil"></span></button>
     <button class="tab" data-view="config" aria-label="Configuración"><span class="ico" data-icon="gear"></span></button>
   </nav>
+
+  <!-- Spinner modal centrado: bloquea la pantalla mientras hay un cambio en curso -->
+  <div id="busy" class="busy" hidden><div class="busy-box"><span class="spinner"></span><span id="busyText">Guardando…</span></div></div>
 </div>
 
 <script>
@@ -482,6 +492,9 @@
   function $(id) { return document.getElementById(id); }
   function showMsg(el, type, html) { el.className = "msg show " + type; el.innerHTML = html; }
   function hideMsg(el) { el.className = "msg"; el.innerHTML = ""; }
+  // Spinner modal centrado: bloquea la pantalla durante un cambio en curso.
+  function showBusy(text) { $("busyText").textContent = text || "Guardando…"; $("busy").hidden = false; }
+  function hideBusy() { $("busy").hidden = true; }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
@@ -518,6 +531,7 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("content").classList.toggle("kanban-mode", name === "kanban");
     if (name !== "issues") $("content").classList.remove("detail-mode");
+    $("detailReload").hidden = true;
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
     else { $("navBack").hidden = true; }
@@ -530,12 +544,13 @@
     for (var i = 0; i < tb.length; i++) tb[i].addEventListener("click", function () { showView(this.getAttribute("data-view")); });
   })();
   var detailOrigin = "issues";
-  var detailMode = "issue";   // "issue" | "tags"
   $("navBack").addEventListener("click", function () {
-    if (detailMode === "tags") { detailMode = "issue"; openIssue(currentIssue.repo, currentIssue.number, detailOrigin); return; }
     if (detailOrigin === "kanban") showView("kanban");
     else showIssuesList();
   });
+  // Recargar flotante del detalle.
+  $("detailReload").innerHTML = svg("reload", 20);
+  $("detailReload").addEventListener("click", function () { if (currentIssue) openIssue(currentIssue.repo, currentIssue.number, detailOrigin); });
 
   // ----- localStorage -----
   function loadSettings() {
@@ -599,10 +614,14 @@
 
   function updateActiveRepoBanners() {
     var repo = getSelectedRepo();
-    ["repoBannerIssues", "repoBannerComposer", "repoBannerKanban"].forEach(function (id) {
-      var el = $(id); if (!el) return;
-      if (repo && repo.indexOf("/") !== -1) el.innerHTML = svg("repo", 16) + "<span>Repo activo: <b>" + esc(repo) + "</b></span>";
-      else el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
+    var ok = repo && repo.indexOf("/") !== -1;
+    var txt = svg("repo", 16) + (ok ? "<span>Repo activo: <b>" + esc(repo) + "</b></span>" : "<span>Sin repo — elígelo en <b>Configuración</b></span>");
+    [["repoBannerIssues", "issues"], ["repoBannerComposer", null], ["repoBannerKanban", "kanban"]].forEach(function (pair) {
+      var el = $(pair[0]); if (!el) return;
+      el.innerHTML = '<div class="bn-text">' + txt + "</div>" +
+        (pair[1] ? '<button class="banner-reload" data-rv="' + pair[1] + '" aria-label="Recargar">' + svg("reload", 16) + "</button>" : "");
+      var rb = el.querySelector(".banner-reload");
+      if (rb) rb.addEventListener("click", function () { var v = this.getAttribute("data-rv"); if (v === "issues") resetAndLoadIssues(); else if (v === "kanban") loadKanban(); });
     });
   }
 
@@ -781,20 +800,18 @@
 
   // =================== INCIDENCIAS: LISTA + SCROLL INFINITO ===================
   var PER_PAGE = 25;
-  var issuesState = { repo: null, dir: "desc", page: 0, loading: false, done: false, count: 0 };
+  var issuesState = { repo: null, dir: "desc", page: 0, loading: false, done: false, items: [] };
 
   function sortLabel() { return issuesState.dir === "asc" ? "Antiguas" : "Recientes"; }
   function paintSortBtn() { $("btnSort").innerHTML = svg("sort", 15) + "<span>" + sortLabel() + "</span>"; }
-  $("btnReloadIssues").innerHTML = svg("reload", 15);
   paintSortBtn();
-
   $("btnSort").addEventListener("click", function () { issuesState.dir = issuesState.dir === "asc" ? "desc" : "asc"; paintSortBtn(); resetAndLoadIssues(); });
-  $("btnReloadIssues").addEventListener("click", function () { resetAndLoadIssues(); });
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
-    $("navBack").hidden = true;
+    $("navBack").hidden = true; $("detailReload").hidden = true;
     $("content").classList.remove("detail-mode");
+    if (issuesState.items.length) renderIssuesList();   // re-pinta desde caché (refleja cambios al volver)
     updateActiveRepoBanners();
   }
   // ---- Mini-render de Markdown seguro (sin dependencias). El texto se escapa
@@ -849,16 +866,38 @@
   }
   function renderMd(text) { return '<div class="md">' + mdToHtml(text) + "</div>"; }
 
+  function renderIssueRow(it) {
+    var li = document.createElement("li");
+    li.className = "list-row";
+    li.innerHTML =
+      '<span class="lead">' + svg("issue", 18) + "</span>" +
+      '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
+        '<div class="row-sub">' + statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
+          " · " + svg("comment", 13) + " " + (it.comments || 0) +
+          " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
+        labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) + "</div>" +
+      '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
+      '<span class="chev">' + svg("chevright", 16) + "</span>";
+    li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
+    return li;
+  }
+  // Re-pinta la lista desde la caché en memoria (refleja cambios sin recargar de red).
+  function renderIssuesList() {
+    var ul = $("issuesList"); ul.innerHTML = "";
+    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>'; return; }
+    issuesState.items.forEach(function (it) { ul.appendChild(renderIssueRow(it)); });
+  }
   function resetAndLoadIssues() {
-    issuesState.page = 0; issuesState.done = false; issuesState.loading = false; issuesState.count = 0;
+    issuesState.page = 0; issuesState.done = false; issuesState.loading = false; issuesState.items = [];
     $("issuesList").innerHTML = ""; hideMsg($("issuesMsg"));
     loadMoreIssues();
   }
   function maybeAutoLoadIssues() {
     var repo = getSelectedRepo();
     if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) return;
-    if (issuesState.repo !== repo) { issuesState.repo = repo; resetAndLoadIssues(); }
-    else if (issuesState.page === 0 && !issuesState.loading) resetAndLoadIssues();
+    if (issuesState.repo !== repo) { issuesState.repo = repo; resetAndLoadIssues(); }   // repo cambiado → red
+    else if (!issuesState.items.length && !issuesState.loading) resetAndLoadIssues();    // sin datos → red
+    else renderIssuesList();                                                             // ya cargado → caché (con cambios)
   }
 
   function loadMoreIssues() {
@@ -879,23 +918,8 @@
       issuesState.page = page;
       var issues = items.filter(function (it) { return !it.pull_request; });
       var ul = $("issuesList");
-      issues.forEach(function (it) {
-        issuesState.count++;
-        var li = document.createElement("li");
-        li.className = "list-row";
-        li.innerHTML =
-          '<span class="lead">' + svg("issue", 18) + "</span>" +
-          '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
-            '<div class="row-sub">' + statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
-              " · " + svg("comment", 13) + " " + (it.comments || 0) +
-              " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
-            labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) + "</div>" +
-          '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
-          '<span class="chev">' + svg("chevright", 16) + "</span>";
-        li.addEventListener("click", function () { openIssue(repo, it.number); });
-        ul.appendChild(li);
-      });
-      if (issuesState.count === 0 && issuesState.done) ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>';
+      issues.forEach(function (it) { issuesState.items.push(it); ul.appendChild(renderIssueRow(it)); });
+      if (!issuesState.items.length && issuesState.done) ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>';
     }).catch(function (err) {
       showMsg($("issuesMsg"), "error", esc(err.message)); issuesState.done = true;
     }).then(function () {
@@ -927,11 +951,10 @@
 
   function openIssue(repo, number, origin) {
     detailOrigin = origin || "issues";
-    detailMode = "issue";
     activateIssuesContainer();
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false;
+    $("navBack").hidden = false; $("detailReload").hidden = false;
     $("content").classList.add("detail-mode");   // quita la safe-area en el detalle
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando incidencia…</div>';
@@ -953,9 +976,7 @@
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
             "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
-          '<button type="button" id="btnTags" class="tagszone">' +
-            (labelsHtml((issue.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) || '<span class="tz-empty">Etiquetas</span>') +
-            '<span class="chev">' + svg("chevright", 16) + "</span></button>" +
+          labelsHtml((issue.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
@@ -966,10 +987,8 @@
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
-            '<button id="btnTriage" class="secondary">Triage IA</button>' +
             '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
           "</div>" +
-          '<div id="triageBox" class="triage" style="display:none"></div>' +
         "</div>" +
         '<div class="pad"><div class="group-title" style="padding:0">Comentarios (' + comments.length + ")</div></div>";
 
@@ -1000,20 +1019,17 @@
 
       // wiring del detalle
       $("btnToggleState").addEventListener("click", toggleIssueState);
-      $("btnTriage").addEventListener("click", function () { runTriage(issue); });
-      $("btnTags").addEventListener("click", function () {
-        openTags(repo, number, (issue.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }));
-      });
       var stbtns = box.querySelectorAll("#statusRow .strow");
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
         if (name === statusOf(issue)) return;
         var prevLabels = (issue.labels || []).slice();   // para revertir si falla
-        // Optimista: aplica y refresca en sitio (sin recargar el detalle entero).
-        applyStatus(repo, issue, name)
-          .then(function () { issuesState.repo = null; KAN.repo = null; })
-          .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); alert(err.message); });
-        refreshDetailStatus(issue);   // applyStatus ya mutó issue.labels
+        showBusy("Cambiando estado…");
+        var p = applyStatus(repo, issue, name);   // muta issue.labels de forma síncrona
+        refreshDetailStatus(issue);                // refleja el nuevo estado al instante
+        p.then(function () { syncIssue(repo, number, { labels: issue.labels.slice() }); })
+          .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); alert(err.message); })
+          .then(function () { hideBusy(); });
       });
       buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
       $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
@@ -1034,159 +1050,25 @@
     if (!currentIssue) return;
     var prevState = currentIssue.state;
     var newState = prevState === "open" ? "closed" : "open";
-    // Optimista: actualiza la UI al instante; sin recargar el detalle.
+    // Optimista: actualiza la UI al instante; spinner modal hasta confirmar.
     currentIssue.state = newState; updateStateUI(newState);
-    issuesState.repo = null; KAN.repo = null;
+    showBusy(newState === "closed" ? "Cerrando…" : "Reabriendo…");
     ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/" + currentIssue.number, {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: newState })
+    }).then(function () {
+      syncIssue(currentIssue.repo, currentIssue.number, { state: newState });
     }).catch(function (err) {
       currentIssue.state = prevState; updateStateUI(prevState); alert(err.message);
-    });
+    }).then(function () { hideBusy(); });
   }
 
-  // ---- Editor de etiquetas (tabla con quitar + zona de añadir) ----
-  var tagState = { repo: null, number: null, labels: [] };
-  function openTags(repo, number, labels) {
-    detailMode = "tags";
-    tagState = { repo: repo, number: number, labels: (labels || []).map(function (l) { return { name: l.name || l, color: l.color || "ededed" }; }) };
-    $("navBack").hidden = false; $("navUpd") && ($("navUpd").hidden = true);
-    $("content").scrollTop = 0;
-    renderTags();
-  }
-  function renderTags() {
-    var box = $("issueDetail");
-    var rows = tagState.labels.map(function (l) {
-      var c = l.color || "ededed";
-      return '<tr class="tagrow" data-name="' + esc(l.name) + '"><td class="repo"><span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l.name) + "</span></td>" +
-        '<td class="del"><span class="rdel">' + svg("x", 16) + "</span></td></tr>";
-    }).join("");
-    box.innerHTML =
-      '<div class="pad"><div class="group-title" style="padding:0">Etiquetas de #' + tagState.number + '</div><div class="group-hint" style="padding:4px 0 0">Pulsa una fila para quitarla.</div></div>' +
-      (rows ? '<table class="rtable"><tbody>' + rows + "</tbody></table>" : '<div class="rt-empty">Sin etiquetas.</div>') +
-      '<div class="group" style="margin-top:14px">' +
-        '<div class="pad"><div class="group-title" style="padding:0">Añadir etiqueta</div></div>' +
-        '<div class="field"><input type="text" id="newTag" placeholder="nombre-de-etiqueta" autocomplete="off" /></div>' +
-        '<div class="field"><button id="btnAddTag" class="block">Añadir</button></div>' +
-        '<div id="tagsMsg" class="msg"></div>' +
-      "</div>";
-    var trs = box.querySelectorAll("tbody tr.tagrow");
-    for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { removeTag(this.getAttribute("data-name")); });
-    $("btnAddTag").addEventListener("click", addTag);
-    $("newTag").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addTag(); } });
-  }
-  // Optimista: quita de la lista y re-renderiza al instante; borra en segundo plano.
-  function removeTag(name) {
-    var repo = tagState.repo, number = tagState.number;
-    var idx = -1; for (var i = 0; i < tagState.labels.length; i++) if (tagState.labels[i].name === name) { idx = i; break; }
-    if (idx === -1) return;
-    var removed = tagState.labels[idx];
-    tagState.labels.splice(idx, 1);
-    issuesState.repo = null; KAN.repo = null;
-    renderTags();
-    ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels/" + encodeURIComponent(name), { method: "DELETE" })
-      .catch(function (err) {
-        tagState.labels.splice(idx, 0, removed);  // revierte
-        renderTags();
-        showMsg($("tagsMsg"), "error", "No se pudo quitar “" + esc(name) + "”: " + esc(err.message));
-      });
-  }
-  // Optimista: añade a la lista y re-renderiza; crea/añade en segundo plano.
-  function addTag() {
-    var msg = $("tagsMsg"); hideMsg(msg);
-    var repo = tagState.repo, number = tagState.number;
-    var name = $("newTag").value.trim();
-    if (!name) { showMsg(msg, "error", "Escribe el nombre de la etiqueta."); return; }
-    if (tagState.labels.some(function (l) { return l.name.toLowerCase() === name.toLowerCase(); })) { showMsg(msg, "info", "Esa etiqueta ya está."); return; }
-    tagState.labels.push({ name: name, color: "ededed" });
-    issuesState.repo = null; KAN.repo = null;
-    renderTags();
-    ghFetch(GH_API + "/repos/" + repo + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name, color: "ededed" }) }).catch(function () {})
-      .then(function () { return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: [name] }) }); })
-      .catch(function (err) {
-        tagState.labels = tagState.labels.filter(function (l) { return l.name !== name; });  // revierte
-        renderTags();
-        showMsg($("tagsMsg"), "error", "No se pudo añadir “" + esc(name) + "”: " + esc(err.message));
-      });
-  }
-
-  // ---- Triage con IA: clasifica, estima prioridad/talla, propone y aplica etiquetas ----
-  var LABEL_COLORS = { bug: "d73a4a", enhancement: "a2eeef", documentation: "0075ca", question: "d876e3", P1: "b60205", P2: "fbca04", P3: "0e8a16" };
-  function colorFor(name) {
-    if (LABEL_COLORS[name]) return LABEL_COLORS[name];
-    if (/^size/i.test(name)) return "c5def5";
-    return "ededed";
-  }
+  // Etiquetas (solo lectura): chips para mostrar las etiquetas no-estado.
   function labelsHtml(labels) {
     if (!labels || !labels.length) return "";
     return '<div class="lblrow">' + labels.map(function (l) {
       var c = l.color || "ededed";
       return '<span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l.name || l) + "</span>";
     }).join("") + "</div>";
-  }
-
-  function runTriage(issue) {
-    var box = $("triageBox");
-    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    box.style.display = "";
-    if (!baseUrl || !apiKey || !model) { box.innerHTML = '<span style="color:var(--danger)">Configura el LLM en Configuración.</span>'; return; }
-    var btn = $("btnTriage"); btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Triage…';
-    box.innerHTML = '<span class="spinner"></span>Clasificando con IA…';
-
-    llmComplete([
-      { role: "system", content:
-        "Clasificas incidencias de GitHub. Responde SOLO con un objeto JSON, sin fences, con las claves: " +
-        "\"type\" (uno de: bug, feature, docs, question), " +
-        "\"priority\" (uno de: P1, P2, P3 — P1 es lo más urgente/alto impacto), " +
-        "\"size\" (uno de: S, M, L — esfuerzo estimado), " +
-        "\"labels\" (array de hasta 4 etiquetas temáticas cortas en minúscula con guiones), " +
-        "\"reason\" (una frase breve justificando). " + langInstruction() },
-      { role: "user", content: "Título: " + issue.title + "\n\nDescripción:\n" + (issue.body || "(sin descripción)") }
-    ]).then(function (content) {
-      var t = parseLooseJSON(content) || {};
-      var typeMap = { bug: "bug", feature: "enhancement", docs: "documentation", question: "question" };
-      var typeLabel = typeMap[String(t.type || "").toLowerCase()] || "question";
-      var prio = String(t.priority || "").toUpperCase(); if (["P1", "P2", "P3"].indexOf(prio) === -1) prio = "P3";
-      var size = String(t.size || "").toUpperCase(); if (["S", "M", "L"].indexOf(size) === -1) size = "M";
-      var extra = Array.isArray(t.labels) ? t.labels.map(function (x) { return String(x).toLowerCase().trim().replace(/\s+/g, "-"); }).filter(Boolean).slice(0, 4) : [];
-      var seen = {}, labels = [typeLabel, prio, "size: " + size].concat(extra).filter(function (l) { if (!l || seen[l]) return false; seen[l] = 1; return true; });
-      var chips = labels.map(function (l) { var c = colorFor(l); return '<span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l) + "</span>"; }).join("");
-      box.innerHTML =
-        '<div class="trow"><span class="tag">' + esc(typeLabel) + '</span><span class="tag">' + esc(prio) + '</span><span class="tag">size ' + esc(size) + "</span></div>" +
-        (t.reason ? '<div class="reason">' + esc(t.reason) + "</div>" : "") +
-        '<div class="lblrow">' + chips + "</div>" +
-        '<div class="actions" style="margin-top:12px"><button id="btnApplyLabels" class="block">Aplicar etiquetas</button></div>' +
-        '<div id="triageMsg" class="msg" style="margin:10px 0 0"></div>';
-      $("btnApplyLabels").addEventListener("click", function () { applyTriageLabels(labels); });
-    }).catch(function (err) {
-      box.innerHTML = '<span style="color:var(--danger)">' + esc(err.message) + "</span>";
-    }).then(function () { btn.disabled = false; btn.textContent = prev; });
-  }
-
-  function applyTriageLabels(labels) {
-    if (!currentIssue) return;
-    var repo = currentIssue.repo, number = currentIssue.number, msg = $("triageMsg");
-    if (msg) hideMsg(msg);
-    var btn = $("btnApplyLabels"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Aplicando…';
-    // 1) Crea las etiquetas que falten (ignora 422 si ya existen), en secuencia.
-    var chain = labels.reduce(function (p, name) {
-      return p.then(function () {
-        return ghFetch(GH_API + "/repos/" + repo + "/labels", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name, color: colorFor(name) })
-        }).catch(function () {});
-      });
-    }, Promise.resolve());
-    // 2) Añade las etiquetas al issue.
-    chain.then(function () {
-      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: labels })
-      });
-    }).then(function () {
-      issuesState.repo = null; KAN.repo = null;
-      openIssue(repo, number, detailOrigin); // recarga mostrando las etiquetas aplicadas
-    }).catch(function (err) {
-      if (msg) showMsg(msg, "error", esc(err.message));
-      btn.disabled = false; btn.textContent = "Aplicar etiquetas";
-    });
   }
 
   function generateComment(issue, comments) {
@@ -1235,14 +1117,15 @@
     var body = $("commentGenerated").value.trim();
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!body) { showMsg(msg, "error", "No hay texto generado que publicar."); return; }
-    var btn = $("btnPostComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Publicando…';
+    showBusy("Publicando comentario…");
     ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body })
     }).then(function () {
-      issuesState.repo = null; KAN.repo = null;  // lista y tablero se recargarán
-      openIssue(repo, number, detailOrigin);     // recarga el detalle con el nuevo comentario
+      syncIssue(repo, number, { commentsInc: 1 });   // refleja +1 comentario en las cachés
+      hideBusy();
+      openIssue(repo, number, detailOrigin);          // recarga el detalle con el nuevo comentario
     }).catch(function (err) {
-      btn.disabled = false; btn.textContent = "Publicar comentario"; showMsg(msg, "error", esc(err.message));
+      hideBusy(); showMsg(msg, "error", esc(err.message));
     });
   }
 
@@ -1262,7 +1145,6 @@
   function statusLabelName(name) { return STATUS_PREFIX + name; }                 // "status:done"
   function statusKeyOf(label) { var n = String(label == null ? "" : (label.name || label)).toLowerCase(); if (n.indexOf(STATUS_PREFIX) !== 0) return null; var k = n.slice(STATUS_PREFIX.length).trim(); return statusByName(k) ? k : null; }
   function isStatusLabel(label) { return !!statusKeyOf(label); }
-  function statusColor(name) { var s = statusByName(name); return s ? s.color : "ededed"; }
   // Estado de una incidencia: primera etiqueta "status:<key>" reconocida; si no, la primera (pending).
   function statusOf(it) {
     var found = null;
@@ -1289,14 +1171,26 @@
     if (tag && s) { tag.style.background = "#" + s.color; tag.textContent = s.name; }
   }
 
-  $("btnReloadKanban").innerHTML = svg("reload", 15);
-  $("btnReloadKanban").addEventListener("click", loadKanban);
+  // Actualiza una incidencia en las cachés (lista + kanban) para que, al volver,
+  // las vistas reflejen el cambio sin recargar de la red.
+  function syncIssue(repo, number, patch) {
+    function upd(arr) {
+      if (!arr) return;
+      for (var i = 0; i < arr.length; i++) if (arr[i].number === number) {
+        if (patch.labels !== undefined) arr[i].labels = patch.labels;
+        if (patch.state !== undefined) arr[i].state = patch.state;
+        if (patch.commentsInc) arr[i].comments = (arr[i].comments || 0) + patch.commentsInc;
+      }
+    }
+    if (KAN.repo === repo) upd(KAN.issues);
+    if (issuesState.repo === repo) upd(issuesState.items);
+  }
 
   function maybeAutoLoadKanban() {
     var repo = getSelectedRepo();
     if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) { $("kanbanBoard").innerHTML = '<div class="empty-state">Selecciona un repositorio en Configuración.</div>'; return; }
-    if (KAN.repo !== repo || KAN.issues.length === 0) loadKanban();
-    else renderKanban();
+    if (KAN.repo !== repo || KAN.issues.length === 0) loadKanban();   // repo cambiado/sin datos → red
+    else renderKanban();                                             // ya cargado → caché (con cambios)
   }
 
   function loadKanban() {
@@ -1332,10 +1226,6 @@
       list.forEach(function (it) { body.appendChild(makeCard(it)); });
       board.appendChild(colEl);
     });
-  }
-  function recountKanban() {
-    var cols = $("kanbanBoard").querySelectorAll(".kcol");
-    for (var i = 0; i < cols.length; i++) cols[i].querySelector(".kcount").textContent = cols[i].querySelectorAll(".kcard").length;
   }
   function makeCard(it) {
     var card = document.createElement("div");
@@ -1435,9 +1325,12 @@
       if (target) {
         var newName = target.getAttribute("data-status");
         if (newName && newName !== statusOf(it)) {
-          applyStatus(KAN.repo, it, newName).then(function () { issuesState.repo = null; })
-            .catch(function (err) { showMsg($("kanbanMsg"), "error", "No se pudo mover #" + it.number + ": " + esc(err.message)); loadKanban(); });
-          renderKanban(); // optimista (applyStatus ya mutó it)
+          showBusy("Moviendo…");
+          var p = applyStatus(KAN.repo, it, newName);   // muta it de forma síncrona
+          renderKanban();                                // optimista
+          p.then(function () { syncIssue(KAN.repo, it.number, { labels: it.labels.slice() }); })
+            .catch(function (err) { showMsg($("kanbanMsg"), "error", "No se pudo mover #" + it.number + ": " + esc(err.message)); loadKanban(); })
+            .then(function () { hideBusy(); });
         }
       }
     }
@@ -1567,15 +1460,15 @@
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
     if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
-    rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Publicando…';
+    rememberRepo(); addRecent(repo); showBusy("Publicando issue…");
     var parts = repo.split("/");
     ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
     }).then(function (issue) {
-      issuesState.repo = null; KAN.repo = null;
+      issuesState.repo = null; KAN.repo = null;   // nuevo issue → recargar lista/tablero al abrirlos
       showMsg(msg, "success", "Issue #" + issue.number + " creado: " + '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + esc(issue.html_url) + "</a>");
     }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Publicar issue"; });
+      .then(function () { hideBusy(); });
   });
 
   // ===== Bloqueo de pinch-zoom (in y out) en iOS Safari =====
