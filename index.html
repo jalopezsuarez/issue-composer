@@ -231,6 +231,9 @@
   .md a { text-decoration: underline; }
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; background: #fff; }
+  /* Botón Cerrar/Reabrir con fondo propio */
+  .btnstate.close { background: #fff1f0; color: #cf222e; border: 1px solid #ffccc7; }
+  .btnstate.reopen { background: #eaf7ee; color: #1a7f37; border: 1px solid #bce8c7; }
 
   /* Etiquetas + triage */
   .lblrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -280,6 +283,10 @@
   .tagszone .tz-empty { flex: 1; text-align: left; color: var(--muted); font-size: .85rem; }
   .tagszone .chev { flex: none; display: flex; color: #afb8c1; }
   .rtable td.repo .lbl { white-space: normal; }
+  .rtable tr.tagrow { cursor: pointer; }
+  .rtable tr.tagrow:active { background: var(--bg); }
+  .rtable tr.tagrow .rdel { display: inline-flex; color: var(--muted); }
+  .rtable tr.tagrow:active .rdel { color: var(--danger); }
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
@@ -973,7 +980,7 @@
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
             '<button id="btnTriage" class="secondary">Triage IA</button>' +
-            '<button id="btnToggleState" class="secondary">' + (issue.state === "open" ? "Cerrar incidencia" : "Reabrir incidencia") + "</button>" +
+            '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
           "</div>" +
           '<div id="triageBox" class="triage" style="display:none"></div>' +
         "</div>" +
@@ -1031,7 +1038,8 @@
 
   // Actualiza en sitio la zona de estado (badge open/closed + texto del botón).
   function updateStateUI(state) {
-    var btn = $("btnToggleState"); if (btn) btn.textContent = state === "open" ? "Cerrar incidencia" : "Reabrir incidencia";
+    var btn = $("btnToggleState");
+    if (btn) { btn.textContent = state === "open" ? "Cerrar" : "Reabrir"; btn.className = "btnstate " + (state === "open" ? "close" : "reopen"); }
     var badge = document.querySelector(".detail-meta .state");
     if (badge) { badge.className = "state " + (state === "open" ? "open" : "closed"); badge.textContent = state; }
   }
@@ -1062,11 +1070,11 @@
     var box = $("issueDetail");
     var rows = tagState.labels.map(function (l) {
       var c = l.color || "ededed";
-      return '<tr><td class="repo"><span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l.name) + "</span></td>" +
-        '<td class="del"><button type="button" class="rdel tdel" data-name="' + esc(l.name) + '" aria-label="Quitar">' + svg("x", 16) + "</button></td></tr>";
+      return '<tr class="tagrow" data-name="' + esc(l.name) + '"><td class="repo"><span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l.name) + "</span></td>" +
+        '<td class="del"><span class="rdel">' + svg("x", 16) + "</span></td></tr>";
     }).join("");
     box.innerHTML =
-      '<div class="pad"><div class="group-title" style="padding:0">Etiquetas de #' + tagState.number + "</div></div>" +
+      '<div class="pad"><div class="group-title" style="padding:0">Etiquetas de #' + tagState.number + '</div><div class="group-hint" style="padding:4px 0 0">Pulsa una fila para quitarla.</div></div>' +
       (rows ? '<table class="rtable"><tbody>' + rows + "</tbody></table>" : '<div class="rt-empty">Sin etiquetas.</div>') +
       '<div class="group" style="margin-top:14px">' +
         '<div class="pad"><div class="group-title" style="padding:0">Añadir etiqueta</div></div>' +
@@ -1074,37 +1082,44 @@
         '<div class="field"><button id="btnAddTag" class="block">Añadir</button></div>' +
         '<div id="tagsMsg" class="msg"></div>' +
       "</div>";
-    var dels = box.querySelectorAll(".tdel");
-    for (var i = 0; i < dels.length; i++) dels[i].addEventListener("click", function () { removeTag(this.getAttribute("data-name")); });
+    var trs = box.querySelectorAll("tbody tr.tagrow");
+    for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { removeTag(this.getAttribute("data-name")); });
     $("btnAddTag").addEventListener("click", addTag);
     $("newTag").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); addTag(); } });
   }
+  // Optimista: quita de la lista y re-renderiza al instante; borra en segundo plano.
   function removeTag(name) {
     var repo = tagState.repo, number = tagState.number;
+    var idx = -1; for (var i = 0; i < tagState.labels.length; i++) if (tagState.labels[i].name === name) { idx = i; break; }
+    if (idx === -1) return;
+    var removed = tagState.labels[idx];
+    tagState.labels.splice(idx, 1);
+    issuesState.repo = null; KAN.repo = null;
+    renderTags();
     ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels/" + encodeURIComponent(name), { method: "DELETE" })
-      .then(function () {
-        tagState.labels = tagState.labels.filter(function (l) { return l.name !== name; });
-        issuesState.repo = null; KAN.repo = null;
+      .catch(function (err) {
+        tagState.labels.splice(idx, 0, removed);  // revierte
         renderTags();
-      }).catch(function (err) { showMsg($("tagsMsg"), "error", esc(err.message)); });
+        showMsg($("tagsMsg"), "error", "No se pudo quitar “" + esc(name) + "”: " + esc(err.message));
+      });
   }
+  // Optimista: añade a la lista y re-renderiza; crea/añade en segundo plano.
   function addTag() {
     var msg = $("tagsMsg"); hideMsg(msg);
     var repo = tagState.repo, number = tagState.number;
     var name = $("newTag").value.trim();
     if (!name) { showMsg(msg, "error", "Escribe el nombre de la etiqueta."); return; }
     if (tagState.labels.some(function (l) { return l.name.toLowerCase() === name.toLowerCase(); })) { showMsg(msg, "info", "Esa etiqueta ya está."); return; }
-    var btn = $("btnAddTag"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Añadiendo…';
-    // Crea la etiqueta si no existe (ignora 422) y la añade a la incidencia.
+    tagState.labels.push({ name: name, color: "ededed" });
+    issuesState.repo = null; KAN.repo = null;
+    renderTags();
     ghFetch(GH_API + "/repos/" + repo + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name, color: "ededed" }) }).catch(function () {})
       .then(function () { return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: [name] }) }); })
-      .then(function (all) {
-        // refresca color real desde la respuesta si está disponible
-        var found = Array.isArray(all) ? all.filter(function (l) { return (l.name || "").toLowerCase() === name.toLowerCase(); })[0] : null;
-        tagState.labels.push({ name: name, color: found && found.color ? found.color : "ededed" });
-        issuesState.repo = null; KAN.repo = null;
+      .catch(function (err) {
+        tagState.labels = tagState.labels.filter(function (l) { return l.name !== name; });  // revierte
         renderTags();
-      }).catch(function (err) { btn.disabled = false; btn.textContent = "Añadir"; showMsg(msg, "error", esc(err.message)); });
+        showMsg($("tagsMsg"), "error", "No se pudo añadir “" + esc(name) + "”: " + esc(err.message));
+      });
   }
 
   // ---- Triage con IA: clasifica, estima prioridad/talla, propone y aplica etiquetas ----
