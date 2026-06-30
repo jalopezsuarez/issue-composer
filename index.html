@@ -49,7 +49,7 @@
   /* ===== Back flotante glass (sólo cuando hay que volver) ===== */
   .fab-back {
     position: fixed;
-    top: calc(env(safe-area-inset-top) + 10px); left: 12px; z-index: 60;
+    top: 10px; left: 12px; z-index: 60;
     width: 46px; height: 46px; border-radius: 50%;
     background: #fff;
     border: 1px solid rgba(0,0,0,.08);
@@ -63,17 +63,18 @@
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
   .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); }
-  /* En el detalle dejamos hueco arriba para no solapar el back flotante */
+  /* En el detalle se quita la safe-area (sube al máximo) y se deja sólo hueco para el back flotante */
+  .content.detail-mode { padding-top: 0; }
   #issueDetailWrap { padding-top: 56px; }
   .view { display: none; }
   .view.active { display: block; }
 
   /* ===== Tab bar inferior ===== */
   .tabbar {
-    flex: none; background: rgba(255,255,255,.1);
+    flex: none; background: transparent;            /* tab bar 100% transparente */
     backdrop-filter: saturate(180%) blur(22px);
     -webkit-backdrop-filter: saturate(180%) blur(22px);
-    border-top: 1px solid rgba(0,0,0,.08);
+    border-top: 1px solid rgba(0,0,0,.06);
     padding-bottom: env(safe-area-inset-bottom);
     height: calc(var(--tab-h) + env(safe-area-inset-bottom));
     display: flex;
@@ -216,6 +217,14 @@
   .md a { text-decoration: underline; }
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; background: #fff; }
+
+  /* Etiquetas + triage */
+  .lblrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .lbl { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(0,0,0,.15); color: var(--text); }
+  .triage { margin-top: 12px; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+  .triage .trow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .triage .tag { font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
+  .triage .reason { color: var(--muted); font-size: .83rem; margin: 8px 0 0; }
 
   /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
      así el arrastre entre columnas no compite con el pan del scroller) ===== */
@@ -455,6 +464,7 @@
     var tb = $("tabbar").querySelectorAll(".tab");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("content").classList.toggle("kanban-mode", name === "kanban");
+    if (name !== "issues") $("content").classList.remove("detail-mode");
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
     else { $("navBack").hidden = true; }
@@ -727,6 +737,7 @@
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
     $("navBack").hidden = true;
+    $("content").classList.remove("detail-mode");
     updateActiveRepoBanners();
   }
   // ---- Mini-render de Markdown seguro (sin dependencias). El texto se escapa
@@ -862,6 +873,7 @@
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
     $("navBack").hidden = false;
+    $("content").classList.add("detail-mode");   // quita la safe-area en el detalle
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando incidencia…</div>';
 
@@ -881,11 +893,14 @@
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
             "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
+          labelsHtml(issue.labels) +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
+            '<button id="btnTriage" class="secondary">Triage IA</button>' +
             '<button id="btnToggleState" class="secondary">' + (issue.state === "open" ? "Cerrar incidencia" : "Reabrir incidencia") + "</button>" +
           "</div>" +
+          '<div id="triageBox" class="triage" style="display:none"></div>' +
         "</div>" +
         '<div class="pad"><div class="group-title" style="padding:0">Comentarios (' + comments.length + ")</div></div>";
 
@@ -916,6 +931,7 @@
 
       // wiring del detalle
       $("btnToggleState").addEventListener("click", toggleIssueState);
+      $("btnTriage").addEventListener("click", function () { runTriage(issue); });
       buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
       $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
       $("btnPostComment").addEventListener("click", function () { postComment(repo, number); });
@@ -937,6 +953,86 @@
     }).catch(function (err) {
       btn.disabled = false; btn.textContent = prev;
       alert(err.message);
+    });
+  }
+
+  // ---- Triage con IA: clasifica, estima prioridad/talla, propone y aplica etiquetas ----
+  var LABEL_COLORS = { bug: "d73a4a", enhancement: "a2eeef", documentation: "0075ca", question: "d876e3", P1: "b60205", P2: "fbca04", P3: "0e8a16" };
+  function colorFor(name) {
+    if (LABEL_COLORS[name]) return LABEL_COLORS[name];
+    if (/^size/i.test(name)) return "c5def5";
+    return "ededed";
+  }
+  function labelsHtml(labels) {
+    if (!labels || !labels.length) return "";
+    return '<div class="lblrow">' + labels.map(function (l) {
+      var c = l.color || "ededed";
+      return '<span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l.name || l) + "</span>";
+    }).join("") + "</div>";
+  }
+
+  function runTriage(issue) {
+    var box = $("triageBox");
+    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
+    box.style.display = "";
+    if (!baseUrl || !apiKey || !model) { box.innerHTML = '<span style="color:var(--danger)">Configura el LLM en Configuración.</span>'; return; }
+    var btn = $("btnTriage"); btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Triage…';
+    box.innerHTML = '<span class="spinner"></span>Clasificando con IA…';
+
+    llmComplete([
+      { role: "system", content:
+        "Clasificas incidencias de GitHub. Responde SOLO con un objeto JSON, sin fences, con las claves: " +
+        "\"type\" (uno de: bug, feature, docs, question), " +
+        "\"priority\" (uno de: P1, P2, P3 — P1 es lo más urgente/alto impacto), " +
+        "\"size\" (uno de: S, M, L — esfuerzo estimado), " +
+        "\"labels\" (array de hasta 4 etiquetas temáticas cortas en minúscula con guiones), " +
+        "\"reason\" (una frase breve en español justificando)." },
+      { role: "user", content: "Título: " + issue.title + "\n\nDescripción:\n" + (issue.body || "(sin descripción)") }
+    ]).then(function (content) {
+      var t = parseLooseJSON(content) || {};
+      var typeMap = { bug: "bug", feature: "enhancement", docs: "documentation", question: "question" };
+      var typeLabel = typeMap[String(t.type || "").toLowerCase()] || "question";
+      var prio = String(t.priority || "").toUpperCase(); if (["P1", "P2", "P3"].indexOf(prio) === -1) prio = "P3";
+      var size = String(t.size || "").toUpperCase(); if (["S", "M", "L"].indexOf(size) === -1) size = "M";
+      var extra = Array.isArray(t.labels) ? t.labels.map(function (x) { return String(x).toLowerCase().trim().replace(/\s+/g, "-"); }).filter(Boolean).slice(0, 4) : [];
+      var seen = {}, labels = [typeLabel, prio, "size: " + size].concat(extra).filter(function (l) { if (!l || seen[l]) return false; seen[l] = 1; return true; });
+      var chips = labels.map(function (l) { var c = colorFor(l); return '<span class="lbl" style="background:#' + c + '22;border-color:#' + c + '">' + esc(l) + "</span>"; }).join("");
+      box.innerHTML =
+        '<div class="trow"><span class="tag">' + esc(typeLabel) + '</span><span class="tag">' + esc(prio) + '</span><span class="tag">size ' + esc(size) + "</span></div>" +
+        (t.reason ? '<div class="reason">' + esc(t.reason) + "</div>" : "") +
+        '<div class="lblrow">' + chips + "</div>" +
+        '<div class="actions" style="margin-top:12px"><button id="btnApplyLabels" class="block">Aplicar etiquetas</button></div>' +
+        '<div id="triageMsg" class="msg" style="margin:10px 0 0"></div>';
+      $("btnApplyLabels").addEventListener("click", function () { applyTriageLabels(labels); });
+    }).catch(function (err) {
+      box.innerHTML = '<span style="color:var(--danger)">' + esc(err.message) + "</span>";
+    }).then(function () { btn.disabled = false; btn.textContent = prev; });
+  }
+
+  function applyTriageLabels(labels) {
+    if (!currentIssue) return;
+    var repo = currentIssue.repo, number = currentIssue.number, msg = $("triageMsg");
+    if (msg) hideMsg(msg);
+    var btn = $("btnApplyLabels"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Aplicando…';
+    // 1) Crea las etiquetas que falten (ignora 422 si ya existen), en secuencia.
+    var chain = labels.reduce(function (p, name) {
+      return p.then(function () {
+        return ghFetch(GH_API + "/repos/" + repo + "/labels", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name, color: colorFor(name) })
+        }).catch(function () {});
+      });
+    }, Promise.resolve());
+    // 2) Añade las etiquetas al issue.
+    chain.then(function () {
+      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/labels", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: labels })
+      });
+    }).then(function () {
+      issuesState.repo = null; KAN.repo = null;
+      openIssue(repo, number, detailOrigin); // recarga mostrando las etiquetas aplicadas
+    }).catch(function (err) {
+      if (msg) showMsg(msg, "error", esc(err.message));
+      btn.disabled = false; btn.textContent = "Aplicar etiquetas";
     });
   }
 
