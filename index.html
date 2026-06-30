@@ -64,7 +64,7 @@
   .fab-back[hidden] { display: none; }
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
-  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); }
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); }
   /* El detalle empieza al nivel del back flotante (sin hueco): el título/meta se
      indentan a la derecha del botón en lugar de bajar el contenido. */
   #issueDetailWrap { padding-top: 0; }
@@ -76,10 +76,8 @@
 
   /* ===== Tab bar inferior ===== */
   .tabbar {
-    flex: none; background: transparent;            /* tab bar 100% transparente */
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
-    border-top: 1px solid rgba(0,0,0,.06);
+    flex: none; background: transparent;            /* tab bar totalmente transparente, sin separador */
+    border-top: none;
     padding-bottom: env(safe-area-inset-bottom);
     height: calc(var(--tab-h) + env(safe-area-inset-bottom));
     display: flex;
@@ -167,6 +165,10 @@
   .rtable tbody tr:active { background: var(--bg); }
   .rtable tbody tr.sel td { font-weight: 700; }
   .rtable tbody tr.sel td.repo svg { color: var(--black); }
+  .rtable td.del { width: 40px; text-align: right; padding: 6px 10px 6px 0; }
+  .rdel { background: none; border: none; color: var(--muted); padding: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+  .rdel:active { background: var(--bg); color: var(--danger); }
+  .rdel svg { width: 16px; height: 16px; }
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
 
   /* Banner de repo activo */
@@ -200,11 +202,11 @@
 
   /* Detalle de incidencia + comentarios */
   .detail-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px; }
-  .detail-head h3 { margin: 0 0 8px; font-size: 1.12rem; }
+  .detail-head h3 { margin: 0 0 8px; font-size: 1.12rem; word-break: break-word; overflow-wrap: anywhere; }
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
   .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-  .md { word-break: break-word; font-size: .9rem; line-height: 1.55; }
+  .md { word-break: break-word; overflow-wrap: anywhere; font-size: .9rem; line-height: 1.55; }
   .md p { margin: 0 0 10px; }
   .md p:last-child { margin-bottom: 0; }
   .mh { font-weight: 700; margin: 14px 0 8px; line-height: 1.3; }
@@ -405,7 +407,8 @@
     check: "M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L1.72 8.78a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z",
     repo: "M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z",
     project: "M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25ZM11.75 3a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Zm-8.25.75a.75.75 0 0 1 1.5 0v5.5a.75.75 0 0 1-1.5 0Zm4.25-.75a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 7.75 3Z",
-    list: "M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm3.75-1.5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5ZM3 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+    list: "M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm3.75-1.5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5ZM3 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z",
+    x: "M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
   };
   function svg(name, size) {
     size = size || 24;
@@ -554,6 +557,10 @@
     updateActiveRepoBanners();
     renderRecents();                          // refresca el resaltado
   }
+  function removeRecent(full) {
+    persist(LS_KEYS.recent, JSON.stringify(getRecents().filter(function (x) { return x !== full; })));
+    renderRecents();
+  }
   function renderRecents() {
     var el = $("recentList"); if (!el) return;
     var list = getRecents();
@@ -562,11 +569,14 @@
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
-        '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td></tr>";
+        '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td>" +
+        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Eliminar de recientes">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
-    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th></tr></thead><tbody>' + rows + "</tbody></table>";
+    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
+    var dels = el.querySelectorAll(".rdel");
+    for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeRecent(this.getAttribute("data-full")); });
   }
 
   // ----- GitHub fetch -----
