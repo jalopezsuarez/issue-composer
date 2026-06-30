@@ -937,7 +937,7 @@
   }
 
   // =================== KANBAN (tablero por estado, arrastrar para mover) ===================
-  var KAN = { repo: null, loading: false, issues: [] };
+  var KAN = { repo: null, loading: false, issues: [], dragging: false };
   var KCOLS = [ { key: "open", label: "Abiertas" }, { key: "closed", label: "Cerradas" } ];
 
   $("btnReloadKanban").innerHTML = svg("reload", 15);
@@ -1051,7 +1051,7 @@
     }
     function beginDrag() {
       if (dragging) return;
-      dragging = true;
+      dragging = true; KAN.dragging = true;   // bloquea el scroll táctil (touchmove)
       var rect = card.getBoundingClientRect();
       grabX = lastX - rect.left; grabY = lastY - rect.top;
       try { card.setPointerCapture(pointerId); } catch (_) {}
@@ -1061,6 +1061,7 @@
       card.classList.add("kdrag-src");
     }
     function finishDrag() {
+      KAN.dragging = false;
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       var board = $("kanbanBoard");
       var el = document.elementFromPoint(lastX, lastY);
@@ -1205,7 +1206,10 @@
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
     document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
   });
-  document.addEventListener("touchmove", function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  document.addEventListener("touchmove", function (e) {
+    if (KAN.dragging) { e.preventDefault(); return; }   // no scrollear mientras se arrastra una tarjeta
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
   // Evita el doble-tap-zoom.
   var lastTouch = 0;
   document.addEventListener("touchend", function (e) {
