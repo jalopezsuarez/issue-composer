@@ -50,10 +50,10 @@
   .navbar {
     position: absolute; top: 0; left: 0; right: 0; z-index: 20;
     color: #fff;
-    background: rgba(20,20,22,.55);
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
-    border-bottom: 1px solid rgba(255,255,255,.10);
+    background: rgba(18,18,20,.32);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,.12);
     padding-top: env(safe-area-inset-top);
     height: calc(var(--nav-h) + env(safe-area-inset-top));
     display: grid; grid-template-columns: 60px 1fr 84px; align-items: center;
@@ -994,29 +994,35 @@
     return card;
   }
 
-  // Arrastre con pulsación larga (compatible con táctil). Pulsación corta = abrir.
-  // El clon sigue al dedo desde el punto donde se agarró; se actualiza con
-  // requestAnimationFrame y transform para que vaya fluido. La detección de
-  // columna usa elementFromPoint: el clon tiene pointer-events:none, así que el
-  // hit-test lo ignora sin necesidad de ocultarlo (evita parpadeos).
+  // Arrastre fluido (transform + rAF). Inicio según el tipo de puntero:
+  //  · ratón/pen: arrastra al mover > 6px (clásico).
+  //  · táctil: pulsación larga (180 ms) para "coger" la tarjeta; antes de eso un
+  //    movimiento amplio se interpreta como scroll. Pulsación corta = abrir.
+  // El clon (pointer-events:none) sigue al dedo y elementFromPoint detecta la
+  // columna sin parpadeos. Auto-scroll horizontal del tablero cerca de los bordes.
   function attachCardInteractions(card, it) {
-    var pressTimer = null, dragging = false, clone = null, pointerId = null;
-    var startX = 0, startY = 0, downAt = 0, grabX = 0, grabY = 0, cloneW = 0;
+    var pressTimer = null, dragging = false, clone = null, pointerId = null, isTouch = false;
+    var startX = 0, startY = 0, downAt = 0, grabX = 0, grabY = 0;
     var lastX = 0, lastY = 0, rafId = 0;
 
     card.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      isTouch = (e.pointerType !== "mouse");
       startX = lastX = e.clientX; startY = lastY = e.clientY; downAt = Date.now(); pointerId = e.pointerId; dragging = false;
-      pressTimer = setTimeout(beginDrag, 220);
+      clearTimeout(pressTimer);
+      if (isTouch) pressTimer = setTimeout(beginDrag, 180);  // long-press para táctil
       card.addEventListener("pointermove", onMove);
       card.addEventListener("pointerup", onUp);
       card.addEventListener("pointercancel", onUp);
     });
 
+    function dist(e) { return Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY); }
+
     function onMove(e) {
       lastX = e.clientX; lastY = e.clientY;
       if (!dragging) {
-        if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 10) clearTimeout(pressTimer); // movimiento previo = scroll
+        if (!isTouch) { if (dist(e) > 6) beginDrag(); }           // ratón: arranca al mover
+        else if (dist(e) > 16) clearTimeout(pressTimer);          // táctil: movimiento amplio antes del long-press = scroll
         return;
       }
       e.preventDefault();
@@ -1026,9 +1032,13 @@
       rafId = 0;
       if (!clone) return;
       clone.style.transform = "translate(" + (lastX - grabX) + "px," + (lastY - grabY) + "px) rotate(2deg) scale(1.03)";
+      // auto-scroll horizontal del tablero cerca de los bordes
+      var board = $("kanbanBoard"), vw = window.innerWidth;
+      if (lastX > vw - 56) board.scrollLeft += 14;
+      else if (lastX < 56) board.scrollLeft -= 14;
       var el = document.elementFromPoint(lastX, lastY);
       var col = el ? el.closest(".kcol") : null;
-      var cols = $("kanbanBoard").querySelectorAll(".kcol");
+      var cols = board.querySelectorAll(".kcol");
       for (var i = 0; i < cols.length; i++) cols[i].classList.toggle("kover", cols[i] === col);
     }
     function onUp(e) {
@@ -1037,23 +1047,25 @@
       card.removeEventListener("pointerup", onUp);
       card.removeEventListener("pointercancel", onUp);
       if (dragging) finishDrag();
-      else if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) < 10 && Date.now() - downAt < 500) openIssue(KAN.repo, it.number, "kanban");
+      else if (dist(e) < 10 && Date.now() - downAt < 500) openIssue(KAN.repo, it.number, "kanban");
     }
     function beginDrag() {
+      if (dragging) return;
       dragging = true;
       var rect = card.getBoundingClientRect();
-      grabX = lastX - rect.left; grabY = lastY - rect.top; cloneW = rect.width;
+      grabX = lastX - rect.left; grabY = lastY - rect.top;
       try { card.setPointerCapture(pointerId); } catch (_) {}
-      clone = card.cloneNode(true); clone.className = "kcard kclone"; clone.style.width = cloneW + "px";
+      clone = card.cloneNode(true); clone.className = "kcard kclone"; clone.style.width = rect.width + "px";
       document.body.appendChild(clone);
       tick();
       card.classList.add("kdrag-src");
     }
     function finishDrag() {
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      var board = $("kanbanBoard");
       var el = document.elementFromPoint(lastX, lastY);
       var target = el ? el.closest(".kcol") : null;
-      var cols = $("kanbanBoard").querySelectorAll(".kcol");
+      var cols = board.querySelectorAll(".kcol");
       for (var i = 0; i < cols.length; i++) cols[i].classList.remove("kover");
       if (clone && clone.parentNode) clone.parentNode.removeChild(clone);
       clone = null;
