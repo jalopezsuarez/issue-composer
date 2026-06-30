@@ -49,10 +49,8 @@
   /* ===== Navigation bar glass (translúcida, el contenido pasa por debajo) ===== */
   .navbar {
     position: absolute; top: 0; left: 0; right: 0; z-index: 20;
-    color: #fff;
-    background: transparent;                 /* navbar 100% transparente */
-    backdrop-filter: saturate(180%) blur(18px);
-    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    color: #000;
+    background: transparent;                 /* 0% opacidad de fondo */
     border-bottom: none;
     padding-top: env(safe-area-inset-top);
     height: calc(var(--nav-h) + env(safe-area-inset-top));
@@ -61,21 +59,20 @@
   .nav-left, .nav-right { display: flex; align-items: center; }
   .nav-left { justify-content: flex-start; padding-left: 10px; }
   .nav-right { justify-content: flex-end; padding-right: 12px; text-align: right; }
-  .nav-title { text-align: center; font-size: 1.02rem; font-weight: 700; letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
-  /* Back en círculo glass */
+  .nav-title { text-align: center; font-size: 1.02rem; font-weight: 700; letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #000; }
+  /* Back en círculo, icono negro, sin borde ni sombra */
   .nav-back {
-    background: rgba(255,255,255,.18);
-    border: 1px solid rgba(255,255,255,.22);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    color: #fff; cursor: pointer;
+    background: rgba(0,0,0,.06);
+    border: none;
+    color: #000; cursor: pointer;
     width: 34px; height: 34px; border-radius: 50%;
     padding: 0; display: inline-flex; align-items: center; justify-content: center;
   }
-  .nav-back:active { background: rgba(255,255,255,.32); }
+  .nav-back:active { background: rgba(0,0,0,.14); }
   .nav-back svg { width: 24px; height: 24px; margin-left: -2px; }
   .nav-back[hidden] { display: none; }
-  .nav-upd { font-size: .66rem; line-height: 1.15; color: #e6e6e6; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
-  .nav-upd b { color: #fff; font-weight: 600; }
+  .nav-upd { font-size: .66rem; line-height: 1.15; color: #000; }
+  .nav-upd b { color: #000; font-weight: 700; }
   .nav-upd[hidden] { display: none; }
 
   /* ===== Contenido scrollable (deja hueco bajo la navbar glass) ===== */
