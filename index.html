@@ -210,9 +210,10 @@
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; background: #fff; }
 
-  /* ===== Kanban (scroll global, sin scroll por columna) ===== */
-  .kanban { display: flex; gap: 12px; padding: 12px; overflow-x: auto; align-items: flex-start; -webkit-overflow-scrolling: touch; }
-  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+  /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
+     así el arrastre entre columnas no compite con el pan del scroller) ===== */
+  .kanban { display: flex; gap: 10px; padding: 10px; align-items: flex-start; overflow-x: hidden; }
+  .kcol { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
   .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); border-radius: 12px 12px 0 0; }
   .kcol-body { padding: 10px; min-height: 40px; }
   .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
@@ -635,7 +636,7 @@
   var PER_PAGE = 25;
   var issuesState = { repo: null, dir: "desc", page: 0, loading: false, done: false, count: 0 };
 
-  function sortLabel() { return issuesState.dir === "asc" ? "Más antiguas primero" : "Más recientes primero"; }
+  function sortLabel() { return issuesState.dir === "asc" ? "Antiguas" : "Recientes"; }
   function paintSortBtn() { $("btnSort").innerHTML = svg("sort", 15) + "<span>" + sortLabel() + "</span>"; }
   $("btnReloadIssues").innerHTML = svg("reload", 15);
   paintSortBtn();
@@ -1011,10 +1012,7 @@
       rafId = 0;
       if (!clone) return;
       clone.style.transform = "translate(" + (lastX - grabX) + "px," + (lastY - grabY) + "px) rotate(2deg) scale(1.03)";
-      // auto-scroll horizontal del tablero cerca de los bordes
-      var board = $("kanbanBoard"), vw = window.innerWidth;
-      if (lastX > vw - 56) board.scrollLeft += 14;
-      else if (lastX < 56) board.scrollLeft -= 14;
+      var board = $("kanbanBoard");
       var el = document.elementFromPoint(lastX, lastY);
       var col = el ? el.closest(".kcol") : null;
       var cols = board.querySelectorAll(".kcol");
