@@ -188,7 +188,7 @@
   .list { list-style: none; margin: 0; padding: 0; background: var(--surface); }
   .list-row { display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-bottom: 1px solid var(--border-soft); cursor: pointer; }
   .list-row:active { background: var(--bg); }
-  .list-row .lead { color: var(--muted); flex: none; display: flex; }
+  .list-row .lead { color: var(--muted); flex: none; display: flex; align-self: flex-start; margin-top: 2px; }
   .list-row .lead svg { width: 18px; height: 18px; }
   .list-row .meta { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: .92rem; word-break: break-word; }
@@ -990,10 +990,12 @@
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
         if (name === statusOf(issue)) return;
-        this.disabled = true;
+        var prevLabels = (issue.labels || []).slice();   // para revertir si falla
+        // Optimista: aplica y refresca en sitio (sin recargar el detalle entero).
         applyStatus(repo, issue, name)
-          .then(function () { issuesState.repo = null; KAN.repo = null; openIssue(repo, number, detailOrigin); })
-          .catch(function (err) { alert(err.message); openIssue(repo, number, detailOrigin); });
+          .then(function () { issuesState.repo = null; KAN.repo = null; })
+          .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); alert(err.message); });
+        refreshDetailStatus(issue);   // applyStatus ya mutó issue.labels
       });
       buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
       $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
@@ -1192,6 +1194,19 @@
     if (!s) return "";
     return '<span class="sttag" style="background:#' + s.color + '">' + esc(s.name) + "</span>";
   }
+  // Refresca en sitio el estado en el detalle (botones + tag) sin recargar todo.
+  function refreshDetailStatus(it) {
+    var cur = statusOf(it);
+    var row = document.getElementById("statusRow");
+    if (row) {
+      var bs = row.querySelectorAll(".stbtn");
+      for (var i = 0; i < bs.length; i++) { bs[i].classList.toggle("on", bs[i].getAttribute("data-st") === cur); bs[i].disabled = false; }
+    }
+    var meta = document.querySelector(".detail-meta");
+    var tag = meta && meta.querySelector(".sttag");
+    var s = statusByName(cur);
+    if (tag && s) { tag.style.background = "#" + s.color; tag.textContent = s.name; }
+  }
   // Configuración de estados (Ajustes): texto <-> array.
   function statusesToText(arr) {
     return arr.map(function (s) { return s.name + " #" + s.color; }).join("\n");
@@ -1384,21 +1399,30 @@
   //  · si la columna destino "cierra", cierra la incidencia; si sale de una que
   //    cerraba hacia otra que no, la reabre.
   // Muta `it` (labels/state) de forma optimista y devuelve la promesa de la API.
+  // Cambia el estado en UNA sola llamada: PUT reemplaza TODAS las etiquetas por
+  // (las que no son de columna) + la nueva de columna. Si la etiqueta no existe
+  // todavía (422), la crea y reintenta. Muta `it` de forma optimista.
   function applyStatus(repo, it, newName) {
     var target = statusByName(newName); if (!target) return Promise.resolve();
-    var oldColLabels = (it.labels || []).filter(function (l) { return isStatusLabel(l.name || l); });
+    var keep = (it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }).map(function (l) { return l.name || l; });
+    var newLabels = keep.concat([target.name]);
     it.labels = (it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); });
     it.labels.push({ name: target.name, color: target.color });
 
-    var chain = oldColLabels.reduce(function (p, l) {
-      return p.then(function () { return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels/" + encodeURIComponent(l.name || l), { method: "DELETE" }).catch(function () {}); });
-    }, Promise.resolve());
-    chain = chain.then(function () {
-      return ghFetch(GH_API + "/repos/" + repo + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: target.name, color: target.color }) }).catch(function () {});
-    }).then(function () {
-      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: [target.name] }) });
+    function putLabels() {
+      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: newLabels })
+      });
+    }
+    return putLabels().catch(function (err) {
+      // 422 = la etiqueta de columna aún no existe en el repo: la creamos y reintentamos.
+      if (/\b422\b/.test(err.message)) {
+        return ghFetch(GH_API + "/repos/" + repo + "/labels", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: target.name, color: target.color })
+        }).catch(function () {}).then(putLabels);
+      }
+      throw err;
     });
-    return chain;
   }
 
   // =================== COMPOSER: ANALIZAR Y REDACTAR ===================
