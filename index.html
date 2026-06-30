@@ -546,8 +546,19 @@
         (exists ? "Ya estaba en la lista: " : "Añadido a la lista: ") +
         "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " 🔒" : "") + ".");
     }).catch(function (err) {
-      showMsg(msg, "error", esc(err.message) +
-        " — comprueba el nombre, los permisos del token y, si la org usa SAML SSO, que el token esté autorizado.");
+      var extra;
+      if (/\b404\b/.test(err.message)) {
+        // GitHub devuelve 404 (no 403) para repos privados que el token no puede ver,
+        // para no revelar su existencia. Casi siempre es un problema de acceso del token.
+        extra = " — un 404 normalmente significa que tu token NO puede ver este repo: " +
+          "(1) si es un token fine-grained, debe incluir explícitamente este repositorio/organización en su acceso; " +
+          "(2) si es un token classic, necesita el scope <strong>repo</strong>; " +
+          "(3) si la org usa SAML SSO, autoriza el token para esa organización (Configure SSO); " +
+          "(4) revisa que owner/repo sea exacto (mayúsculas/minúsculas incluidas).";
+      } else {
+        extra = " — comprueba el nombre, los permisos del token y, si la org usa SAML SSO, que el token esté autorizado.";
+      }
+      showMsg(msg, "error", esc(err.message) + extra);
     }).then(function () {
       btn.disabled = false;
       btn.textContent = prevLabel;
