@@ -53,9 +53,11 @@
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px); left: 12px; z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
-    background: #fff;
-    border: 1px solid rgba(0,0,0,.08);
-    box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    background: rgba(255,255,255,.1);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
     color: #000; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
@@ -65,12 +67,8 @@
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
   .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); }
-  /* El detalle empieza al nivel del back flotante (sin hueco): el título/meta se
-     indentan a la derecha del botón en lugar de bajar el contenido. */
+  /* El detalle empieza arriba sin sangría (el back puede solaparse con el texto). */
   #issueDetailWrap { padding-top: 0; }
-  #issueDetailWrap .detail-head h3,
-  #issueDetailWrap .detail-head .detail-meta { padding-left: 52px; }
-  #issueDetailWrap .detail-head h3 { min-height: 36px; }
   .view { display: none; }
   .view.active { display: block; }
 
