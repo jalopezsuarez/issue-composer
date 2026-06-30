@@ -213,17 +213,18 @@
   .content.kanban-mode { overflow: hidden; }
   #view-kanban.active { display: flex; flex-direction: column; height: 100%; min-height: 0; }
   .kanban { flex: 1; display: flex; gap: 12px; padding: 12px; overflow-x: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
-  .kcol { flex: 0 0 80%; max-width: 300px; display: flex; flex-direction: column; min-height: 0; max-height: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; min-height: 0; max-height: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
   .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .kcol-body { padding: 10px; overflow-y: auto; flex: 1; min-height: 60px; -webkit-overflow-scrolling: touch; }
   .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
   .kcard:active { cursor: grabbing; }
   .ktitle { font-weight: 600; font-size: .88rem; word-break: break-word; }
-  .ksub { font-size: .74rem; color: var(--muted); margin-top: 5px; }
+  .kbody { font-size: .78rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+  .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; }
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
-  .kcard.kdrag-src { opacity: .35; }
-  .kclone { position: fixed; z-index: 999; width: 260px; pointer-events: none; box-shadow: 0 10px 28px rgba(0,0,0,.28); transform: rotate(1.5deg); margin: 0; }
+  .kcard.kdrag-src { opacity: .3; }
+  .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
 <body>
@@ -971,60 +972,75 @@
   function makeCard(it) {
     var card = document.createElement("div");
     card.className = "kcard"; card.setAttribute("data-num", it.number);
-    card.innerHTML = '<div class="ktitle">' + esc(it.title) + '</div><div class="ksub">#' + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>";
+    // Resumen del detalle: 2 líneas en gris (texto plano del cuerpo del issue).
+    var excerpt = (it.body || "").replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`\-]/g, " ").replace(/\s+/g, " ").trim();
+    var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
+    card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
+      '<div class="ksub">#' + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>";
     attachCardInteractions(card, it);
     return card;
   }
 
   // Arrastre con pulsación larga (compatible con táctil). Pulsación corta = abrir.
+  // El clon sigue al dedo desde el punto donde se agarró; se actualiza con
+  // requestAnimationFrame y transform para que vaya fluido. La detección de
+  // columna usa elementFromPoint: el clon tiene pointer-events:none, así que el
+  // hit-test lo ignora sin necesidad de ocultarlo (evita parpadeos).
   function attachCardInteractions(card, it) {
-    var pressTimer = null, dragging = false, clone = null, startX = 0, startY = 0, pointerId = null, downAt = 0;
+    var pressTimer = null, dragging = false, clone = null, pointerId = null;
+    var startX = 0, startY = 0, downAt = 0, grabX = 0, grabY = 0, cloneW = 0;
+    var lastX = 0, lastY = 0, rafId = 0;
+
     card.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "mouse" && e.button !== 0) return;
-      startX = e.clientX; startY = e.clientY; downAt = Date.now(); pointerId = e.pointerId; dragging = false;
-      pressTimer = setTimeout(function () { beginDrag(e.clientX, e.clientY); }, 240);
+      startX = lastX = e.clientX; startY = lastY = e.clientY; downAt = Date.now(); pointerId = e.pointerId; dragging = false;
+      pressTimer = setTimeout(beginDrag, 220);
       card.addEventListener("pointermove", onMove);
       card.addEventListener("pointerup", onUp);
       card.addEventListener("pointercancel", onUp);
     });
+
     function onMove(e) {
+      lastX = e.clientX; lastY = e.clientY;
       if (!dragging) {
-        if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 10) clearTimeout(pressTimer); // es scroll
+        if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 10) clearTimeout(pressTimer); // movimiento previo = scroll
         return;
       }
       e.preventDefault();
-      positionClone(e.clientX, e.clientY);
-      highlight(e.clientX, e.clientY);
+      if (!rafId) rafId = requestAnimationFrame(tick);
+    }
+    function tick() {
+      rafId = 0;
+      if (!clone) return;
+      clone.style.transform = "translate(" + (lastX - grabX) + "px," + (lastY - grabY) + "px) rotate(2deg) scale(1.03)";
+      var el = document.elementFromPoint(lastX, lastY);
+      var col = el ? el.closest(".kcol") : null;
+      var cols = $("kanbanBoard").querySelectorAll(".kcol");
+      for (var i = 0; i < cols.length; i++) cols[i].classList.toggle("kover", cols[i] === col);
     }
     function onUp(e) {
       clearTimeout(pressTimer);
       card.removeEventListener("pointermove", onMove);
       card.removeEventListener("pointerup", onUp);
       card.removeEventListener("pointercancel", onUp);
-      if (dragging) finishDrag(e.clientX, e.clientY);
+      if (dragging) finishDrag();
       else if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) < 10 && Date.now() - downAt < 500) openIssue(KAN.repo, it.number, "kanban");
     }
-    function beginDrag(x, y) {
+    function beginDrag() {
       dragging = true;
+      var rect = card.getBoundingClientRect();
+      grabX = lastX - rect.left; grabY = lastY - rect.top; cloneW = rect.width;
       try { card.setPointerCapture(pointerId); } catch (_) {}
-      clone = card.cloneNode(true); clone.className = "kcard kclone";
+      clone = card.cloneNode(true); clone.className = "kcard kclone"; clone.style.width = cloneW + "px";
       document.body.appendChild(clone);
-      positionClone(x, y);
+      tick();
       card.classList.add("kdrag-src");
     }
-    function positionClone(x, y) { if (clone) { clone.style.left = (x - 130) + "px"; clone.style.top = (y - 22) + "px"; } }
-    function columnAt(x, y) {
-      if (clone) clone.style.display = "none";
-      var el = document.elementFromPoint(x, y);
-      if (clone) clone.style.display = "";
-      return el ? el.closest(".kcol") : null;
-    }
-    function highlight(x, y) {
-      var col = columnAt(x, y), cols = $("kanbanBoard").querySelectorAll(".kcol");
-      for (var i = 0; i < cols.length; i++) cols[i].classList.toggle("kover", cols[i] === col);
-    }
-    function finishDrag(x, y) {
-      var target = columnAt(x, y), cols = $("kanbanBoard").querySelectorAll(".kcol");
+    function finishDrag() {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      var el = document.elementFromPoint(lastX, lastY);
+      var target = el ? el.closest(".kcol") : null;
+      var cols = $("kanbanBoard").querySelectorAll(".kcol");
       for (var i = 0; i < cols.length; i++) cols[i].classList.remove("kover");
       if (clone && clone.parentNode) clone.parentNode.removeChild(clone);
       clone = null;
