@@ -66,7 +66,7 @@
   .fab-back[hidden] { display: none; }
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
-  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); }
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
   /* El detalle empieza arriba sin sangría (el back puede solaparse con el texto). */
   #issueDetailWrap { padding-top: 0; }
   .view { display: none; }
@@ -74,7 +74,10 @@
 
   /* ===== Tab bar inferior ===== */
   .tabbar {
-    flex: none; background: rgba(255,255,255,.6);   /* translúcido + blur, sin separador */
+    /* Overlay sobre el contenido para que el glass deje ver lo que hay debajo
+       (en flujo normal mostraría el fondo blanco de la app y parecería opaca). */
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: rgba(255,255,255,.5);
     backdrop-filter: saturate(180%) blur(22px);
     -webkit-backdrop-filter: saturate(180%) blur(22px);
     border-top: none;
@@ -246,10 +249,12 @@
   /* Mientras se arrastra, el scroll horizontal se desactiva (clase .dragging) para
      que el pan del tablero no robe el gesto del drag. */
   .kanban.dragging { overflow-x: hidden; }
-  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
-  .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); border-radius: 12px 12px 0 0; }
+  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid rgba(0,0,0,.08); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; }
   .kcol-body { padding: 10px; min-height: 40px; }
-  .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  /* touch-action pan-x pan-y: permite scroll horizontal del tablero y vertical de
+     la página al deslizar sobre una tarjeta; el drag se inicia por pulsación larga. */
+  .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
   .kcard:active { cursor: grabbing; }
   .ktitle { font-weight: 600; font-size: .88rem; word-break: break-word; }
   .kbody { font-size: .78rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
@@ -257,8 +262,10 @@
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
   .kcard.kdrag-src { opacity: .3; }
-  .kcard.closed { opacity: .55; background: #f6f8fa; }
+  .kcard.closed { background: #fff; }   /* cerrada: fondo blanco, sólo el tag la distingue */
   .kclosed { font-size: .66rem; font-weight: 700; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; }
+  /* Tag de estado (color del estado en Ajustes) */
+  .sttag { font-size: .66rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); color: #1f2328; }
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
@@ -398,9 +405,9 @@
       <!-- 5. Estados del tablero (Kanban) -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Estados del tablero (Kanban)</div>
-        <div class="group-hint" style="padding:0">Un estado por línea = una columna. Coinciden con tus etiquetas de GitHub por nombre. Opcional: <code>#color</code> (hex) y <code>*</code> para marcar la columna que cierra la incidencia. Ej.: <code>LISTO #1a7f37 *</code></div></div>
+        <div class="group-hint" style="padding:0">Un estado por línea = una columna. Coinciden con tus etiquetas de GitHub por nombre. Opcional: <code>#color</code> (hex). Ej.: <code>LISTO #1a7f37</code></div></div>
         <div class="field">
-          <textarea id="statusCfg" rows="5" placeholder="PENDIENTE&#10;PROGRESO&#10;LISTO #1a7f37 *&#10;APLAZADO"></textarea>
+          <textarea id="statusCfg" rows="5" placeholder="PENDIENTE&#10;PROGRESO&#10;LISTO #1a7f37&#10;APLAZADO"></textarea>
           <div class="actions" style="margin-top:10px">
             <button id="btnSaveStatuses" class="block">Guardar estados</button>
             <button id="btnResetStatuses" class="secondary block" type="button">Restablecer</button>
@@ -869,10 +876,10 @@
         li.innerHTML =
           '<span class="lead">' + svg("issue", 18) + "</span>" +
           '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
-            '<div class="row-sub">#' + it.number + " · " + esc(it.user ? it.user.login : "?") +
+            '<div class="row-sub">' + statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
               " · " + svg("comment", 13) + " " + (it.comments || 0) +
               " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
-            labelsHtml(it.labels) + "</div>" +
+            labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) + "</div>" +
           '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
           '<span class="chev">' + svg("chevright", 16) + "</span>";
         li.addEventListener("click", function () { openIssue(repo, it.number); });
@@ -929,6 +936,7 @@
         '<div class="detail-head">' +
           '<h3>#' + issue.number + " · " + esc(issue.title) + "</h3>" +
           '<div class="detail-meta">' +
+            statusTag(issue) +
             '<span class="state ' + (issue.state === "open" ? "open" : "closed") + '">' + esc(issue.state) + "</span>" +
             "<span>" + esc(issue.user ? issue.user.login : "?") + "</span>" +
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
@@ -1155,13 +1163,13 @@
   // (y al sacarla de una columna "closes", se reabre). Configurable en Ajustes.
   function defaultStatuses() {
     return [
-      { name: "PENDIENTE", color: "ededed", closes: false },
-      { name: "PROGRESO",  color: "0969da", closes: false },
-      { name: "LISTO",     color: "1a7f37", closes: true  },
-      { name: "APLAZADO",  color: "9a6700", closes: false }
+      { name: "PENDIENTE", color: "e9edf2" },  // gris pastel
+      { name: "PROGRESO",  color: "cfe3fb" },  // azul pastel
+      { name: "LISTO",     color: "d6f0dd" },  // verde pastel
+      { name: "APLAZADO",  color: "fde9c7" }   // ámbar pastel
     ];
   }
-  function normalizeStatus(s) { return { name: String(s.name || "").trim(), color: String(s.color || "ededed").replace(/^#/, ""), closes: !!s.closes }; }
+  function normalizeStatus(s) { return { name: String(s.name || "").trim(), color: String(s.color || "ededed").replace(/^#/, "") }; }
   function loadStatuses() {
     try { var a = JSON.parse(localStorage.getItem(LS_KEYS.statuses) || "null"); if (Array.isArray(a) && a.length) return a.map(normalizeStatus).filter(function (s) { return s.name; }); } catch (e) {}
     return defaultStatuses();
@@ -1177,19 +1185,24 @@
     (it.labels || []).forEach(function (l) { var s = statusByName(l.name || l); if (s && !found) found = s.name; });
     return found || (STATUSES[0] && STATUSES[0].name) || "";
   }
+  // Tag coloreado del estado (usa el color de Ajustes).
+  function statusTag(it) {
+    var s = statusByName(statusOf(it));
+    if (!s) return "";
+    return '<span class="sttag" style="background:#' + s.color + '">' + esc(s.name) + "</span>";
+  }
   // Configuración de estados (Ajustes): texto <-> array.
   function statusesToText(arr) {
-    return arr.map(function (s) { return s.name + " #" + s.color + (s.closes ? " *" : ""); }).join("\n");
+    return arr.map(function (s) { return s.name + " #" + s.color; }).join("\n");
   }
   function parseStatuses(text) {
     var out = [], seen = {};
     String(text || "").split("\n").forEach(function (line) {
-      var closes = /(^|\s)\*(\s|$)/.test(line);
       var color = (line.match(/#([0-9a-fA-F]{6})\b/) || [])[1] || "ededed";
-      var name = line.replace(/#[0-9a-fA-F]{6}\b/g, "").replace(/\*/g, "").trim();
+      var name = line.replace(/#[0-9a-fA-F]{6}\b/g, "").trim();
       if (!name) return;
       var key = name.toLowerCase(); if (seen[key]) return; seen[key] = 1;
-      out.push({ name: name, color: color.toLowerCase(), closes: closes });
+      out.push({ name: name, color: color.toLowerCase() });
     });
     return out;
   }
@@ -1248,7 +1261,8 @@
       });
       var colEl = document.createElement("div");
       colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
-      colEl.innerHTML = '<div class="kcol-head"><span>' + esc(col.name) + '</span><span class="pill kcount">' + list.length + "</span></div><div class=\"kcol-body\"></div>";
+      colEl.style.background = "#" + col.color;   // fondo de columna con el color del estado
+      colEl.innerHTML = '<div class="kcol-head" style="background:#' + col.color + '"><span>' + esc(col.name) + '</span><span class="pill kcount">' + list.length + "</span></div><div class=\"kcol-body\"></div>";
       var body = colEl.querySelector(".kcol-body");
       list.forEach(function (it) { body.appendChild(makeCard(it)); });
       board.appendChild(colEl);
@@ -1267,7 +1281,7 @@
     var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
     var closedTag = it.state === "closed" ? '<span class="kclosed">cerrada</span> ' : "";
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
-      '<div class="ksub">' + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
+      '<div class="ksub">' + statusTag(it) + " " + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
       labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }));
     attachCardInteractions(card, it);
     return card;
@@ -1372,13 +1386,8 @@
   function applyStatus(repo, it, newName) {
     var target = statusByName(newName); if (!target) return Promise.resolve();
     var oldColLabels = (it.labels || []).filter(function (l) { return isStatusLabel(l.name || l); });
-    var wasCloses = oldColLabels.some(function (l) { var s = statusByName(l.name || l); return s && s.closes; });
     it.labels = (it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); });
     it.labels.push({ name: target.name, color: target.color });
-    var stateChange = null;
-    if (target.closes && it.state !== "closed") stateChange = "closed";
-    else if (!target.closes && wasCloses && it.state === "closed") stateChange = "open";
-    if (stateChange) it.state = stateChange;
 
     var chain = oldColLabels.reduce(function (p, l) {
       return p.then(function () { return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels/" + encodeURIComponent(l.name || l), { method: "DELETE" }).catch(function () {}); });
@@ -1387,9 +1396,6 @@
       return ghFetch(GH_API + "/repos/" + repo + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: target.name, color: target.color }) }).catch(function () {});
     }).then(function () {
       return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: [target.name] }) });
-    });
-    if (stateChange) chain = chain.then(function () {
-      return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: stateChange }) });
     });
     return chain;
   }
