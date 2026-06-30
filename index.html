@@ -51,9 +51,7 @@
     position: fixed;
     top: calc(env(safe-area-inset-top) + 10px); left: 12px; z-index: 60;
     width: 46px; height: 46px; border-radius: 50%;
-    background: rgba(255,255,255,.6);
-    backdrop-filter: saturate(180%) blur(18px);
-    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    background: #fff;
     border: 1px solid rgba(0,0,0,.08);
     box-shadow: 0 4px 14px rgba(0,0,0,.18);
     color: #000; cursor: pointer;
@@ -212,7 +210,7 @@
 
   /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
      así el arrastre entre columnas no compite con el pan del scroller) ===== */
-  .kanban { display: flex; gap: 10px; padding: 10px; align-items: flex-start; overflow-x: hidden; }
+  .kanban { display: flex; gap: 10px; padding: 10px; align-items: stretch; overflow-x: hidden; }
   .kcol { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
   .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--bg); border-radius: 12px 12px 0 0; }
   .kcol-body { padding: 10px; min-height: 40px; }
