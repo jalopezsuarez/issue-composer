@@ -289,7 +289,7 @@
   .kcard:active { cursor: grabbing; }
   .ktitle { font-weight: 600; font-size: .93rem; word-break: break-word; }
   .kbody { font-size: .88rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
-  .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; }
+  .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; font-weight: 500; }
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
   .kcard.kdrag-src { opacity: .3; }
@@ -935,7 +935,7 @@
         '<div class="row-sub">' + statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
           " · " + svg("comment", 13) + " " + (it.comments || 0) +
           " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
-        labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) + "</div>" +
+        labelsHtml((it.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); })) + "</div>" +
       '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
@@ -1031,7 +1031,7 @@
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
             "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
-          labelsHtml((issue.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); })) +
+          labelsHtml((issue.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); })) +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
@@ -1259,6 +1259,25 @@
     if (!s) return "";
     return '<span class="sttag" style="background:#' + s.color + '">' + esc(s.name) + "</span>";
   }
+
+  // ----- Orden manual dentro de una columna: etiqueta "order:<n>" -----
+  var ORDER_PREFIX = "order:";
+  function orderLabelName(n) { return ORDER_PREFIX + n; }
+  function orderKeyOf(label) {
+    var n = String(label == null ? "" : (label.name || label)).toLowerCase();
+    if (n.indexOf(ORDER_PREFIX) !== 0) return null;
+    var v = parseInt(n.slice(ORDER_PREFIX.length).trim(), 10);
+    return isNaN(v) ? null : v;
+  }
+  function isOrderLabel(label) { return orderKeyOf(label) !== null; }
+  // Orden de una incidencia (primer "order:<n>" válido) o null si no tiene.
+  function orderOf(it) {
+    var found = null;
+    (it.labels || []).forEach(function (l) { var v = orderKeyOf(l); if (v !== null && found === null) found = v; });
+    return found;
+  }
+  // Etiqueta interna (estado u orden): no se muestra como chip de usuario.
+  function isInternalLabel(label) { return isStatusLabel(label) || isOrderLabel(label); }
   // Refresca en sitio el estado en el detalle (filas + tag) sin recargar todo.
   function refreshDetailStatus(it) {
     var cur = statusOf(it);
@@ -1315,10 +1334,15 @@
     var board = $("kanbanBoard"); board.innerHTML = "";
     STATUSES.forEach(function (col) {
       var list = KAN.issues.filter(function (it) { return statusOf(it) === col.name; });
-      // Abiertas primero, cerradas al fondo.
+      // Orden: cerradas al fondo; luego las que tienen "order:<n>" (ascendente) y,
+      // por último, las que no lo tienen ordenadas por fecha (más reciente arriba).
       list.sort(function (a, b) {
         if ((a.state === "closed") !== (b.state === "closed")) return a.state === "closed" ? 1 : -1;
-        return 0;
+        var oa = orderOf(a), ob = orderOf(b);
+        if (oa !== null && ob !== null && oa !== ob) return oa - ob;
+        if (oa !== null && ob === null) return -1;
+        if (ob !== null && oa === null) return 1;
+        return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
       });
       var colEl = document.createElement("div");
       colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
@@ -1337,9 +1361,10 @@
     var excerpt = (it.body || "").replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`\-]/g, " ").replace(/\s+/g, " ").trim();
     var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
     var closedTag = it.state === "closed" ? '<span class="kclosed">cerrada</span> ' : "";
+    // El estado no se muestra en la tarjeta: ya lo indica la columna donde está.
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
-      '<div class="ksub">' + statusTag(it) + " " + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
-      labelsHtml((it.labels || []).filter(function (l) { return !isStatusLabel(l.name || l); }));
+      '<div class="ksub">' + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
+      labelsHtml((it.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); }));
     attachCardInteractions(card, it);
     return card;
   }
@@ -1382,10 +1407,14 @@
       rafId = 0;
       if (!clone) return;
       clone.style.transform = "translate(" + (lastX - grabX) + "px," + (lastY - grabY) + "px) rotate(2deg) scale(1.03)";
-      var board = $("kanbanBoard"), vw = window.innerWidth;
+      var board = $("kanbanBoard"), vw = window.innerWidth, vh = window.innerHeight;
       // auto-scroll horizontal cerca de los bordes para alcanzar columnas lejanas
       if (lastX > vw - 50) board.scrollLeft += 16;
       else if (lastX < 50) board.scrollLeft -= 16;
+      // auto-scroll vertical para reordenar en columnas largas
+      var content = $("content");
+      if (lastY > vh - 100) content.scrollTop += 16;
+      else if (lastY < 90) content.scrollTop -= 16;
       var el = document.elementFromPoint(lastX, lastY);
       var col = el ? el.closest(".kcol") : null;
       var cols = board.querySelectorAll(".kcol");
@@ -1424,45 +1453,97 @@
       clone = null;
       card.classList.remove("kdrag-src");
       try { card.releasePointerCapture(pointerId); } catch (_) {}
-      if (target) {
-        var newName = target.getAttribute("data-status");
-        if (newName && newName !== statusOf(it)) {
-          showBusy();
-          var p = applyStatus(KAN.repo, it, newName);   // muta it de forma síncrona
-          renderKanban();                                // optimista
-          p.then(function () { syncIssue(KAN.repo, it.number, { labels: it.labels.slice() }); })
-            .catch(function (err) { showMsg($("kanbanMsg"), "error", "No se pudo mover #" + it.number + ": " + esc(err.message)); loadKanban(); })
-            .then(function () { hideBusy(); });
-        }
+      if (!target) return;
+      var newStatus = target.getAttribute("data-status");
+      if (!newStatus) return;
+
+      // Secuencia final de la columna destino: tarjetas visibles (menos la
+      // arrastrada) con la arrastrada insertada según la Y del puntero.
+      var body = target.querySelector(".kcol-body");
+      var domCards = [].slice.call(body.querySelectorAll(".kcard")).filter(function (c) { return c !== card; });
+      var insertIdx = domCards.length;
+      for (var j = 0; j < domCards.length; j++) {
+        var r = domCards[j].getBoundingClientRect();
+        if (lastY < r.top + r.height / 2) { insertIdx = j; break; }
       }
+      var seq = domCards.map(function (c) { return parseInt(c.getAttribute("data-num"), 10); });
+      seq.splice(insertIdx, 0, it.number);
+
+      // ¿Hay algún cambio real (de columna o de posición)?
+      var changed = seq.some(function (num, idx) {
+        var x = findKanIssue(num);
+        return x && (statusOf(x) !== newStatus || orderOf(x) !== idx + 1);
+      });
+      if (!changed) return;
+
+      showBusy();
+      var p = applyColumnOrder(KAN.repo, newStatus, seq);   // muta las incidencias en memoria
+      renderKanban();                                        // optimista
+      p.catch(function (err) { showMsg($("kanbanMsg"), "error", "No se pudo reordenar: " + esc(err.message)); loadKanban(); })
+        .then(function () { hideBusy(); });
     }
   }
 
-  // Cambia el estado en UNA sola llamada: PUT reemplaza TODAS las etiquetas por
-  // (las que no son de estado) + la etiqueta "status:<key>". Si la etiqueta no
-  // existe todavía (422), la crea y reintenta. Muta `it` de forma optimista.
-  function applyStatus(repo, it, newName) {
-    var target = statusByName(newName); if (!target) return Promise.resolve();
-    var label = statusLabelName(target.name);   // "status:done"
-    var keep = (it.labels || []).filter(function (l) { return !isStatusLabel(l); }).map(function (l) { return l.name || l; });
-    var newLabels = keep.concat([label]);
-    it.labels = (it.labels || []).filter(function (l) { return !isStatusLabel(l); });
-    it.labels.push({ name: label, color: target.color });
-
-    function putLabels() {
+  // Nombres de etiqueta para una incidencia con estado y (opcional) orden dados,
+  // conservando las etiquetas de usuario y descartando las internas anteriores.
+  function labelsWith(it, statusName, orderNum) {
+    var keep = (it.labels || []).filter(function (l) { return !isInternalLabel(l); }).map(function (l) { return l.name || l; });
+    if (statusName) keep.push(statusLabelName(statusName));
+    if (orderNum != null) keep.push(orderLabelName(orderNum));
+    return keep;
+  }
+  // Muta it.labels en memoria (optimista) al nuevo conjunto interno.
+  function setLocalLabels(it, statusName, orderNum) {
+    var keep = (it.labels || []).filter(function (l) { return !isInternalLabel(l); });
+    if (statusName) { var s = statusByName(statusName); keep.push({ name: statusLabelName(statusName), color: s ? s.color : "ededed" }); }
+    if (orderNum != null) keep.push({ name: orderLabelName(orderNum), color: "ededed" });
+    it.labels = keep;
+  }
+  // PUT de etiquetas en UNA llamada. Si alguna etiqueta interna no existe aún en
+  // el repo (422), crea las que puedan faltar y reintenta una vez.
+  function putIssueLabels(repo, it, labelNames) {
+    function put() {
       return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: newLabels })
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: labelNames })
       });
     }
-    return putLabels().catch(function (err) {
-      // 422 = la etiqueta de estado aún no existe en el repo: la creamos y reintentamos.
-      if (/\b422\b/.test(err.message)) {
+    return put().catch(function (err) {
+      if (!/\b422\b/.test(err.message)) throw err;
+      var creates = labelNames.filter(function (n) { return isStatusLabel(n) || isOrderLabel(n); }).map(function (n) {
+        var k = statusKeyOf(n), s = k ? statusByName(k) : null;
         return ghFetch(GH_API + "/repos/" + repo + "/labels", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: label, color: target.color })
-        }).catch(function () {}).then(putLabels);
-      }
-      throw err;
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: n, color: s ? s.color : "ededed" })
+        }).catch(function () {});
+      });
+      return Promise.all(creates).then(put);
     });
+  }
+  // Cambia solo el estado (mover de columna): descarta el orden manual previo.
+  function applyStatus(repo, it, newName) {
+    if (!statusByName(newName)) return Promise.resolve();
+    var labels = labelsWith(it, newName, null);
+    setLocalLabels(it, newName, null);
+    return putIssueLabels(repo, it, labels);
+  }
+  function findKanIssue(num) {
+    for (var i = 0; i < KAN.issues.length; i++) if (KAN.issues[i].number === num) return KAN.issues[i];
+    return null;
+  }
+  // Aplica una secuencia de números como el orden de una columna: asigna
+  // order:1..N y el estado de la columna, escribiendo solo las que cambian.
+  function applyColumnOrder(repo, statusName, seq) {
+    var writes = [];
+    seq.forEach(function (num, idx) {
+      var it = findKanIssue(num); if (!it) return;
+      var want = idx + 1;
+      if (statusOf(it) === statusName && orderOf(it) === want) return;   // sin cambios
+      var labels = labelsWith(it, statusName, want);
+      setLocalLabels(it, statusName, want);
+      writes.push(putIssueLabels(repo, it, labels).then(function () {
+        syncIssue(repo, num, { labels: it.labels.slice() });
+      }));
+    });
+    return Promise.all(writes);
   }
 
   // =================== COMPOSER: ANALIZAR Y REDACTAR ===================
