@@ -63,7 +63,7 @@
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
   .fab-back:active { background: rgba(255,255,255,.5); }
-  .fab-back svg { width: 30px; height: 30px; margin-left: -2px; }
+  .fab-back svg { width: 28px; height: 28px; margin-left: -2px; }
   .fab-back[hidden] { display: none; }
   /* Recargar flotante (glass), a la derecha (detalle y listado/kanban). */
   .fab-reload {
@@ -517,7 +517,7 @@
     var icoEls = document.querySelectorAll("[data-icon]");
     for (var i = 0; i < icoEls.length; i++) icoEls[i].innerHTML = svg(icoEls[i].getAttribute("data-icon"), 24);
     // Chevron de "atrás" dibujado con trazo fino (no relleno) para que sea más ligero.
-    $("navBack").innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4.5 8 12l7 7.5"></path></svg>';
+    $("navBack").innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4.5 8 12l7 7.5"></path></svg>';
   })();
 
   // ====================== NAVEGACIÓN ENTRE VISTAS ======================
@@ -716,6 +716,9 @@
   function ghFetch(url, opts) {
     opts = opts || {};
     opts.headers = Object.assign({}, ghHeaders(), opts.headers || {});
+    // GitHub responde con "Cache-Control: private, max-age=60"; sin esto el navegador
+    // servía un GET cacheado tras cambiar una etiqueta y el estado parecía revertirse.
+    if (!("cache" in opts)) opts.cache = "no-store";
     return fetch(url, opts).then(function (res) {
       return res.text().then(function (txt) {
         var data = null;
