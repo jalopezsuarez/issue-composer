@@ -404,7 +404,7 @@
           <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
         </div>
         <div class="field actions">
-          <button id="btnAnalyze" class="block">Analizar repo y redactar</button>
+          <button id="btnAnalyze" class="block">Generar con IA</button>
           <button id="btnClearNote" class="secondary block" type="button">Borrar nota</button>
         </div>
         <div id="analyzeStatus" class="status"></div>
@@ -1789,7 +1789,7 @@
       showMsg(msg, "success", "Issue redactado. Revísalo abajo y publícalo.");
       $("issueTitle").scrollIntoView({ behavior: "smooth", block: "center" });
     }).catch(function (err) { setStatus(""); showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Analizar repo y redactar"; });
+      .then(function () { btn.disabled = false; btn.textContent = "Generar con IA"; });
   });
 
   // =================== COMPOSER: PUBLICAR ===================
