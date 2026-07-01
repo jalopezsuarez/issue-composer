@@ -248,11 +248,11 @@
   .list-row .lead svg { width: 18px; height: 18px; }
   .list-row .meta { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: .92rem; word-break: break-word; }
-  /* Subfila en una sola línea: cápsula open/closed + estado (ancho fijo) y el resto
-     (#n · usuario · comentarios · fecha) ocupa lo que queda y se recorta con «…». */
-  .row-sub { font-size: .76rem; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
-  .row-sub .state, .row-sub .sttag { flex: none; }
-  .rsub-meta { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Subfila en dos líneas: 1) cápsula open/closed + estado; 2) #n · usuario ·
+     comentarios · fecha (se recorta con «…» si no cabe). */
+  .row-sub { font-size: .76rem; color: var(--muted); margin-top: 3px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .rsub-badges { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+  .rsub-meta { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .row-sub svg { width: 13px; height: 13px; vertical-align: -2px; }
   .chev { color: #afb8c1; flex: none; display: flex; }
   .chev svg { width: 16px; height: 16px; }
@@ -416,7 +416,6 @@
 
     <!-- ====== CONFIGURACIÓN ====== -->
     <section class="view" id="view-config">
-      <div class="repo-banner" id="repoBannerSettings"></div>
       <!-- 1. Repositorios recientes (arriba del todo) -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Repositorios recientes</div>
@@ -424,7 +423,8 @@
         <div id="recentList"></div>
       </div>
 
-      <!-- 2. GitHub: token + selección de repo -->
+      <!-- 2. GitHub: token + selección de repo (con el banner de repo activo encima) -->
+      <div class="repo-banner" id="repoBannerSettings"></div>
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">GitHub</div>
         <div class="group-hint" style="padding:0">Token y selección de repositorio.</div></div>
@@ -998,8 +998,8 @@
       '<span class="lead">' + svg("issue", 18) + "</span>" +
       '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
         '<div class="row-sub">' +
-          '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
-          statusTag(it) +
+          '<span class="rsub-badges"><span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
+            statusTag(it) + "</span>" +
           '<span class="rsub-meta">#' + it.number + " · " + esc(it.user ? it.user.login : "?") +
             " · " + svg("comment", 13) + " " + (it.comments || 0) +
             " · act. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
