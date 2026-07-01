@@ -61,19 +61,21 @@
     color: #000; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
+  .fab-back { font-weight: 400; }
   .fab-back:active { background: rgba(255,255,255,.8); }
   .fab-back svg { width: 32px; height: 32px; margin-left: -3px; }
   .fab-back[hidden] { display: none; }
-  /* Recargar flotante (detalle), arriba a la derecha */
+  /* Recargar flotante (glass). Detalle: derecha. Listado/Kanban: izquierda (.left). */
   .fab-reload {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px); right: 12px; z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(255,255,255,.6);
+    background: rgba(255,255,255,.6); font-weight: 400;
     backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px);
     border: 1px solid rgba(0,0,0,.06); box-shadow: 0 2px 8px rgba(0,0,0,.12);
     color: #000; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
+  .fab-reload.left { left: 12px; right: auto; }
   .fab-reload:active { background: rgba(255,255,255,.85); }
   .fab-reload svg { width: 20px; height: 20px; }
   .fab-reload[hidden] { display: none; }
@@ -225,6 +227,7 @@
   .state.closed { background: #fff; color: var(--muted); }
 
   .loader { text-align: center; color: var(--muted); padding: 18px; font-size: .85rem; }
+  .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centrado dentro del flex del tablero */
   .empty-state { text-align: center; color: var(--muted); padding: 44px 16px; font-size: .9rem; }
 
   /* Detalle de incidencia + comentarios */
@@ -232,7 +235,11 @@
   .detail-head h3 { margin: 0 0 8px; font-size: 1.12rem; word-break: break-word; overflow-wrap: anywhere; }
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
-  .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+  .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; }
+  .cactions { margin-left: auto; display: inline-flex; gap: 12px; }
+  .clink { background: none; border: none; padding: 0; font-size: .74rem; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .clink.cdel { color: var(--danger); }
+  .cedit-ta { width: 100%; }
   .md { word-break: break-word; overflow-wrap: anywhere; font-size: .9rem; line-height: 1.55; }
   .md p { margin: 0 0 10px; }
   .md p:last-child { margin-bottom: 0; }
@@ -286,8 +293,8 @@
      la página al deslizar sobre una tarjeta; el drag se inicia por pulsación larga. */
   .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
   .kcard:active { cursor: grabbing; }
-  .ktitle { font-weight: 600; font-size: .88rem; word-break: break-word; }
-  .kbody { font-size: .83rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+  .ktitle { font-weight: 600; font-size: .93rem; word-break: break-word; }
+  .kbody { font-size: .88rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
   .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; }
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
@@ -304,8 +311,9 @@
 <div class="app">
   <!-- Back flotante glass: sólo visible cuando hay que volver (detalle) -->
   <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
-  <!-- Recargar flotante (detalle) -->
+  <!-- Recargar flotante: detalle (derecha) y listado/kanban (izquierda) -->
   <button id="detailReload" class="fab-reload" hidden aria-label="Recargar"></button>
+  <button id="viewReload" class="fab-reload left" hidden aria-label="Recargar"></button>
 
   <main class="content" id="content">
 
@@ -443,7 +451,7 @@
   </nav>
 
   <!-- Spinner modal centrado: bloquea la pantalla mientras hay un cambio en curso -->
-  <div id="busy" class="busy" hidden><div class="busy-box"><span class="spinner"></span><span id="busyText">Guardando…</span></div></div>
+  <div id="busy" class="busy" hidden><div class="busy-box"><span class="spinner"></span><span id="busyText">Cargando…</span></div></div>
 </div>
 
 <script>
@@ -485,6 +493,7 @@
   // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
   // Úsalo en equipo de confianza y con permisos mínimos (scope repo).
   var ghTokenMem = "";
+  var ghUserLogin = null;   // login del usuario del token (para editar/borrar comentarios propios)
   var currentTone = "estructurado";   // fiel | estructurado | profundo
   var commentTone = "estructurado";
   var currentLang = "es";   // idioma de generación (es por defecto)
@@ -493,8 +502,9 @@
   function $(id) { return document.getElementById(id); }
   function showMsg(el, type, html) { el.className = "msg show " + type; el.innerHTML = html; }
   function hideMsg(el) { el.className = "msg"; el.innerHTML = ""; }
-  // Spinner modal centrado: bloquea la pantalla durante un cambio en curso.
-  function showBusy(text) { $("busyText").textContent = text || "Guardando…"; $("busy").hidden = false; }
+  // Spinner modal centrado: bloquea la pantalla durante un cambio/carga en curso.
+  // Texto unificado en todo el sistema: "Cargando…".
+  function showBusy() { $("busyText").textContent = "Cargando…"; $("busy").hidden = false; }
   function hideBusy() { $("busy").hidden = true; }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) {
@@ -533,6 +543,7 @@
     $("content").classList.toggle("kanban-mode", name === "kanban");
     if (name !== "issues") $("content").classList.remove("detail-mode");
     $("detailReload").hidden = true;
+    $("viewReload").hidden = !(name === "issues" || name === "kanban");
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
     else { $("navBack").hidden = true; }
@@ -549,9 +560,14 @@
     if (detailOrigin === "kanban") showView("kanban");
     else showIssuesList();
   });
-  // Recargar flotante del detalle.
+  // Recargar flotante del detalle (derecha) y del listado/kanban (izquierda).
   $("detailReload").innerHTML = svg("reload", 20);
   $("detailReload").addEventListener("click", function () { if (currentIssue) openIssue(currentIssue.repo, currentIssue.number, detailOrigin); });
+  $("viewReload").innerHTML = svg("reload", 20);
+  $("viewReload").addEventListener("click", function () {
+    if ($("view-kanban").classList.contains("active")) loadKanban();
+    else resetAndLoadIssues();
+  });
 
   // ----- localStorage -----
   function loadSettings() {
@@ -663,14 +679,8 @@
   function updateActiveRepoBanners() {
     var repo = getSelectedRepo();
     var ok = repo && repo.indexOf("/") !== -1;
-    var txt = svg("repo", 16) + (ok ? "<span>Repo activo: <b>" + esc(repo) + "</b></span>" : "<span>Sin repo — elígelo en <b>Configuración</b></span>");
-    [["repoBannerIssues", "issues"], ["repoBannerComposer", null], ["repoBannerKanban", "kanban"]].forEach(function (pair) {
-      var el = $(pair[0]); if (!el) return;
-      el.innerHTML = '<div class="bn-text">' + txt + "</div>" +
-        (pair[1] ? '<button class="banner-reload" data-rv="' + pair[1] + '" aria-label="Recargar">' + svg("reload", 16) + "</button>" : "");
-      var rb = el.querySelector(".banner-reload");
-      if (rb) rb.addEventListener("click", function () { var v = this.getAttribute("data-rv"); if (v === "issues") resetAndLoadIssues(); else if (v === "kanban") loadKanban(); });
-    });
+    var html = svg("repo", 16) + (ok ? "<span>Repo activo: <b>" + esc(repo) + "</b></span>" : "<span>Sin repo — elígelo en <b>Configuración</b></span>");
+    ["repoBannerIssues", "repoBannerComposer", "repoBannerKanban"].forEach(function (id) { var el = $(id); if (el) el.innerHTML = html; });
   }
 
   // ----- Repositorios recientes (uso propio en Issue Composer), máx 10 -----
@@ -857,7 +867,7 @@
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
-    $("navBack").hidden = true; $("detailReload").hidden = true;
+    $("navBack").hidden = true; $("detailReload").hidden = true; $("viewReload").hidden = false;
     $("content").classList.remove("detail-mode");
     if (issuesState.items.length) renderIssuesList();   // re-pinta desde caché (refleja cambios al volver)
     updateActiveRepoBanners();
@@ -913,8 +923,17 @@
     return out.join("");
   }
   function renderMd(text) { return '<div class="md">' + mdToHtml(text) + "</div>"; }
+  // Login del usuario del token (cacheado); permite mostrar editar/borrar en comentarios propios.
+  function getMe() {
+    if (ghUserLogin !== null) return Promise.resolve(ghUserLogin);
+    return ghFetch(GH_API + "/user").then(function (u) { ghUserLogin = (u && u.login) || ""; return ghUserLogin; }).catch(function () { ghUserLogin = ""; return ""; });
+  }
   function renderComment(c) {
-    return '<div class="comment"><div class="who">' + esc(c.user ? c.user.login : "?") + " · " + esc(fmtShort(c.created_at)) + "</div>" + renderMd(c.body) + "</div>";
+    var mine = c.user && ghUserLogin && c.user.login === ghUserLogin;
+    var acts = mine ? '<span class="cactions"><button type="button" class="clink cedit" data-cid="' + c.id + '">Editar</button><button type="button" class="clink cdel" data-cid="' + c.id + '">Borrar</button></span>' : "";
+    return '<div class="comment" data-cid="' + c.id + '" data-raw="' + encodeURIComponent(c.body || "") + '">' +
+      '<div class="who">' + esc(c.user ? c.user.login : "?") + " · " + esc(fmtShort(c.created_at)) + acts + "</div>" +
+      '<div class="cbody">' + renderMd(c.body) + "</div></div>";
   }
 
   function renderIssueRow(it) {
@@ -1005,15 +1024,16 @@
     activateIssuesContainer();
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("detailReload").hidden = false;
+    $("navBack").hidden = false; $("detailReload").hidden = false; $("viewReload").hidden = true;
     $("content").classList.add("detail-mode");   // quita la safe-area en el detalle
     $("content").scrollTop = 0;
-    box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando incidencia…</div>';
-    showBusy("Cargando incidencia…");
+    box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando…</div>';
+    showBusy();
 
     Promise.all([
       ghFetch(GH_API + "/repos/" + repo + "/issues/" + number),
-      ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments?per_page=100").catch(function () { return []; })
+      ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments?per_page=100").catch(function () { return []; }),
+      getMe()   // conocer el login para mostrar editar/borrar en comentarios propios
     ]).then(function (res) {
       var issue = res[0], comments = Array.isArray(res[1]) ? res[1] : [];
       currentIssue = { repo: repo, number: number, state: issue.state };
@@ -1076,7 +1096,7 @@
         var name = this.getAttribute("data-st");
         if (name === statusOf(issue)) return;
         var prevLabels = (issue.labels || []).slice();   // para revertir si falla
-        showBusy("Cambiando estado…");
+        showBusy();
         var p = applyStatus(repo, issue, name);   // muta issue.labels de forma síncrona
         refreshDetailStatus(issue);                // refleja el nuevo estado al instante
         p.then(function () { syncIssue(repo, number, { labels: issue.labels.slice() }); })
@@ -1086,9 +1106,57 @@
       buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
       $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
       $("btnPostComment").addEventListener("click", function () { postComment(repo, number); });
+      var cl = $("commentsList"); if (cl) cl.addEventListener("click", onCommentAction);
     }).catch(function (err) {
       box.innerHTML = '<div class="msg show error">' + esc(err.message) + "</div>";
     }).then(function () { hideBusy(); });
+  }
+
+  // ---- Editar / borrar comentarios (solo los propios; la API valida permisos) ----
+  function commentEl(cid) { return document.querySelector('.comment[data-cid="' + cid + '"]'); }
+  function onCommentAction(e) {
+    var t = e.target;
+    var ed = t.closest && t.closest(".cedit"), dl = t.closest && t.closest(".cdel"),
+        sv = t.closest && t.closest(".csave"), cn = t.closest && t.closest(".ccancel");
+    if (ed) startEditComment(ed.getAttribute("data-cid"));
+    else if (dl) deleteComment(dl.getAttribute("data-cid"));
+    else if (sv) saveEditComment(sv.getAttribute("data-cid"));
+    else if (cn) cancelEditComment(cn.getAttribute("data-cid"));
+  }
+  function startEditComment(cid) {
+    var el = commentEl(cid); if (!el) return;
+    var raw = decodeURIComponent(el.getAttribute("data-raw") || "");
+    el.querySelector(".cbody").innerHTML =
+      '<textarea class="cedit-ta" rows="4">' + esc(raw) + "</textarea>" +
+      '<div class="actions" style="margin-top:8px"><button type="button" class="csave" data-cid="' + cid + '">Guardar</button>' +
+      '<button type="button" class="secondary ccancel" data-cid="' + cid + '">Cancelar</button></div>';
+  }
+  function cancelEditComment(cid) {
+    var el = commentEl(cid); if (!el) return;
+    el.querySelector(".cbody").innerHTML = renderMd(decodeURIComponent(el.getAttribute("data-raw") || ""));
+  }
+  function saveEditComment(cid) {
+    var el = commentEl(cid); if (!el || !currentIssue) return;
+    var ta = el.querySelector(".cedit-ta"); if (!ta) return;
+    var newBody = ta.value;
+    showBusy();
+    ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/comments/" + cid, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: newBody })
+    }).then(function (updated) {
+      var body = (updated && updated.body !== undefined) ? updated.body : newBody;
+      el.setAttribute("data-raw", encodeURIComponent(body));
+      el.querySelector(".cbody").innerHTML = renderMd(body);
+    }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
+  }
+  function deleteComment(cid) {
+    if (!currentIssue) return;
+    showBusy();
+    ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/comments/" + cid, { method: "DELETE" })
+      .then(function () {
+        var el = commentEl(cid); if (el && el.parentNode) el.parentNode.removeChild(el);
+        var cc = $("commentsCount"); if (cc) cc.textContent = Math.max(0, (parseInt(cc.textContent, 10) || 1) - 1);
+        syncIssue(currentIssue.repo, currentIssue.number, { commentsInc: -1 });
+      }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
   }
 
   // Actualiza en sitio la zona de estado (badge open/closed + texto del botón).
@@ -1104,7 +1172,7 @@
     var newState = prevState === "open" ? "closed" : "open";
     // Optimista: actualiza la UI al instante; spinner modal hasta confirmar.
     currentIssue.state = newState; updateStateUI(newState);
-    showBusy(newState === "closed" ? "Cerrando…" : "Reabriendo…");
+    showBusy();
     ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/" + currentIssue.number, {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: newState })
     }).then(function () {
@@ -1161,7 +1229,7 @@
     var body = $("commentGenerated").value.trim();
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!body) { showMsg(msg, "error", "No hay texto generado que publicar."); return; }
-    showBusy("Publicando comentario…");
+    showBusy();
     ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body })
     }).then(function (created) {
@@ -1250,7 +1318,7 @@
     if (!repo || repo.indexOf("/") === -1) { showMsg($("kanbanMsg"), "error", "Selecciona un repositorio en Configuración."); return; }
     hideMsg($("kanbanMsg"));
     KAN.repo = repo; KAN.loading = true; addRecent(repo);
-    $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Cargando tablero…</div>';
+    $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Cargando…</div>';
     ghFetch(GH_API + "/repos/" + repo + "/issues?state=all&per_page=100&sort=updated&direction=desc")
       .then(function (items) {
         items = Array.isArray(items) ? items : [];
@@ -1376,7 +1444,7 @@
       if (target) {
         var newName = target.getAttribute("data-status");
         if (newName && newName !== statusOf(it)) {
-          showBusy("Moviendo…");
+          showBusy();
           var p = applyStatus(KAN.repo, it, newName);   // muta it de forma síncrona
           renderKanban();                                // optimista
           p.then(function () { syncIssue(KAN.repo, it.number, { labels: it.labels.slice() }); })
@@ -1522,7 +1590,7 @@
     if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
     if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
-    rememberRepo(); addRecent(repo); showBusy("Publicando issue…");
+    rememberRepo(); addRecent(repo); showBusy();
     var parts = repo.split("/");
     ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
