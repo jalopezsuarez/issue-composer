@@ -44,9 +44,7 @@
   }
 
   .app {
-    /* --apph = alto del viewport visible (lo fija JS con visualViewport) para que,
-       al abrir el teclado, la app encoja y el botón Guardar del editor quede encima. */
-    max-width: 480px; margin: 0 auto; height: var(--apph, 100%);
+    max-width: 480px; margin: 0 auto; height: 100%;
     display: flex; flex-direction: column;
     background: var(--bg); position: relative; overflow: hidden;
   }
@@ -92,11 +90,14 @@
   .view { display: none; }
   .view.active { display: block; }
 
-  /* ===== Editor a pantalla completa (overlay). Columna flex: cabecera y título
-     arriba y un textarea que crece/decrece llenando el resto de la pantalla
-     (se ajusta al alto visible gracias a --apph). Guardar/atrás son fabs arriba. ===== */
+  /* ===== Editor a pantalla completa (overlay fijo al viewport visible). Columna
+     flex: cabecera y título arriba y un textarea que crece/decrece llenando el
+     resto. La altura sigue al viewport visible (--apph, con fallback 100dvh) para
+     ajustarse al abrir/cerrar el teclado. Guardar/atrás son fabs arriba. ===== */
   #view-edit {
-    position: absolute; inset: 0; z-index: 40;
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px; height: var(--apph, 100dvh);
+    z-index: 40; overflow: hidden;
     background: var(--surface); flex-direction: column;
     padding-top: calc(env(safe-area-inset-top) + var(--topbar));
   }
@@ -1769,14 +1770,16 @@
     lastTouch = now;
   }, { passive: false });
 
-  // Ajusta la altura de la app al viewport visible: al abrir el teclado, iOS no
-  // encoge el layout (position:fixed) y el botón Guardar quedaría oculto; con esto
-  // la app se ajusta al área visible y el botón queda pegado encima del teclado.
+  // --apph = alto del viewport visible. La vista de edición lo usa como altura para
+  // ajustarse exactamente al área visible (y encoger con el teclado en móvil).
   function syncAppHeight() {
     var vv = window.visualViewport;
     document.documentElement.style.setProperty("--apph", (vv ? vv.height : window.innerHeight) + "px");
   }
-  if (window.visualViewport) window.visualViewport.addEventListener("resize", syncAppHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", syncAppHeight);
+    window.visualViewport.addEventListener("scroll", syncAppHeight);
+  }
   window.addEventListener("resize", syncAppHeight);
   syncAppHeight();
 
