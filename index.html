@@ -248,7 +248,11 @@
   .list-row .lead svg { width: 18px; height: 18px; }
   .list-row .meta { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: .92rem; word-break: break-word; }
-  .row-sub { font-size: .76rem; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  /* Subfila en una sola línea: cápsula open/closed + estado (ancho fijo) y el resto
+     (#n · usuario · comentarios · fecha) ocupa lo que queda y se recorta con «…». */
+  .row-sub { font-size: .76rem; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+  .row-sub .state, .row-sub .sttag { flex: none; }
+  .rsub-meta { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .row-sub svg { width: 13px; height: 13px; vertical-align: -2px; }
   .chev { color: #afb8c1; flex: none; display: flex; }
   .chev svg { width: 16px; height: 16px; }
@@ -263,7 +267,7 @@
   /* Detalle de incidencia + comentarios */
   .detail-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px; }
   .detail-head h3 { margin: 0 0 8px; font-size: 1.12rem; word-break: break-word; overflow-wrap: anywhere; }
-  .detail-head h3.editable { cursor: pointer; }
+  .detail-head h3.editable { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
   .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; }
@@ -994,10 +998,11 @@
       '<span class="lead">' + svg("issue", 18) + "</span>" +
       '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
         '<div class="row-sub">' +
-          '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span> " +
-          statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
-          " · " + svg("comment", 13) + " " + (it.comments || 0) +
-          " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
+          '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
+          statusTag(it) +
+          '<span class="rsub-meta">#' + it.number + " · " + esc(it.user ? it.user.login : "?") +
+            " · " + svg("comment", 13) + " " + (it.comments || 0) +
+            " · act. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
         labelsHtml(userLabels(it)) + "</div>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
@@ -1104,8 +1109,8 @@
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
-            '<button id="btnToggleState" style="margin-left:auto" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
-            '<button id="btnEditIssue" class="secondary">Editar</button>' +
+            '<button id="btnEditIssue" style="margin-left:auto" class="secondary">Editar</button>' +
+            '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
           "</div>" +
         "</div>" +
         '<div class="pad"><div class="group-title" style="padding:0">Comentarios (<span id="commentsCount">' + comments.length + "</span>)</div></div>";
