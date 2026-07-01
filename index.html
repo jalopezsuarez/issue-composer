@@ -5,9 +5,13 @@
 <!-- Viewport fijo de móvil: sin zoom (ni pinch-in ni pinch-out) y con safe-areas del iPhone. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<!-- black-translucent: en PWA instalada la barra de estado (reloj) es transparente y el
+     contenido pasa por debajo del safe-area (que la app deja transparente). -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <!-- Tinte de la barra de URL/estado en iOS Safari: blanco -->
 <meta name="theme-color" content="#ffffff" />
+<!-- Fuerza apariencia clara: el teclado de iOS sale claro/blanco (no oscuro). -->
+<meta name="color-scheme" content="light" />
 <title>GH Issue Composer</title>
 <style>
   :root {
@@ -30,8 +34,9 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Tipografía aumentada respecto al por defecto (19px en vez de 16). */
   /* html/body transparentes: la franja del safe-area de arriba no tiene ninguna base
-     opaca detrás, así queda 100% transparente (el color lo pone .content por debajo). */
-  html { font-size: 19px; background: transparent; }
+     opaca detrás, así queda 100% transparente (el color lo pone .content por debajo).
+     color-scheme: light fuerza el teclado de iOS en claro (fondo blanco/gris claro). */
+  html { font-size: 19px; background: transparent; color-scheme: light; }
   html, body { height: 100%; }
   body {
     margin: 0;
