@@ -46,7 +46,9 @@
   .app {
     max-width: 480px; margin: 0 auto; height: 100%;
     display: flex; flex-direction: column;
-    background: var(--bg); position: relative; overflow: hidden;
+    /* Fondo transparente para que la franja del safe-area de arriba se vea limpia
+       (el color lo pone .content, empezando bajo el safe-area). */
+    background: transparent; position: relative; overflow: hidden;
   }
 
   /* ===== Botones flotantes glass =====
@@ -84,9 +86,19 @@
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
   /* Hueco superior en todas las vistas (safe-area + navigation invisible) para que
      el contenido no quede bajo los botones flotantes (atrás/recargar/añadir). */
-  /* El fondo del contenido (y por tanto del hueco superior) se ajusta al color de
-     cada vista desde JS: blanco en Incidencias/detalle, gris en el resto. */
-  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--botbar) + env(safe-area-inset-bottom)); }
+  /* El color del contenido lo fija JS por vista (--cbg: blanco en Incidencias, gris
+     en el resto) y se pinta EMPEZANDO bajo el safe-area, de modo que la franja del
+     safe-area de arriba queda totalmente transparente. */
+  .content {
+    flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    background-color: transparent;
+    background-image: linear-gradient(var(--cbg, var(--bg)), var(--cbg, var(--bg)));
+    background-repeat: no-repeat;
+    background-position: 0 env(safe-area-inset-top);
+    background-size: 100% calc(100% - env(safe-area-inset-top));
+    padding-top: calc(env(safe-area-inset-top) + var(--topbar));
+    padding-bottom: calc(var(--botbar) + env(safe-area-inset-bottom));
+  }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -561,8 +573,8 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit");   // oculta la navegación mientras se edita
     $("btnSaveEdit").hidden = (name !== "edit");   // Guardar (fab arriba-derecha) solo al editar
-    // El hueco superior toma el color de la vista: blanco en Incidencias/detalle, gris en el resto.
-    $("content").style.background = (name === "issues") ? "var(--surface)" : "var(--bg)";
+    // Color del contenido por vista (el safe-area de arriba queda transparente).
+    $("content").style.setProperty("--cbg", (name === "issues") ? "var(--surface)" : "var(--bg)");
   }
   function showView(name) {
     markActiveView(name);
