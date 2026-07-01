@@ -344,12 +344,13 @@
           <textarea id="note" rows="5" placeholder="Ej.: El botón de login no responde en móvil…"></textarea>
         </div>
         <div class="field">
-          <label>Tono del texto</label>
+          <label>Modo de redacción</label>
           <div class="segmented" id="toneControl">
-            <button type="button" data-tone="tecnico">Técnico</button>
-            <button type="button" data-tone="conciso">Conciso</button>
+            <button type="button" data-tone="fiel">Fiel</button>
+            <button type="button" data-tone="estructurado">Estructurado</button>
             <button type="button" data-tone="profundo">Profundo</button>
           </div>
+          <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
         </div>
         <div class="field actions">
           <button id="btnAnalyze" class="block">Analizar repo y redactar</button>
@@ -484,8 +485,8 @@
   // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
   // Úsalo en equipo de confianza y con permisos mínimos (scope repo).
   var ghTokenMem = "";
-  var currentTone = "tecnico";
-  var commentTone = "tecnico";
+  var currentTone = "estructurado";   // fiel | estructurado | profundo
+  var commentTone = "estructurado";
   var currentLang = "es";   // idioma de generación (es por defecto)
 
   // ----- Helpers DOM -----
@@ -562,7 +563,7 @@
       if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
-      if (tone) { currentTone = tone; commentTone = tone; }
+      if (tone && { fiel: 1, estructurado: 1, profundo: 1 }[tone]) { currentTone = tone; commentTone = tone; }
       if (lang === "en" || lang === "es") currentLang = lang;
     } catch (e) {}
   }
@@ -581,10 +582,57 @@
     for (var i = 0; i < btns.length; i++) btns[i].addEventListener("click", function () { setVal(this.getAttribute("data-tone")); paint(); });
     paint();
   }
-  function toneInstruction(tone) {
-    if (tone === "conciso") return "TONO CONCISO: directo al grano, frases cortas, solo lo esencial, sin relleno.";
-    if (tone === "profundo") return "TONO PROFUNDO: análisis exhaustivo con contexto, causa raíz, impacto, casos límite y propuestas detalladas, fundamentado en el código revisado.";
-    return "TONO TÉCNICO: lenguaje preciso de ingeniería, terminología adecuada, referencias a símbolos/funciones/módulos/rutas reales y detalles de implementación.";
+  var TONE_HINT = {
+    fiel: "Fiel: cambios mínimos, conserva tus palabras (no analiza el código, es instantáneo).",
+    estructurado: "Estructurado: revisa el código y organiza en secciones + criterios de aceptación.",
+    profundo: "Profundo: análisis completo (causa raíz, impacto, casos límite, propuesta y pruebas)."
+  };
+  function paintToneHint() { var el = $("toneHint"); if (el) el.textContent = TONE_HINT[currentTone] || ""; }
+  // ¿Este modo revisa el código base?
+  function toneReviewsCode(tone) { return tone !== "fiel"; }
+
+  // ---- Prompts por CONTEXTO (issue / comentario) y MODO (fiel/estructurado/profundo) ----
+  function issueSystemPrompt(tone) {
+    var base = "Redactas issues de GitHub. Respondes SOLO con un objeto JSON válido {\"title\",\"body\"} sin fences. " +
+      "'title' conciso (< 70 caracteres, sin punto final). ";
+    if (tone === "fiel") {
+      base += "MODO FIEL: transforma lo MÍNIMO la nota del usuario — corrige ortografía y da formato Markdown ligero, " +
+        "conservando sus palabras, orden e intención. PROHIBIDO añadir secciones, pasos, criterios o cualquier información que el usuario no haya escrito. " +
+        "El 'title' resume su nota.";
+    } else if (tone === "profundo") {
+      base += "MODO PROFUNDO: 'body' en Markdown con secciones (omite las que no apliquen): **Contexto**, **Descripción**, " +
+        "**Pasos de reproducción**, **Comportamiento esperado vs actual**, **Archivos implicados** (rutas reales del código revisado), " +
+        "**Causa raíz probable**, **Impacto**, **Casos límite**, **Propuesta de solución** (archivos a tocar y pasos), **Plan de pruebas** y " +
+        "**Criterios de aceptación** como checklist '- [ ]'. Básate SIEMPRE en el código real revisado; no inventes rutas ni comportamientos.";
+    } else { // estructurado
+      base += "MODO ESTRUCTURADO: 'body' en Markdown con secciones (omite las que no apliquen): **Contexto**, **Descripción**, " +
+        "**Pasos de reproducción**, **Comportamiento esperado vs actual**, **Archivos implicados** (rutas reales del código revisado) y " +
+        "**Criterios de aceptación** como checklist '- [ ]'. Básate SIEMPRE en el código real revisado; no inventes rutas ni comportamientos.";
+    }
+    return base + " " + langInstruction();
+  }
+  function issueUserPrompt(tone, note, ctx) {
+    if (tone === "fiel" || !ctx) return "Nota del usuario:\n" + note + "\n\nDevuelve SOLO el JSON {\"title\",\"body\"}.";
+    return "Nota del usuario:\n" + note + "\n\nREADME:\n" + (ctx.readme || "(sin README)") +
+      "\n\nCódigo revisado:\n" + (ctx.codeBlob || "(no se seleccionó código)") + "\n\nDevuelve SOLO el JSON {\"title\",\"body\"}.";
+  }
+  function commentSystemPrompt(tone) {
+    var base = "Redactas comentarios para issues de GitHub. Respondes SOLO con el texto del comentario en Markdown, sin fences ni JSON. ";
+    if (tone === "fiel") {
+      base += "MODO FIEL: transforma lo MÍNIMO el texto propuesto — corrige y formatea, conserva palabras e intención. No añadas secciones ni información nueva.";
+    } else if (tone === "profundo") {
+      base += "MODO PROFUNDO: organiza en **Resumen**, **Detalle/propuesta**, **Referencias al código** (rutas reales revisadas), " +
+        "**Causa raíz**, **Impacto**, **Casos límite** y **Próximos pasos**. Básate en el código real; no inventes.";
+    } else {
+      base += "MODO ESTRUCTURADO: organiza en **Resumen**, **Detalle/propuesta**, **Referencias al código** (rutas reales revisadas) y **Próximos pasos**. Básate en el código real.";
+    }
+    return base + " " + langInstruction();
+  }
+  function commentUserPrompt(tone, issue, thread, note, ctx) {
+    var s = "Incidencia #" + issue.number + ": " + issue.title + "\n\nDescripción:\n" + (issue.body || "(sin descripción)") +
+      "\n\nÚltimos comentarios:\n" + (thread || "(ninguno)");
+    if (tone !== "fiel" && ctx) s += "\n\nREADME:\n" + (ctx.readme || "(sin README)") + "\n\nCódigo revisado:\n" + (ctx.codeBlob || "(no se seleccionó código)");
+    return s + "\n\nTexto propuesto por el usuario:\n" + note + "\n\nRedacta el comentario final.";
   }
 
   // ----- Idioma de generación -----
@@ -1007,9 +1055,9 @@
           '<div class="pad"><div class="group-title" style="padding:0">Nuevo comentario con IA</div></div>' +
           '<div class="field"><label for="commentNote">Texto propuesto</label>' +
             '<textarea id="commentNote" rows="3" placeholder="Idea / borrador de lo que quieres comentar…"></textarea></div>' +
-          '<div class="field"><label>Tono</label><div class="segmented" id="commentToneControl">' +
-            '<button type="button" data-tone="tecnico">Técnico</button>' +
-            '<button type="button" data-tone="conciso">Conciso</button>' +
+          '<div class="field"><label>Modo</label><div class="segmented" id="commentToneControl">' +
+            '<button type="button" data-tone="fiel">Fiel</button>' +
+            '<button type="button" data-tone="estructurado">Estructurado</button>' +
             '<button type="button" data-tone="profundo">Profundo</button></div></div>' +
           '<div class="field actions"><button id="btnGenComment" class="block">Generar con IA</button></div>' +
           '<div id="commentGenStatus" class="status"></div>' +
@@ -1086,31 +1134,23 @@
 
     var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
     var parts = (currentIssue ? currentIssue.repo : "/").split("/"), owner = parts[0], name = parts[1];
-    // Revisa el código base antes de redactar (como el composer de issues),
-    // usando la incidencia + el texto propuesto como contexto de búsqueda.
+    var tone = commentTone;
     var query = "Incidencia: " + issue.title + "\n" + (issue.body || "") + "\n\nComentario propuesto:\n" + note;
 
-    reviewCodebase(owner, name, query, setStat).then(function (ctx) {
-      setStat("Redactando comentario (tono " + commentTone + ")…");
+    function draft(ctx) {
+      setStat("Redactando comentario…");
       return llmComplete([
-        { role: "system", content:
-          "Eres un asistente que redacta comentarios para issues de GitHub. " +
-          "Responde SOLO con el texto del comentario en Markdown, sin fences ni JSON. " +
-          "Tienes acceso al código real revisado del repositorio: básate en él para ser preciso y no inventes rutas ni comportamientos. " +
-          toneInstruction(commentTone) + " " + langInstruction() },
-        { role: "user", content:
-          "Incidencia #" + issue.number + ": " + issue.title +
-          "\n\nDescripción:\n" + (issue.body || "(sin descripción)") +
-          "\n\nÚltimos comentarios:\n" + (thread || "(ninguno)") +
-          "\n\nREADME:\n" + (ctx.readme || "(sin README)") +
-          "\n\nCódigo revisado:\n" + (ctx.codeBlob || "(no se seleccionó código)") +
-          "\n\nTexto propuesto por el usuario:\n" + note +
-          "\n\nRedacta el comentario final." }
+        { role: "system", content: commentSystemPrompt(tone) },
+        { role: "user", content: commentUserPrompt(tone, issue, thread, note, ctx) }
       ]);
-    }).then(function (content) {
+    }
+    // MODO FIEL: no revisa el código (rápido y fiel). Resto: revisa el código base.
+    var work = toneReviewsCode(tone) ? reviewCodebase(owner, name, query, setStat).then(draft) : draft(null);
+
+    work.then(function (content) {
       $("commentGenerated").value = cleanText(content);
       setStat("");
-      showMsg(msg, "success", "Comentario generado revisando el código. Edítalo si quieres y pulsa Publicar.");
+      showMsg(msg, "success", "Comentario generado. Edítalo si quieres y pulsa Publicar.");
     }).catch(function (err) {
       setStat(""); showMsg(msg, "error", esc(err.message));
     }).then(function () { btn.disabled = false; btn.textContent = "Generar con IA"; });
@@ -1386,25 +1426,37 @@
     return new TextDecoder("utf-8").decode(bytes);
   }
 
-  // Revisa el código base de un repo y devuelve {branch, readme, codeBlob}.
-  // 1) rama por defecto, 2) README, 3) árbol, 4) el LLM elige hasta 5 rutas
-  // relevantes a `query`, 5) descarga y recorta esos ficheros. Reutilizable por
-  // el composer de issues y por el generador de comentarios.
-  function reviewCodebase(owner, name, query, setStat) {
-    var ctx = { branch: "main", readme: "", tree: [], codeBlob: "" };
+  // Caché por repo (sesión) de la parte pesada: rama, README y árbol de ficheros.
+  // La selección de ficheros depende de la nota, así que esa parte no se cachea.
+  var repoBaseCache = {};
+  function getRepoBase(owner, name, setStat) {
+    var key = owner + "/" + name;
+    if (repoBaseCache[key]) return Promise.resolve(repoBaseCache[key]);
+    var base = { branch: "main", readme: "", files: [] };
     setStat("Detectando rama por defecto…");
     return ghFetch(GH_API + "/repos/" + owner + "/" + name).then(function (info) {
-      ctx.branch = info.default_branch || "main";
+      base.branch = info.default_branch || "main";
       setStat("Leyendo README…");
-      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/readme?ref=" + ctx.branch)
-        .then(function (rd) { try { ctx.readme = b64ToUtf8(rd.content).slice(0, 5000); } catch (e) {} })
+      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/readme?ref=" + base.branch)
+        .then(function (rd) { try { base.readme = b64ToUtf8(rd.content).slice(0, 5000); } catch (e) {} })
         .catch(function () {});
     }).then(function () {
       setStat("Obteniendo árbol de ficheros…");
-      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/git/trees/" + ctx.branch + "?recursive=1");
+      return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/git/trees/" + base.branch + "?recursive=1");
     }).then(function (tree) {
-      var files = (tree.tree || []).filter(function (t) { return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path); }).map(function (t) { return t.path; });
-      ctx.tree = files;
+      base.files = (tree.tree || []).filter(function (t) { return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path); }).map(function (t) { return t.path; });
+      repoBaseCache[key] = base;
+      return base;
+    });
+  }
+
+  // Revisa el código base y devuelve {branch, readme, codeBlob}. Usa la caché de
+  // rama/README/árbol; el LLM elige hasta 5 rutas relevantes a `query` y se descargan.
+  function reviewCodebase(owner, name, query, setStat) {
+    var ctx = { branch: "main", readme: "", tree: [], codeBlob: "" };
+    return getRepoBase(owner, name, setStat).then(function (base) {
+      ctx.branch = base.branch; ctx.readme = base.readme; ctx.tree = base.files;
+      var files = base.files;
       setStat("Eligiendo rutas relevantes (" + files.length + " ficheros)…");
       return llmComplete([
         { role: "system", content: "Eres un asistente que localiza el código relevante para una nota/incidencia. Respondes SOLO con un array JSON de rutas (strings), sin texto adicional, sin fences." },
@@ -1438,22 +1490,21 @@
 
     rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando…';
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
-    var ctx;
+    var tone = currentTone;
 
-    reviewCodebase(owner, name, "Nota del usuario:\n" + note, setStatus).then(function (c) {
-      ctx = c;
-      setStatus("Redactando el issue con la IA (tono " + currentTone + ")…");
-      var codeBlob = ctx.codeBlob;
+    function draft(ctx) {
+      setStatus("Redactando el issue…");
       return llmComplete([
-        { role: "system", content:
-          "Eres un asistente experto que redacta issues de GitHub claros y accionables. " +
-          "Respondes SOLO con un objeto JSON válido con las claves \"title\" y \"body\", sin texto adicional ni fences. " +
-          "Reglas: 'title' conciso, < 70 caracteres, sin punto final. 'body' en Markdown con checklist '- [ ]' y referencias a rutas reales. " +
-          "IMPORTANTE: básate SIEMPRE en el código real revisado; sé preciso y no inventes rutas ni comportamientos. " +
-          toneInstruction(currentTone) + " " + langInstruction() },
-        { role: "user", content: "Nota del usuario:\n" + note + "\n\nREADME:\n" + (ctx.readme || "(sin README)") + "\n\nCódigo revisado:\n" + (codeBlob || "(no se seleccionó código)") + "\n\nDevuelve SOLO el JSON {\"title\":\"...\",\"body\":\"...\"}." }
+        { role: "system", content: issueSystemPrompt(tone) },
+        { role: "user", content: issueUserPrompt(tone, note, ctx) }
       ]);
-    }).then(function (content) {
+    }
+    // MODO FIEL: no revisa el código (rápido y fiel). Resto: revisa el código base.
+    var work = toneReviewsCode(tone)
+      ? reviewCodebase(owner, name, "Nota del usuario:\n" + note, setStatus).then(draft)
+      : draft(null);
+
+    work.then(function (content) {
       var obj = parseLooseJSON(content);
       var title = (obj && obj.title) ? String(obj.title) : "", body = (obj && obj.body) ? String(obj.body) : "";
       if (!title && !body) throw new Error("El LLM no devolvió title/body.");
@@ -1500,7 +1551,8 @@
 
   // ----- Init -----
   loadSettings();
-  buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; persist(LS_KEYS.tone, v); });
+  buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; commentTone = v; persist(LS_KEYS.tone, v); paintToneHint(); });
+  paintToneHint();
   setLang(currentLang);   // marca el idioma activo en el control
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   renderRecents();   // pinta la tabla de recientes guardados
