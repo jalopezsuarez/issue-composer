@@ -23,10 +23,9 @@
     --danger-bg: #fff1f0;
     --ok: #1f2328;
     --ok-bg: #f6f8fa;
-    /* Alto de la "navigation" invisible superior: deja hueco para la zona de
-       botones flotantes (8px arriba + 44px del botón + 8px de aire). */
+    /* Hueco (arriba y abajo) para las zonas de botones flotantes: 8px + 44px + 8px. */
     --topbar: 60px;
-    --tab-h: 58px;
+    --botbar: 68px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Tipografía aumentada respecto al por defecto (19px en vez de 16). */
@@ -87,7 +86,7 @@
      el contenido no quede bajo los botones flotantes (atrás/recargar/añadir). */
   /* El fondo del contenido (y por tanto del hueco superior) se ajusta al color de
      cada vista desde JS: blanco en Incidencias/detalle, gris en el resto. */
-  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--botbar) + env(safe-area-inset-bottom)); }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -107,35 +106,30 @@
   .edit-foot { flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-soft); background: var(--surface); }
   .edit-foot .msg { margin: 0 0 10px; }
 
-  /* ===== Tab bar inferior ===== */
-  .tabbar {
-    /* Overlay sobre el contenido para que el glass deje ver lo que hay debajo
-       (en flujo normal mostraría el fondo blanco de la app y parecería opaca). */
-    position: absolute; left: 0; right: 0; bottom: 0; z-index: 20;
+  /* ===== Navegación en cápsula glass (abajo a la derecha) =====
+     Mismo material glass que los botones flotantes, pero los tres agrupados en
+     una cápsula (estilo iOS): fondo casi nulo con blur, borde blanco tenue y sombra. */
+  .navcap {
+    position: fixed; z-index: 60;
+    right: 12px; bottom: calc(env(safe-area-inset-bottom) + 12px);
+    display: flex; gap: 2px; padding: 5px;
+    border-radius: 999px;
     background: rgba(255,255,255,.001);
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
-    padding-bottom: env(safe-area-inset-bottom);
-    height: calc(var(--tab-h) + env(safe-area-inset-bottom));
-    display: flex;
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid rgba(255,255,255,.5);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
   }
-  /* Difuminado sobre la toolbar: franja de blur que se desvanece hacia arriba con
-     una máscara en degradado, en lugar de una línea/corte brusco entre normal y blur. */
-  .tabbar::before {
-    content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
-    height: 22px; pointer-events: none;
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
-    -webkit-mask-image: linear-gradient(to top, #000, transparent);
-    mask-image: linear-gradient(to top, #000, transparent);
+  .navcap[hidden] { display: none; }
+  .navcap-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: none; border: none; padding: 0; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--muted);
   }
-  .tab {
-    flex: 1; background: none; border: none; color: var(--muted);
-    display: flex; align-items: center; justify-content: center;
-    padding: 6px 0; cursor: pointer; font-weight: 300;
-  }
-  .tab svg { width: 27px; height: 27px; }
-  .tab.active { color: var(--black); }
+  .navcap-btn svg { width: 24px; height: 24px; }
+  .navcap-btn.active { color: var(--black); background: rgba(0,0,0,.06); }
+  .navcap-btn:active { background: rgba(0,0,0,.12); }
 
   /* ===== Grupos full-width estilo iOS (sin tarjetas) ===== */
   .group { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 22px; }
@@ -457,10 +451,10 @@
 
   </main>
 
-  <nav class="tabbar" id="tabbar">
-    <button class="tab" data-view="kanban" aria-label="Kanban"><span class="ico" data-icon="project"></span></button>
-    <button class="tab" data-view="issues" aria-label="Incidencias"><span class="ico" data-icon="list"></span></button>
-    <button class="tab" data-view="config" aria-label="Configuración"><span class="ico" data-icon="gear"></span></button>
+  <nav class="navcap" id="navcap" aria-label="Navegación">
+    <button class="navcap-btn" data-view="kanban" aria-label="Kanban"><span class="ico" data-icon="project"></span></button>
+    <button class="navcap-btn" data-view="issues" aria-label="Incidencias"><span class="ico" data-icon="list"></span></button>
+    <button class="navcap-btn" data-view="config" aria-label="Configuración"><span class="ico" data-icon="gear"></span></button>
   </nav>
 
   <!-- ====== EDITAR (overlay a pantalla completa: el textarea crece/decrece con la
@@ -562,11 +556,12 @@
 
   // ====================== NAVEGACIÓN ENTRE VISTAS ======================
   var VIEWS = ["kanban", "issues", "composer", "config", "edit"];
-  // Marca una vista (y su pestaña) como activa, sin recargar su contenido.
+  // Marca una vista (y su botón de la cápsula) como activa, sin recargar su contenido.
   function markActiveView(name) {
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
-    var tb = $("tabbar").querySelectorAll(".tab");
+    var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
+    $("navcap").hidden = (name === "edit");   // oculta la navegación mientras se edita
     // El hueco superior toma el color de la vista: blanco en Incidencias/detalle, gris en el resto.
     $("content").style.background = (name === "issues") ? "var(--surface)" : "var(--bg)";
   }
@@ -584,7 +579,7 @@
     updateActiveRepoBanners();
   }
   (function wireTabs() {
-    var tb = $("tabbar").querySelectorAll(".tab");
+    var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].addEventListener("click", function () { showView(this.getAttribute("data-view")); });
   })();
   var detailOrigin = "issues";    // vista de origen del detalle (issues/kanban)
