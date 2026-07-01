@@ -976,14 +976,17 @@
   function renderIssueRow(it) {
     var li = document.createElement("li");
     li.className = "list-row";
+    // La cápsula open/closed va en la subfila, a la izquierda del estado
+    // (pending/done…), dejando más ancho a la derecha de la fila (solo el chevrón).
     li.innerHTML =
       '<span class="lead">' + svg("issue", 18) + "</span>" +
       '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
-        '<div class="row-sub">' + statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
+        '<div class="row-sub">' +
+          '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span> " +
+          statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
           " · " + svg("comment", 13) + " " + (it.comments || 0) +
           " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
         labelsHtml(userLabels(it)) + "</div>" +
-      '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
     return li;
