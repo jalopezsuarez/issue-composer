@@ -319,7 +319,6 @@
 
     <!-- ====== KANBAN ====== -->
     <section class="view" id="view-kanban">
-      <div class="repo-banner" id="repoBannerKanban"></div>
       <div id="kanbanMsg" class="msg"></div>
       <div class="kanban" id="kanbanBoard"></div>
     </section>
@@ -327,7 +326,6 @@
     <!-- ====== INCIDENCIAS ====== -->
     <section class="view" id="view-issues">
       <div id="issuesListWrap">
-        <div class="repo-banner" id="repoBannerIssues"></div>
         <div class="list-toolbar">
           <button id="btnSort" class="secondary"></button>
         </div>
@@ -342,8 +340,6 @@
 
     <!-- ====== CREAR (COMPOSER IA) ====== -->
     <section class="view" id="view-composer">
-      <div class="repo-banner" id="repoBannerComposer"></div>
-
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Nota y análisis del código</div>
         <div class="group-hint" style="padding:0 0 10px">La IA revisa el código base del repo antes de redactar para ser más precisa.</div></div>
@@ -681,7 +677,7 @@
     var repo = getSelectedRepo();
     var ok = repo && repo.indexOf("/") !== -1;
     var html = svg("repo", 16) + (ok ? "<span>Repo activo: <b>" + esc(repo) + "</b></span>" : "<span>Sin repo — elígelo en <b>Configuración</b></span>");
-    ["repoBannerIssues", "repoBannerComposer", "repoBannerKanban", "repoBannerSettings"].forEach(function (id) { var el = $(id); if (el) el.innerHTML = html; });
+    var el = $("repoBannerSettings"); if (el) el.innerHTML = html;
   }
 
   // ----- Repositorios recientes (uso propio en Issue Composer), máx 10 -----
