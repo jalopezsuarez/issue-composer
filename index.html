@@ -5,9 +5,8 @@
 <!-- Viewport fijo de móvil: sin zoom (ni pinch-in ni pinch-out) y con safe-areas del iPhone. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<!-- black-translucent: en PWA instalada la barra de estado (reloj) es transparente y el
-     contenido pasa por debajo del safe-area (que la app deja transparente). -->
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<!-- default: barra de estado blanca con reloj oscuro (legible sobre el safe-area blanco). -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <!-- Tinte de la barra de URL/estado en iOS Safari: blanco -->
 <meta name="theme-color" content="#ffffff" />
 <!-- Fuerza apariencia clara: el teclado de iOS sale claro/blanco (no oscuro). -->
@@ -33,15 +32,15 @@
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Tipografía aumentada respecto al por defecto (19px en vez de 16). */
-  /* html/body transparentes: la franja del safe-area de arriba no tiene ninguna base
-     opaca detrás, así queda 100% transparente (el color lo pone .content por debajo).
+  /* Base blanca en html/body: la franja del safe-area (y el fondo tras el teclado)
+     nunca es gris; el color de la vista lo pinta #viewbg empezando bajo el safe-area.
      color-scheme: light fuerza el teclado de iOS en claro (fondo blanco/gris claro). */
-  html { font-size: 19px; background: transparent; color-scheme: light; }
+  html { font-size: 19px; background: #fff; color-scheme: light; }
   html, body { height: 100%; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: transparent;
+    background: #fff;
     color: var(--text);
     line-height: 1.5;
     position: fixed; inset: 0; overflow: hidden;       /* app fija de móvil */
@@ -53,9 +52,16 @@
   .app {
     max-width: 480px; margin: 0 auto; height: 100%;
     display: flex; flex-direction: column;
-    /* Fondo transparente para que la franja del safe-area de arriba se vea limpia
-       (el color lo pone .content, empezando bajo el safe-area). */
     background: transparent; position: relative; overflow: hidden;
+  }
+  /* Capa de color de la vista: se posiciona empezando JUSTO bajo el safe-area con
+     top:env(...) (fiable en Safari, a diferencia de env() en background-size). Así el
+     safe-area de arriba queda blanco (base html/body) y el fondo tras el teclado también. */
+  #viewbg {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    top: env(safe-area-inset-top); bottom: 0; z-index: 0;
+    background: var(--cbg, var(--bg));
   }
 
   /* ===== Botones flotantes glass =====
@@ -92,17 +98,11 @@
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
   /* Hueco superior en todas las vistas (safe-area + navigation invisible) para que
-     el contenido no quede bajo los botones flotantes (atrás/recargar/añadir). */
-  /* El color del contenido lo fija JS por vista (--cbg: blanco en Incidencias, gris
-     en el resto) y se pinta EMPEZANDO bajo el safe-area, de modo que la franja del
-     safe-area de arriba queda totalmente transparente. */
+     el contenido no quede bajo los botones flotantes (atrás/recargar/añadir).
+     El contenido es transparente y deja ver #viewbg (color de la vista) por debajo. */
   .content {
     flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
-    background-color: transparent;
-    background-image: linear-gradient(var(--cbg, var(--bg)), var(--cbg, var(--bg)));
-    background-repeat: no-repeat;
-    background-position: 0 env(safe-area-inset-top);
-    background-size: 100% calc(100% - env(safe-area-inset-top));
+    position: relative; z-index: 1; background: transparent;
     padding-top: calc(env(safe-area-inset-top) + var(--topbar));
     padding-bottom: calc(var(--botbar) + env(safe-area-inset-bottom));
   }
@@ -348,6 +348,8 @@
 </head>
 <body>
 <div class="app">
+  <!-- Capa de color de la vista (bajo el safe-area); el safe-area queda blanco -->
+  <div id="viewbg"></div>
   <!-- Back flotante glass: visible al volver (detalle y crear) -->
   <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
   <!-- En listado/kanban: recargar a la izquierda y añadir incidencia a la derecha -->
@@ -582,8 +584,10 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit");   // oculta la navegación mientras se edita
     $("btnSaveEdit").hidden = (name !== "edit");   // Guardar (fab arriba-derecha) solo al editar
-    // Color del contenido por vista (el safe-area de arriba queda transparente).
-    $("content").style.setProperty("--cbg", (name === "issues") ? "var(--surface)" : "var(--bg)");
+    // Color de la vista (lo pinta #viewbg bajo el safe-area). Blanco en Incidencias/
+    // detalle y en el editor (para que el fondo tras el teclado sea blanco), gris en el resto.
+    var white = (name === "issues" || name === "edit");
+    document.documentElement.style.setProperty("--cbg", white ? "var(--surface)" : "var(--bg)");
   }
   function showView(name) {
     markActiveView(name);
