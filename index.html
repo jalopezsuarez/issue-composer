@@ -48,40 +48,29 @@
     background: var(--bg); position: relative; overflow: hidden;
   }
 
-  /* ===== Back flotante glass (sólo cuando hay que volver) ===== */
-  /* Fabs glass: fondo casi nulo (mínimo) manteniendo el blur; borde blanco; peso ligero. */
-  .fab-back {
-    position: fixed;
-    top: calc(env(safe-area-inset-top) + 8px); left: 12px; z-index: 60;
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(255,255,255,.001);
-    backdrop-filter: saturate(180%) blur(14px);
-    -webkit-backdrop-filter: saturate(180%) blur(14px);
-    border: 1px solid rgba(255,255,255,.5);
-    box-shadow: 0 2px 8px rgba(0,0,0,.12);
-    color: #000; cursor: pointer; font-weight: 300;
-    display: inline-flex; align-items: center; justify-content: center; padding: 0;
-  }
-  .fab-back:active { background: rgba(255,255,255,.5); }
-  .fab-back svg { width: 28px; height: 28px; margin-left: -2px; }
-  .fab-back[hidden] { display: none; }
-  /* Botones flotantes glass del listado/kanban: recargar (izquierda) y añadir (derecha).
-     Mismo diseño espejo; solo cambia el lado y el icono. */
-  .fab-reload, .fab-add {
+  /* ===== Botones flotantes glass =====
+     Base común: fondo casi nulo (mínimo) manteniendo el blur, borde blanco tenue,
+     peso ligero. Atrás (izquierda, en detalle/crear); en listado/kanban recargar
+     (izquierda) y añadir (derecha, diseño espejo). */
+  .fab-back, .fab-reload, .fab-add {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
     background: rgba(255,255,255,.001); font-weight: 300;
-    backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px);
-    border: 1px solid rgba(255,255,255,.5); box-shadow: 0 2px 8px rgba(0,0,0,.12);
-    color: #000; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid rgba(255,255,255,.5);
+    box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    color: #000; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
-  .fab-reload { left: 12px; }
+  .fab-back, .fab-reload { left: 12px; }
   .fab-add { right: 12px; }
-  .fab-reload:active, .fab-add:active { background: rgba(255,255,255,.5); }
+  .fab-back:active, .fab-reload:active, .fab-add:active { background: rgba(255,255,255,.5); }
+  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden] { display: none; }
+  .fab-back svg { width: 28px; height: 28px; margin-left: -2px; }
   .fab-reload svg { width: 20px; height: 20px; }
   .fab-add svg { width: 24px; height: 24px; }
-  .fab-reload[hidden], .fab-add[hidden] { display: none; }
 
   /* ===== Spinner modal centrado (bloquea durante un cambio) ===== */
   .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
@@ -946,7 +935,7 @@
         '<div class="row-sub">' + statusTag(it) + " #" + it.number + " · " + esc(it.user ? it.user.login : "?") +
           " · " + svg("comment", 13) + " " + (it.comments || 0) +
           " · act. " + esc(fmtShort(it.updated_at)) + "</div>" +
-        labelsHtml((it.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); })) + "</div>" +
+        labelsHtml(userLabels(it)) + "</div>" +
       '<span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
@@ -1042,7 +1031,7 @@
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
             "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
-          labelsHtml((issue.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); })) +
+          labelsHtml(userLabels(issue)) +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
@@ -1289,6 +1278,8 @@
   }
   // Etiqueta interna (estado u orden): no se muestra como chip de usuario.
   function isInternalLabel(label) { return isStatusLabel(label) || isOrderLabel(label); }
+  // Etiquetas visibles de una incidencia (las del usuario, sin las internas).
+  function userLabels(it) { return (it.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); }); }
   // Refresca en sitio el estado en el detalle (filas + tag) sin recargar todo.
   function refreshDetailStatus(it) {
     var cur = statusOf(it);
@@ -1375,7 +1366,7 @@
     // El estado no se muestra en la tarjeta: ya lo indica la columna donde está.
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
       '<div class="ksub">' + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
-      labelsHtml((it.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); }));
+      labelsHtml(userLabels(it));
     attachCardInteractions(card, it);
     return card;
   }
