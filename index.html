@@ -65,19 +65,23 @@
   .fab-back:active { background: rgba(255,255,255,.5); }
   .fab-back svg { width: 28px; height: 28px; margin-left: -2px; }
   .fab-back[hidden] { display: none; }
-  /* Recargar flotante (glass), a la derecha (detalle y listado/kanban). */
-  .fab-reload {
+  /* Botones flotantes glass del listado/kanban: recargar (izquierda) y añadir (derecha).
+     Mismo diseño espejo; solo cambia el lado y el icono. */
+  .fab-reload, .fab-add {
     position: fixed;
-    top: calc(env(safe-area-inset-top) + 8px); right: 12px; z-index: 60;
+    top: calc(env(safe-area-inset-top) + 8px); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
     background: rgba(255,255,255,.001); font-weight: 300;
     backdrop-filter: saturate(180%) blur(14px); -webkit-backdrop-filter: saturate(180%) blur(14px);
     border: 1px solid rgba(255,255,255,.5); box-shadow: 0 2px 8px rgba(0,0,0,.12);
     color: #000; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
-  .fab-reload:active { background: rgba(255,255,255,.5); }
+  .fab-reload { left: 12px; }
+  .fab-add { right: 12px; }
+  .fab-reload:active, .fab-add:active { background: rgba(255,255,255,.5); }
   .fab-reload svg { width: 20px; height: 20px; }
-  .fab-reload[hidden] { display: none; }
+  .fab-add svg { width: 24px; height: 24px; }
+  .fab-reload[hidden], .fab-add[hidden] { display: none; }
 
   /* ===== Spinner modal centrado (bloquea durante un cambio) ===== */
   .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
@@ -303,11 +307,11 @@
 </head>
 <body>
 <div class="app">
-  <!-- Back flotante glass: sólo visible cuando hay que volver (detalle) -->
+  <!-- Back flotante glass: visible al volver (detalle y crear) -->
   <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
-  <!-- Recargar flotante (derecha): uno para el detalle y otro para listado/kanban -->
-  <button id="detailReload" class="fab-reload" hidden aria-label="Recargar"></button>
+  <!-- En listado/kanban: recargar a la izquierda y añadir incidencia a la derecha -->
   <button id="viewReload" class="fab-reload" hidden aria-label="Recargar"></button>
+  <button id="viewAdd" class="fab-add" hidden aria-label="Añadir incidencia"></button>
 
   <main class="content" id="content">
 
@@ -437,7 +441,6 @@
   <nav class="tabbar" id="tabbar">
     <button class="tab" data-view="kanban" aria-label="Kanban"><span class="ico" data-icon="project"></span></button>
     <button class="tab" data-view="issues" aria-label="Incidencias"><span class="ico" data-icon="list"></span></button>
-    <button class="tab" data-view="composer" aria-label="Crear"><span class="ico" data-icon="pencil"></span></button>
     <button class="tab" data-view="config" aria-label="Configuración"><span class="ico" data-icon="gear"></span></button>
   </nav>
 
@@ -452,7 +455,7 @@
   // ===== Iconos SVG monocromos (octicons, fill currentColor) =====
   var PATHS = {
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
-    pencil: "M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z",
+    plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     gear: "M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.039.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.364-1.891l.814-.806c.049-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c-.01-.147.039-.246.088-.294l.814-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm0 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z",
     chevright: "M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z",
     comment: "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
@@ -530,12 +533,14 @@
   }
   function showView(name) {
     markActiveView(name);
-    $("detailReload").hidden = true;
-    $("viewReload").hidden = !(name === "issues" || name === "kanban");
+    var isList = (name === "issues" || name === "kanban");
+    $("viewReload").hidden = !isList;   // recargar (izquierda)
+    $("viewAdd").hidden = !isList;       // añadir incidencia (derecha)
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
+    else if (name === "composer") { $("navBack").hidden = false; }   // vista "push": volver con el back
     else { $("navBack").hidden = true; }
-    persist(LS_KEYS.tab, name);  // recuerda la última pestaña
+    if (name !== "composer") persist(LS_KEYS.tab, name);  // composer es transitorio, no se recuerda
     $("content").scrollTop = 0;
     updateActiveRepoBanners();
   }
@@ -543,18 +548,24 @@
     var tb = $("tabbar").querySelectorAll(".tab");
     for (var i = 0; i < tb.length; i++) tb[i].addEventListener("click", function () { showView(this.getAttribute("data-view")); });
   })();
-  var detailOrigin = "issues";
+  var detailOrigin = "issues";    // vista de origen del detalle (issues/kanban)
+  var composerOrigin = "issues";  // vista de origen al abrir "Crear" con el botón +
   $("navBack").addEventListener("click", function () {
+    if ($("view-composer").classList.contains("active")) { showView(composerOrigin); return; }
     if (detailOrigin === "kanban") showView("kanban");
     else showIssuesList();
   });
-  // Recargar flotante (derecha): recarga el detalle o el listado/kanban activo.
-  $("detailReload").innerHTML = svg("reload", 20);
-  $("detailReload").addEventListener("click", function () { if (currentIssue) openIssue(currentIssue.repo, currentIssue.number, detailOrigin); });
+  // Recargar (izquierda) del listado/kanban activo.
   $("viewReload").innerHTML = svg("reload", 20);
   $("viewReload").addEventListener("click", function () {
     if ($("view-kanban").classList.contains("active")) loadKanban();
     else resetAndLoadIssues();
+  });
+  // Añadir incidencia (derecha): abre "Crear" como vista push, volviendo al origen.
+  $("viewAdd").innerHTML = svg("plus", 24);
+  $("viewAdd").addEventListener("click", function () {
+    composerOrigin = $("view-kanban").classList.contains("active") ? "kanban" : "issues";
+    showView("composer");
   });
 
   // ----- localStorage -----
@@ -858,7 +869,7 @@
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
-    $("navBack").hidden = true; $("detailReload").hidden = true; $("viewReload").hidden = false;
+    $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false;
     if (issuesState.items.length) renderIssuesList();   // re-pinta desde caché (refleja cambios al volver)
     updateActiveRepoBanners();
   }
@@ -1009,7 +1020,7 @@
     activateIssuesContainer();
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("detailReload").hidden = false; $("viewReload").hidden = true;
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando…</div>';
 
@@ -1688,11 +1699,12 @@
   setLang(currentLang);   // marca el idioma activo en el control
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   renderRecents();   // pinta la tabla de recientes guardados
-  // Restaura la última pestaña usada (localStorage); si no hay, abre Crear (con repo) o Configuración.
+  // Restaura la última pestaña usada (localStorage); si no hay, abre Kanban (con repo) o Configuración.
+  // "composer" ya no es una pestaña: se abre con el botón + y no se recuerda.
   (function restoreTab() {
     var saved = ""; try { saved = localStorage.getItem(LS_KEYS.tab) || ""; } catch (e) {}
-    var valid = { kanban: 1, issues: 1, composer: 1, config: 1 };
-    showView(valid[saved] ? saved : (getSelectedRepo() ? "composer" : "config"));
+    var valid = { kanban: 1, issues: 1, config: 1 };
+    showView(valid[saved] ? saved : (getSelectedRepo() ? "kanban" : "config"));
   })();
 })();
 </script>
