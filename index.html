@@ -33,14 +33,15 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Tipografía aumentada respecto al por defecto (19px en vez de 16). */
   /* Base blanca en html/body: la franja del safe-area (y el fondo tras el teclado)
-     nunca es gris; el color de la vista lo pinta #viewbg empezando bajo el safe-area.
-     color-scheme: light fuerza el teclado de iOS en claro (fondo blanco/gris claro). */
-  html { font-size: 19px; background: #fff; color-scheme: light; }
+     el color de la vista lo pinta #viewbg (solo entre el safe-area y el borde inferior
+     visible), así el safe-area de arriba y el fondo tras el teclado quedan transparentes.
+     color-scheme: light fuerza el teclado de iOS en claro. */
+  html { font-size: 19px; background: transparent; color-scheme: light; }
   html, body { height: 100%; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: #fff;
+    background: transparent;
     color: var(--text);
     line-height: 1.5;
     position: fixed; inset: 0; overflow: hidden;       /* app fija de móvil */
@@ -56,11 +57,15 @@
   }
   /* Capa de color de la vista: se posiciona empezando JUSTO bajo el safe-area con
      top:env(...) (fiable en Safari, a diferencia de env() en background-size). Así el
-     safe-area de arriba queda blanco (base html/body) y el fondo tras el teclado también. */
+     safe-area de arriba y el fondo tras el teclado quedan transparentes (fuera de #viewbg). */
   #viewbg {
     position: fixed; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 480px;
-    top: env(safe-area-inset-top); bottom: 0; z-index: 0;
+    /* De la base del safe-area al borde inferior VISIBLE (--apph): al abrir el teclado
+       encoge y deja transparente la zona que queda por detrás del teclado. */
+    top: env(safe-area-inset-top);
+    height: calc(var(--apph, 100dvh) - env(safe-area-inset-top));
+    z-index: 0;
     background: var(--cbg, var(--bg));
   }
 
