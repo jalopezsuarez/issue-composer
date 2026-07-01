@@ -45,7 +45,9 @@
   }
 
   .app {
-    max-width: 480px; margin: 0 auto; height: 100%;
+    /* --apph = alto del viewport visible (lo fija JS con visualViewport) para que,
+       al abrir el teclado, la app encoja y el botón Guardar del editor quede encima. */
+    max-width: 480px; margin: 0 auto; height: var(--apph, 100%);
     display: flex; flex-direction: column;
     background: var(--bg); position: relative; overflow: hidden;
   }
@@ -88,6 +90,22 @@
   .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
   .view { display: none; }
   .view.active { display: block; }
+
+  /* ===== Editor a pantalla completa (overlay). Columna flex: cabecera y título
+     arriba, textarea que crece/decrece llenando el hueco, y pie con el botón
+     Guardar pegado abajo (por encima del teclado, gracias a --apph). ===== */
+  #view-edit {
+    position: absolute; inset: 0; z-index: 40;
+    background: var(--surface); flex-direction: column;
+    padding-top: calc(env(safe-area-inset-top) + var(--topbar));
+  }
+  #view-edit.active { display: flex; }
+  .edit-head { flex: none; font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 10px; }
+  #view-edit .field { flex: none; }
+  .edit-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px; }
+  .edit-body #editBody { flex: 1 1 auto; min-height: 0; resize: none; }
+  .edit-foot { flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-soft); background: var(--surface); }
+  .edit-foot .msg { margin: 0 0 10px; }
 
   /* ===== Tab bar inferior ===== */
   .tabbar {
@@ -378,23 +396,6 @@
       </div>
     </section>
 
-    <!-- ====== EDITAR (incidencia o comentario) ====== -->
-    <section class="view" id="view-edit">
-      <div class="group">
-        <div class="pad"><div class="group-title" id="editHeading" style="padding:0 0 4px">Editar</div></div>
-        <div class="field" id="editTitleField">
-          <label for="editTitle">Título</label>
-          <input type="text" id="editTitle" placeholder="Título del issue" />
-        </div>
-        <div class="field">
-          <label for="editBody" id="editBodyLabel">Cuerpo (Markdown)</label>
-          <textarea id="editBody" rows="14" placeholder="Contenido en Markdown…"></textarea>
-        </div>
-        <div class="field"><button id="btnSaveEdit" class="block">Guardar</button></div>
-        <div id="editMsg" class="msg"></div>
-      </div>
-    </section>
-
     <!-- ====== CONFIGURACIÓN ====== -->
     <section class="view" id="view-config">
       <div class="repo-banner" id="repoBannerSettings"></div>
@@ -461,6 +462,24 @@
     <button class="tab" data-view="issues" aria-label="Incidencias"><span class="ico" data-icon="list"></span></button>
     <button class="tab" data-view="config" aria-label="Configuración"><span class="ico" data-icon="gear"></span></button>
   </nav>
+
+  <!-- ====== EDITAR (overlay a pantalla completa: el textarea crece/decrece con la
+       pantalla y el botón Guardar queda pegado abajo/al teclado) ====== -->
+  <section class="view" id="view-edit">
+    <div class="edit-head" id="editHeading">Editar</div>
+    <div class="field" id="editTitleField">
+      <label for="editTitle">Título</label>
+      <input type="text" id="editTitle" placeholder="Título del issue" />
+    </div>
+    <div class="edit-body">
+      <label for="editBody" id="editBodyLabel">Cuerpo (Markdown)</label>
+      <textarea id="editBody" placeholder="Contenido en Markdown…"></textarea>
+    </div>
+    <div class="edit-foot">
+      <div id="editMsg" class="msg"></div>
+      <button id="btnSaveEdit" class="block">Guardar</button>
+    </div>
+  </section>
 
   <!-- Spinner modal centrado: bloquea la pantalla mientras hay un cambio en curso -->
   <div id="busy" class="busy" hidden><div class="busy-box"><span class="spinner"></span><span id="busyText">Cargando…</span></div></div>
@@ -1749,6 +1768,17 @@
     if (now - lastTouch <= 300) e.preventDefault();
     lastTouch = now;
   }, { passive: false });
+
+  // Ajusta la altura de la app al viewport visible: al abrir el teclado, iOS no
+  // encoge el layout (position:fixed) y el botón Guardar quedaría oculto; con esto
+  // la app se ajusta al área visible y el botón queda pegado encima del teclado.
+  function syncAppHeight() {
+    var vv = window.visualViewport;
+    document.documentElement.style.setProperty("--apph", (vv ? vv.height : window.innerHeight) + "px");
+  }
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", syncAppHeight);
+  window.addEventListener("resize", syncAppHeight);
+  syncAppHeight();
 
   // ----- Init -----
   loadSettings();
