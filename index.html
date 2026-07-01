@@ -55,7 +55,7 @@
      Base común: fondo casi nulo (mínimo) manteniendo el blur, borde blanco tenue,
      peso ligero. Atrás (izquierda, en detalle/crear); en listado/kanban recargar
      (izquierda) y añadir (derecha, diseño espejo). */
-  .fab-back, .fab-reload, .fab-add {
+  .fab-back, .fab-reload, .fab-add, .fab-save {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
@@ -68,12 +68,14 @@
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
   .fab-back, .fab-reload { left: 12px; }
-  .fab-add { right: 12px; }
-  .fab-back:active, .fab-reload:active, .fab-add:active { background: rgba(255,255,255,.5); }
-  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden] { display: none; }
+  .fab-add, .fab-save { right: 12px; }
+  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active { background: rgba(255,255,255,.5); }
+  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden] { display: none; }
+  .fab-save:disabled { opacity: .5; cursor: not-allowed; }
   .fab-back svg { width: 28px; height: 28px; margin-left: -2px; }
   .fab-reload svg { width: 20px; height: 20px; }
   .fab-add svg { width: 24px; height: 24px; }
+  .fab-save svg { width: 24px; height: 24px; }
 
   /* ===== Spinner modal centrado (bloquea durante un cambio) ===== */
   .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
@@ -91,8 +93,8 @@
   .view.active { display: block; }
 
   /* ===== Editor a pantalla completa (overlay). Columna flex: cabecera y título
-     arriba, textarea que crece/decrece llenando el hueco, y pie con el botón
-     Guardar pegado abajo (por encima del teclado, gracias a --apph). ===== */
+     arriba y un textarea que crece/decrece llenando el resto de la pantalla
+     (se ajusta al alto visible gracias a --apph). Guardar/atrás son fabs arriba. ===== */
   #view-edit {
     position: absolute; inset: 0; z-index: 40;
     background: var(--surface); flex-direction: column;
@@ -101,10 +103,9 @@
   #view-edit.active { display: flex; }
   .edit-head { flex: none; font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 10px; }
   #view-edit .field { flex: none; }
-  .edit-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px; }
+  #view-edit .msg { flex: none; }
+  .edit-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
   .edit-body #editBody { flex: 1 1 auto; min-height: 0; resize: none; }
-  .edit-foot { flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-soft); background: var(--surface); }
-  .edit-foot .msg { margin: 0 0 10px; }
 
   /* ===== Navegación en cápsula glass (abajo a la derecha) =====
      Mismo material glass que los botones flotantes, pero los tres agrupados en
@@ -327,6 +328,7 @@
   <!-- En listado/kanban: recargar a la izquierda y añadir incidencia a la derecha -->
   <button id="viewReload" class="fab-reload" hidden aria-label="Recargar"></button>
   <button id="viewAdd" class="fab-add" hidden aria-label="Añadir incidencia"></button>
+  <button id="btnSaveEdit" class="fab-save" hidden aria-label="Guardar"></button>
 
   <main class="content" id="content">
 
@@ -467,13 +469,10 @@
       <label for="editTitle">Título</label>
       <input type="text" id="editTitle" placeholder="Título del issue" />
     </div>
+    <div id="editMsg" class="msg"></div>
     <div class="edit-body">
       <label for="editBody" id="editBodyLabel">Cuerpo (Markdown)</label>
       <textarea id="editBody" placeholder="Contenido en Markdown…"></textarea>
-    </div>
-    <div class="edit-foot">
-      <div id="editMsg" class="msg"></div>
-      <button id="btnSaveEdit" class="block">Guardar</button>
     </div>
   </section>
 
@@ -489,6 +488,7 @@
   var PATHS = {
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
+    down: "M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.75.75 0 0 1 1.06-1.06l2.97 2.97V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z",
     gear: "M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.039.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.364-1.891l.814-.806c.049-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c-.01-.147.039-.246.088-.294l.814-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm0 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z",
     chevright: "M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z",
     comment: "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
@@ -564,6 +564,7 @@
     var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit");   // oculta la navegación mientras se edita
+    $("btnSaveEdit").hidden = (name !== "edit");   // Guardar (fab arriba-derecha) solo al editar
     // El hueco superior toma el color de la vista: blanco en Incidencias/detalle, gris en el resto.
     $("content").style.background = (name === "issues") ? "var(--surface)" : "var(--bg)";
   }
@@ -604,6 +605,8 @@
     composerOrigin = $("view-kanban").classList.contains("active") ? "kanban" : "issues";
     showView("composer");
   });
+  // Guardar (derecha, arriba) de la vista de edición: mismo estilo que atrás/recargar.
+  $("btnSaveEdit").innerHTML = svg("down", 24);
 
   // ----- localStorage -----
   function loadSettings() {
