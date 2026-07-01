@@ -83,7 +83,9 @@
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
   /* Hueco superior en todas las vistas (safe-area + navigation invisible) para que
      el contenido no quede bajo los botones flotantes (atrás/recargar/añadir). */
-  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
+  /* El fondo del contenido (y por tanto del hueco superior) se ajusta al color de
+     cada vista desde JS: blanco en Incidencias/detalle, gris en el resto. */
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -95,10 +97,19 @@
     background: rgba(255,255,255,.001);
     backdrop-filter: saturate(180%) blur(22px);
     -webkit-backdrop-filter: saturate(180%) blur(22px);
-    border-top: 1px solid rgba(255,255,255,.5);
     padding-bottom: env(safe-area-inset-bottom);
     height: calc(var(--tab-h) + env(safe-area-inset-bottom));
     display: flex;
+  }
+  /* Difuminado sobre la toolbar: franja de blur que se desvanece hacia arriba con
+     una máscara en degradado, en lugar de una línea/corte brusco entre normal y blur. */
+  .tabbar::before {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 100%;
+    height: 22px; pointer-events: none;
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    -webkit-mask-image: linear-gradient(to top, #000, transparent);
+    mask-image: linear-gradient(to top, #000, transparent);
   }
   .tab {
     flex: 1; background: none; border: none; color: var(--muted);
@@ -537,6 +548,8 @@
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
     var tb = $("tabbar").querySelectorAll(".tab");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
+    // El hueco superior toma el color de la vista: blanco en Incidencias/detalle, gris en el resto.
+    $("content").style.background = (name === "issues") ? "var(--surface)" : "var(--bg)";
   }
   function showView(name) {
     markActiveView(name);
