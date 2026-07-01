@@ -228,7 +228,6 @@
   .cactions { margin-left: auto; display: inline-flex; gap: 12px; }
   .clink { background: none; border: none; padding: 0; font-size: .74rem; font-weight: 600; color: var(--muted); cursor: pointer; }
   .clink.cdel { color: var(--danger); }
-  .cedit-ta { width: 100%; min-height: 160px; }
   .md { word-break: break-word; overflow-wrap: anywhere; font-size: .9rem; line-height: 1.55; }
   .md p { margin: 0 0 10px; }
   .md p:last-child { margin-bottom: 0; }
@@ -365,6 +364,23 @@
         </div>
         <div class="field"><button id="btnPublish" class="block">Publicar issue</button></div>
         <div id="publishMsg" class="msg"></div>
+      </div>
+    </section>
+
+    <!-- ====== EDITAR (incidencia o comentario) ====== -->
+    <section class="view" id="view-edit">
+      <div class="group">
+        <div class="pad"><div class="group-title" id="editHeading" style="padding:0 0 4px">Editar</div></div>
+        <div class="field" id="editTitleField">
+          <label for="editTitle">Título</label>
+          <input type="text" id="editTitle" placeholder="Título del issue" />
+        </div>
+        <div class="field">
+          <label for="editBody" id="editBodyLabel">Cuerpo (Markdown)</label>
+          <textarea id="editBody" rows="14" placeholder="Contenido en Markdown…"></textarea>
+        </div>
+        <div class="field"><button id="btnSaveEdit" class="block">Guardar</button></div>
+        <div id="editMsg" class="msg"></div>
       </div>
     </section>
 
@@ -515,7 +531,7 @@
   })();
 
   // ====================== NAVEGACIÓN ENTRE VISTAS ======================
-  var VIEWS = ["kanban", "issues", "composer", "config"];
+  var VIEWS = ["kanban", "issues", "composer", "config", "edit"];
   // Marca una vista (y su pestaña) como activa, sin recargar su contenido.
   function markActiveView(name) {
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
@@ -542,6 +558,7 @@
   var detailOrigin = "issues";    // vista de origen del detalle (issues/kanban)
   var composerOrigin = "issues";  // vista de origen al abrir "Crear" con el botón +
   $("navBack").addEventListener("click", function () {
+    if ($("view-edit").classList.contains("active")) { closeEditor(); return; }
     if ($("view-composer").classList.contains("active")) { showView(composerOrigin); return; }
     if (detailOrigin === "kanban") showView("kanban");
     else showIssuesList();
@@ -1044,6 +1061,7 @@
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
+            '<button id="btnEditIssue" class="secondary">Editar</button>' +
             '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
           "</div>" +
         "</div>" +
@@ -1076,6 +1094,9 @@
 
       // wiring del detalle
       $("btnToggleState").addEventListener("click", toggleIssueState);
+      $("btnEditIssue").addEventListener("click", function () {
+        openEditor("issue", { repo: repo, number: number, title: issue.title, body: issue.body || "" });
+      });
       var stbtns = box.querySelectorAll("#statusRow .strow");
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
@@ -1101,37 +1122,12 @@
   function commentEl(cid) { return document.querySelector('.comment[data-cid="' + cid + '"]'); }
   function onCommentAction(e) {
     var t = e.target;
-    var ed = t.closest && t.closest(".cedit"), dl = t.closest && t.closest(".cdel"),
-        sv = t.closest && t.closest(".csave"), cn = t.closest && t.closest(".ccancel");
-    if (ed) startEditComment(ed.getAttribute("data-cid"));
-    else if (dl) deleteComment(dl.getAttribute("data-cid"));
-    else if (sv) saveEditComment(sv.getAttribute("data-cid"));
-    else if (cn) cancelEditComment(cn.getAttribute("data-cid"));
-  }
-  function startEditComment(cid) {
-    var el = commentEl(cid); if (!el) return;
-    var raw = decodeURIComponent(el.getAttribute("data-raw") || "");
-    el.querySelector(".cbody").innerHTML =
-      '<textarea class="cedit-ta" rows="8">' + esc(raw) + "</textarea>" +
-      '<div class="actions" style="margin-top:8px;justify-content:flex-end"><button type="button" class="csave" data-cid="' + cid + '">Guardar</button>' +
-      '<button type="button" class="secondary ccancel" data-cid="' + cid + '">Cancelar</button></div>';
-  }
-  function cancelEditComment(cid) {
-    var el = commentEl(cid); if (!el) return;
-    el.querySelector(".cbody").innerHTML = renderMd(decodeURIComponent(el.getAttribute("data-raw") || ""));
-  }
-  function saveEditComment(cid) {
-    var el = commentEl(cid); if (!el || !currentIssue) return;
-    var ta = el.querySelector(".cedit-ta"); if (!ta) return;
-    var newBody = ta.value;
-    showBusy();
-    ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/comments/" + cid, {
-      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: newBody })
-    }).then(function (updated) {
-      var body = (updated && updated.body !== undefined) ? updated.body : newBody;
-      el.setAttribute("data-raw", encodeURIComponent(body));
-      el.querySelector(".cbody").innerHTML = renderMd(body);
-    }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
+    var ed = t.closest && t.closest(".cedit"), dl = t.closest && t.closest(".cdel");
+    if (ed && currentIssue) {
+      var cid = ed.getAttribute("data-cid"), el = commentEl(cid);
+      var raw = el ? decodeURIComponent(el.getAttribute("data-raw") || "") : "";
+      openEditor("comment", { repo: currentIssue.repo, cid: cid, body: raw });   // vista de edición
+    } else if (dl) deleteComment(dl.getAttribute("data-cid"));
   }
   function deleteComment(cid) {
     if (!currentIssue) return;
@@ -1143,6 +1139,60 @@
         syncIssue(currentIssue.repo, currentIssue.number, { commentsInc: -1 });
       }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
   }
+
+  // =================== EDITOR (vista push: editar incidencia o comentario) ===================
+  var editState = null;   // { kind:"issue"|"comment", repo, number, cid }
+  function openEditor(kind, opts) {
+    editState = { kind: kind, repo: opts.repo, number: opts.number, cid: opts.cid };
+    var isIssue = kind === "issue";
+    markActiveView("edit");
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
+    $("editHeading").textContent = isIssue ? "Editar incidencia" : "Editar comentario";
+    $("editTitleField").style.display = isIssue ? "" : "none";
+    $("editBodyLabel").textContent = isIssue ? "Cuerpo (Markdown)" : "Comentario (Markdown)";
+    $("editTitle").value = opts.title || "";
+    $("editBody").value = opts.body || "";
+    hideMsg($("editMsg"));
+    $("content").scrollTop = 0;
+    (isIssue ? $("editTitle") : $("editBody")).focus();
+  }
+  // Vuelve al detalle ya renderizado (sin recargar de red).
+  function closeEditor() {
+    editState = null;
+    markActiveView("issues");
+    $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
+  }
+  $("btnSaveEdit").addEventListener("click", function () {
+    if (!editState) return;
+    var btn = this, msg = $("editMsg"); hideMsg(msg);
+    if (editState.kind === "issue") {
+      var title = $("editTitle").value.trim(), body = $("editBody").value;
+      if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
+      var repo = editState.repo, number = editState.number;
+      btn.disabled = true; showBusy();
+      ghFetch(GH_API + "/repos/" + repo + "/issues/" + number, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
+      }).then(function () {
+        syncIssue(repo, number, { title: title, body: body });   // refleja el cambio en las cachés
+        editState = null;
+        openIssue(repo, number, detailOrigin);   // vuelve al detalle actualizado
+      }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
+        .then(function () { btn.disabled = false; hideBusy(); });
+    } else {
+      var cbody = $("editBody").value, crepo = editState.repo, cid = editState.cid;
+      btn.disabled = true; showBusy();
+      ghFetch(GH_API + "/repos/" + crepo + "/issues/comments/" + cid, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: cbody })
+      }).then(function (updated) {
+        var newBody = (updated && updated.body !== undefined) ? updated.body : cbody;
+        closeEditor();   // vuelve al detalle
+        var el = commentEl(cid);   // actualiza el comentario en sitio
+        if (el) { el.setAttribute("data-raw", encodeURIComponent(newBody)); el.querySelector(".cbody").innerHTML = renderMd(newBody); }
+      }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
+        .then(function () { btn.disabled = false; hideBusy(); });
+    }
+  });
 
   // Actualiza en sitio la zona de estado (badge open/closed + texto del botón).
   function updateStateUI(state) {
@@ -1304,6 +1354,8 @@
       for (var i = 0; i < arr.length; i++) if (arr[i].number === number) {
         if (patch.labels !== undefined) arr[i].labels = patch.labels;
         if (patch.state !== undefined) arr[i].state = patch.state;
+        if (patch.title !== undefined) arr[i].title = patch.title;
+        if (patch.body !== undefined) arr[i].body = patch.body;
         if (patch.commentsInc) arr[i].comments = (arr[i].comments || 0) + patch.commentsInc;
       }
     }
