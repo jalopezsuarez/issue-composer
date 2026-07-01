@@ -123,12 +123,14 @@
   .navcap[hidden] { display: none; }
   .navcap-btn {
     width: 44px; height: 44px; border-radius: 50%;
-    background: none; border: none; padding: 0; cursor: pointer;
+    background: none; border: none; padding: 0; cursor: pointer; font-weight: 300;
     display: inline-flex; align-items: center; justify-content: center;
     color: var(--muted);
   }
-  .navcap-btn svg { width: 24px; height: 24px; }
+  /* Iconos más ligeros (menos peso visual). */
+  .navcap-btn svg { width: 24px; height: 24px; opacity: .8; }
   .navcap-btn.active { color: var(--black); background: rgba(0,0,0,.06); }
+  .navcap-btn.active svg { opacity: 1; }
   .navcap-btn:active { background: rgba(0,0,0,.12); }
 
   /* ===== Grupos full-width estilo iOS (sin tarjetas) ===== */
