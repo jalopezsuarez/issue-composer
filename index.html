@@ -90,23 +90,23 @@
   .view { display: none; }
   .view.active { display: block; }
 
-  /* ===== Editor a pantalla completa (overlay fijo al viewport visible). Columna
-     flex: cabecera y título arriba y un textarea que crece/decrece llenando el
-     resto. La altura sigue al viewport visible (--apph, con fallback 100dvh) para
-     ajustarse al abrir/cerrar el teclado. Guardar/atrás son fabs arriba. ===== */
+  /* ===== Editor a pantalla completa: solo un textarea sin bordes que ocupa toda
+     la pantalla visible (--apph, con fallback 100dvh) y se ajusta al teclado.
+     Atrás y Guardar son fabs flotantes arriba. ===== */
   #view-edit {
     position: fixed; top: 0; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 480px; height: var(--apph, 100dvh);
-    z-index: 40; overflow: hidden;
-    background: var(--surface); flex-direction: column;
-    padding-top: calc(env(safe-area-inset-top) + var(--topbar));
+    z-index: 40; overflow: hidden; background: var(--surface);
   }
-  #view-edit.active { display: flex; }
-  .edit-head { flex: none; font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 10px; }
-  #view-edit .field { flex: none; }
-  #view-edit .msg { flex: none; }
-  .edit-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
-  .edit-body #editBody { flex: 1 1 auto; min-height: 0; resize: none; }
+  #view-edit.active { display: block; }
+  #editBody {
+    width: 100%; height: 100%;
+    border: none; border-radius: 0; background: var(--surface); color: var(--text);
+    resize: none; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .9rem; line-height: 1.5;
+    padding: calc(env(safe-area-inset-top) + var(--topbar)) 16px calc(12px + env(safe-area-inset-bottom));
+  }
+  #editBody:focus { outline: none; box-shadow: none; border: none; }
 
   /* ===== Navegación en cápsula glass (abajo a la derecha) =====
      Mismo material glass que los botones flotantes, pero los tres agrupados en
@@ -249,6 +249,8 @@
   /* Detalle de incidencia + comentarios */
   .detail-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px; }
   .detail-head h3 { margin: 0 0 8px; font-size: 1.12rem; word-break: break-word; overflow-wrap: anywhere; }
+  .detail-head h3.editable { cursor: pointer; }
+  .detail-head h3.editable svg { width: 15px; height: 15px; color: var(--muted); vertical-align: -1px; }
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
   .comment .who { font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; display: flex; align-items: center; }
@@ -464,17 +466,9 @@
 
   <!-- ====== EDITAR (overlay a pantalla completa: el textarea crece/decrece con la
        pantalla y el botón Guardar queda pegado abajo/al teclado) ====== -->
+  <!-- Editor a pantalla completa: solo el textarea (sin bordes). Atrás/Guardar son fabs. -->
   <section class="view" id="view-edit">
-    <div class="edit-head" id="editHeading">Editar</div>
-    <div class="field" id="editTitleField">
-      <label for="editTitle">Título</label>
-      <input type="text" id="editTitle" placeholder="Título del issue" />
-    </div>
-    <div id="editMsg" class="msg"></div>
-    <div class="edit-body">
-      <label for="editBody" id="editBodyLabel">Cuerpo (Markdown)</label>
-      <textarea id="editBody" placeholder="Contenido en Markdown…"></textarea>
-    </div>
+    <textarea id="editBody" placeholder="Escribe aquí en Markdown…"></textarea>
   </section>
 
   <!-- Spinner modal centrado: bloquea la pantalla mientras hay un cambio en curso -->
@@ -490,6 +484,7 @@
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     down: "M13.03 8.22a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L3.47 9.28a.75.75 0 0 1 1.06-1.06l2.97 2.97V3.75a.75.75 0 0 1 1.5 0v7.44l2.97-2.97a.75.75 0 0 1 1.06 0Z",
+    pencil: "M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z",
     gear: "M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.039.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.364-1.891l.814-.806c.049-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c-.01-.147.039-.246.088-.294l.814-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm0 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z",
     chevright: "M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z",
     comment: "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
@@ -1075,7 +1070,7 @@
 
       var html =
         '<div class="detail-head">' +
-          '<h3>#' + issue.number + " · " + esc(issue.title) + "</h3>" +
+          '<h3 id="detailTitle" class="editable">#' + issue.number + " · " + esc(issue.title) + " " + svg("pencil", 15) + "</h3>" +
           '<div class="detail-meta">' +
             statusTag(issue) +
             '<span class="state ' + (issue.state === "open" ? "open" : "closed") + '">' + esc(issue.state) + "</span>" +
@@ -1094,7 +1089,7 @@
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
-            '<button id="btnEditIssue" class="secondary">Editar</button>' +
+            '<button id="btnEditIssue" class="secondary">Editar cuerpo</button>' +
             '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
           "</div>" +
         "</div>" +
@@ -1127,9 +1122,8 @@
 
       // wiring del detalle
       $("btnToggleState").addEventListener("click", toggleIssueState);
-      $("btnEditIssue").addEventListener("click", function () {
-        openEditor("issue", { repo: repo, number: number, title: issue.title, body: issue.body || "" });
-      });
+      $("btnEditIssue").addEventListener("click", function () { editIssueField(repo, number, "body", issue.body || ""); });
+      $("detailTitle").addEventListener("click", function () { editIssueField(repo, number, "title", issue.title || ""); });
       var stbtns = box.querySelectorAll("#statusRow .strow");
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
@@ -1159,7 +1153,7 @@
     if (ed && currentIssue) {
       var cid = ed.getAttribute("data-cid"), el = commentEl(cid);
       var raw = el ? decodeURIComponent(el.getAttribute("data-raw") || "") : "";
-      openEditor("comment", { repo: currentIssue.repo, cid: cid, body: raw });   // vista de edición
+      editCommentBody(currentIssue.repo, cid, raw);   // reutiliza la vista de edición
     } else if (dl) deleteComment(dl.getAttribute("data-cid"));
   }
   function deleteComment(cid) {
@@ -1173,21 +1167,18 @@
       }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
   }
 
-  // =================== EDITOR (vista push: editar incidencia o comentario) ===================
-  var editState = null;   // { kind:"issue"|"comment", repo, number, cid }
-  function openEditor(kind, opts) {
-    editState = { kind: kind, repo: opts.repo, number: opts.number, cid: opts.cid };
-    var isIssue = kind === "issue";
+  // =================== EDITOR GENÉRICO (una sola vista, un elemento cada vez) ===================
+  // Reutilizado para el título de la incidencia, el cuerpo de la incidencia y el
+  // comentario: cada llamada define cómo guardar (save) y qué hacer al terminar (after).
+  var editState = null;   // { save(value)->Promise, after(value, result) }
+  function openEditor(opts) {
+    editState = opts;
     markActiveView("edit");
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
-    $("editHeading").textContent = isIssue ? "Editar incidencia" : "Editar comentario";
-    $("editTitleField").style.display = isIssue ? "" : "none";
-    $("editBodyLabel").textContent = isIssue ? "Cuerpo (Markdown)" : "Comentario (Markdown)";
-    $("editTitle").value = opts.title || "";
-    $("editBody").value = opts.body || "";
-    hideMsg($("editMsg"));
-    $("content").scrollTop = 0;
-    (isIssue ? $("editTitle") : $("editBody")).focus();
+    var ta = $("editBody");
+    ta.placeholder = opts.placeholder || "Escribe aquí…";
+    ta.value = opts.value || "";
+    ta.focus();
   }
   // Vuelve al detalle ya renderizado (sin recargar de red).
   function closeEditor() {
@@ -1196,35 +1187,52 @@
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
   }
+  // Atajos para no repetir la fontanería del PATCH en cada llamada.
+  function editIssueField(repo, number, field, value) {
+    var patch = {}; patch[field] = value;
+    openEditor({
+      value: value,
+      placeholder: field === "title" ? "Título de la incidencia" : "Cuerpo (Markdown)…",
+      validate: function (v) { if (field === "title" && !v.trim()) return "El título no puede estar vacío."; },
+      save: function (v) {
+        var b = {}; b[field] = (field === "title") ? v.trim() : v;
+        return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number, {
+          method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b)
+        });
+      },
+      after: function (v) {
+        var s = {}; s[field] = (field === "title") ? v.trim() : v;
+        syncIssue(repo, number, s);
+        openIssue(repo, number, detailOrigin);   // vuelve al detalle actualizado
+      }
+    });
+  }
+  function editCommentBody(repo, cid, value) {
+    openEditor({
+      value: value, placeholder: "Comentario (Markdown)…",
+      save: function (v) {
+        return ghFetch(GH_API + "/repos/" + repo + "/issues/comments/" + cid, {
+          method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: v })
+        });
+      },
+      after: function (v, updated) {
+        var nb = (updated && updated.body !== undefined) ? updated.body : v;
+        closeEditor();
+        var el = commentEl(cid);
+        if (el) { el.setAttribute("data-raw", encodeURIComponent(nb)); el.querySelector(".cbody").innerHTML = renderMd(nb); }
+      }
+    });
+  }
   $("btnSaveEdit").addEventListener("click", function () {
     if (!editState) return;
-    var btn = this, msg = $("editMsg"); hideMsg(msg);
-    if (editState.kind === "issue") {
-      var title = $("editTitle").value.trim(), body = $("editBody").value;
-      if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
-      var repo = editState.repo, number = editState.number;
-      btn.disabled = true; showBusy();
-      ghFetch(GH_API + "/repos/" + repo + "/issues/" + number, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
-      }).then(function () {
-        syncIssue(repo, number, { title: title, body: body });   // refleja el cambio en las cachés
-        editState = null;
-        openIssue(repo, number, detailOrigin);   // vuelve al detalle actualizado
-      }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
-        .then(function () { btn.disabled = false; hideBusy(); });
-    } else {
-      var cbody = $("editBody").value, crepo = editState.repo, cid = editState.cid;
-      btn.disabled = true; showBusy();
-      ghFetch(GH_API + "/repos/" + crepo + "/issues/comments/" + cid, {
-        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: cbody })
-      }).then(function (updated) {
-        var newBody = (updated && updated.body !== undefined) ? updated.body : cbody;
-        closeEditor();   // vuelve al detalle
-        var el = commentEl(cid);   // actualiza el comentario en sitio
-        if (el) { el.setAttribute("data-raw", encodeURIComponent(newBody)); el.querySelector(".cbody").innerHTML = renderMd(newBody); }
-      }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
-        .then(function () { btn.disabled = false; hideBusy(); });
-    }
+    var btn = this, st = editState, value = $("editBody").value;
+    if (st.validate) { var err = st.validate(value); if (err) { alert(err); return; } }
+    btn.disabled = true; showBusy();
+    st.save(value).then(function (result) {
+      editState = null;
+      st.after(value, result);
+    }).catch(function (e) { alert(e.message); })
+      .then(function () { btn.disabled = false; hideBusy(); });
   });
 
   // Actualiza en sitio la zona de estado (badge open/closed + texto del botón).
