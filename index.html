@@ -23,7 +23,9 @@
     --danger-bg: #fff1f0;
     --ok: #1f2328;
     --ok-bg: #f6f8fa;
-    --nav-h: 48px;
+    /* Alto de la "navigation" invisible superior: deja hueco para la zona de
+       botones flotantes (8px arriba + 44px del botón + 8px de aire). */
+    --topbar: 60px;
     --tab-h: 58px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -79,9 +81,9 @@
   .busy-box .spinner { width: 18px; height: 18px; }
 
   /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
-  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: env(safe-area-inset-top); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
-  /* El detalle empieza arriba sin sangría (el back puede solaparse con el texto). */
-  #issueDetailWrap { padding-top: 0; }
+  /* Hueco superior en todas las vistas (safe-area + navigation invisible) para que
+     el contenido no quede bajo los botones flotantes (atrás/recargar/añadir). */
+  .content { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding-top: calc(env(safe-area-inset-top) + var(--topbar)); padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
   .view { display: none; }
   .view.active { display: block; }
 
