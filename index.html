@@ -272,9 +272,8 @@
   .row-sub svg { width: 13px; height: 13px; vertical-align: -2px; }
   .chev { color: #afb8c1; flex: none; display: flex; }
   .chev svg { width: 16px; height: 16px; }
-  .state { font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; flex: none; border: 1px solid var(--border); }
-  .state.open { background: var(--black); color: #fff; border-color: var(--black); }
-  .state.closed { background: #fff; color: var(--muted); }
+  /* Los badges de estado (open/closed) y de status usan el mismo estilo que la
+     cápsula de la cabecera del kanban (.kchip / .kdot). */
 
   .loader { text-align: center; color: var(--muted); padding: 18px; font-size: .85rem; }
   .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centrado dentro del flex del tablero */
@@ -340,7 +339,7 @@
   .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: none; border-radius: 12px; overflow: hidden; }
   /* Cabecera estilo Notion: chip (punto + nombre) y el recuento en gris al lado. */
   .kcol-head { padding: 12px 12px 10px; display: flex; align-items: center; gap: 8px; }
-  .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 2px 12px; border-radius: 999px; font-weight: 500; font-size: .77rem; line-height: 1.25; }
+  .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 2px 12px; border-radius: 999px; font-weight: 500; font-size: .77rem; line-height: 1.25; flex: none; }
   .kchip .kdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   .kcount { color: var(--muted); font-weight: 500; font-size: .77rem; }
   .kcol-body { padding: 0 10px 10px; min-height: 40px; }
@@ -357,8 +356,6 @@
   .kcard.closed { background: #fff; }   /* cerrada: fondo blanco */
   .kcard.closed .ktitle { color: var(--muted); }   /* tareas terminadas: título en gris */
   .kclosed { font-size: .66rem; font-weight: 700; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; }
-  /* Tag de estado (color del estado) */
-  .sttag { font-size: .66rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,.12); color: #1f2328; }
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
@@ -1130,8 +1127,7 @@
       '<span class="lead">' + svg("issue", 18) + "</span>" +
       '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
         '<div class="row-sub">' +
-          '<span class="rsub-badges"><span class="state ' + (it.state === "open" ? "open" : "closed") + '">' + esc(it.state) + "</span>" +
-            statusTag(it) + "</span>" +
+          '<span class="rsub-badges">' + stateTag(it.state) + statusTag(it) + "</span>" +
           '<span class="rsub-meta">#' + it.number + " · " + esc(it.user ? it.user.login : "?") +
             " · " + svg("comment", 13) + " " + (it.comments || 0) +
             " · act. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
@@ -1224,8 +1220,8 @@
         '<div class="detail-head">' +
           '<h3 id="detailTitle" class="editable">#' + issue.number + " · " + esc(issue.title) + "</h3>" +
           '<div class="detail-meta">' +
+            stateTag(issue.state) +
             statusTag(issue) +
-            '<span class="state ' + (issue.state === "open" ? "open" : "closed") + '">' + esc(issue.state) + "</span>" +
             "<span>" + esc(issue.user ? issue.user.login : "?") + "</span>" +
             "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
             "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
@@ -1394,8 +1390,8 @@
   function updateStateUI(state) {
     var btn = $("btnToggleState");
     if (btn) { btn.textContent = state === "open" ? "Cerrar" : "Reabrir"; btn.className = "btnstate " + (state === "open" ? "close" : "reopen"); }
-    var badge = document.querySelector(".detail-meta .state");
-    if (badge) { badge.className = "state " + (state === "open" ? "open" : "closed"); badge.textContent = state; }
+    var badge = document.querySelector(".detail-meta .statechip");
+    if (badge) { var c = stateChipColors(state); badge.style.background = "#" + c.color; badge.style.color = "#" + c.dot; badge.innerHTML = chipInner(c.dot, state); }
   }
   function toggleIssueState() {
     if (!currentIssue) return;
@@ -1502,11 +1498,21 @@
     (it.labels || []).forEach(function (l) { var k = statusKeyOf(l); if (k && !found) found = k; });
     return found || (STATUSES[0] && STATUSES[0].name) || "";
   }
-  // Tag coloreado del estado.
+  // Cápsula con el mismo estilo que la cabecera del kanban (.kchip/.kdot):
+  // fondo pastel, texto y punto en el tono oscuro.
+  function chipInner(dotHex, text) { return '<span class="kdot" style="background:#' + dotHex + '"></span>' + esc(text); }
+  function chip(marker, bgHex, dotHex, text) {
+    return '<span class="kchip ' + marker + '" style="background:#' + bgHex + ';color:#' + dotHex + '">' + chipInner(dotHex, text) + "</span>";
+  }
+  // Colores de la cápsula open/closed (mismo palette pastel que el kanban).
+  var STATE_CHIP = { open: { color: "d3ebd9", dot: "2da44e" }, closed: { color: "e7d9f7", dot: "8250df" } };
+  function stateChipColors(state) { return STATE_CHIP[state === "closed" ? "closed" : "open"]; }
+  function stateTag(state) { var c = stateChipColors(state); return chip("statechip", c.color, c.dot, state); }
+  // Tag coloreado del estado (pending/done…), con estilo de cápsula del kanban.
   function statusTag(it) {
     var s = statusByName(statusOf(it));
     if (!s) return "";
-    return '<span class="sttag" style="background:#' + s.color + '">' + esc(s.name) + "</span>";
+    return chip("sttag", s.color, s.dot, s.name);
   }
 
   // ----- Orden manual dentro de una columna: etiqueta "order:<n>" -----
@@ -1545,7 +1551,7 @@
     var meta = document.querySelector(".detail-meta");
     var tag = meta && meta.querySelector(".sttag");
     var s = statusByName(cur);
-    if (tag && s) { tag.style.background = "#" + s.color; tag.textContent = s.name; }
+    if (tag && s) { tag.style.background = "#" + s.color; tag.style.color = "#" + s.dot; tag.innerHTML = chipInner(s.dot, s.name); }
   }
 
   // Actualiza una incidencia en las cachés (lista + kanban) para que, al volver,
