@@ -1635,9 +1635,11 @@
     // Resumen del detalle: 2 líneas en gris (texto plano del cuerpo del issue).
     var excerpt = (it.body || "").replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`\-]/g, " ").replace(/\s+/g, " ").trim();
     var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
-    // Cápsula open/closed a la izquierda del número de la incidencia.
+    // Solo se muestra la cápsula de estado si la incidencia está cerrada (la abierta
+    // se entiende por defecto). Va a la izquierda del número.
+    var stateChip = it.state === "closed" ? stateTag(it.state) : "";
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
-      '<div class="ksub">' + stateTag(it.state) + '<span class="knum">#' + it.number + "</span>" + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
+      '<div class="ksub">' + stateChip + '<span class="knum">#' + it.number + "</span>" + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
       labelsHtml(userLabels(it));
     attachCardInteractions(card, it);
     return card;
