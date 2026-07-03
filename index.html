@@ -97,10 +97,8 @@
   .fab-add, .fab-save, .fab-fav { right: 12px; }
   .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active { background: rgba(255,255,255,.5); }
   .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden] { display: none; }
-  /* Favorite fab (settings, right): heart filled if the active repo is a favorite. */
+  /* Favorite fab (settings, right): filled heart, marks the active repo. */
   .fab-fav svg { width: 22px; height: 22px; }
-  .fab-fav.on svg { fill: #000; stroke: none; }
-  .fab-fav.off svg { fill: none; stroke: #000; stroke-width: 1.5px; stroke-linejoin: round; }
   .fab-save:disabled { opacity: .5; cursor: not-allowed; }
   /* Active repo: floating, transparent label next to reload (left). */
   .view-repo-tag {
@@ -400,7 +398,7 @@
   <div id="viewRepoTag" class="view-repo-tag" hidden></div>
   <button id="viewAdd" class="fab-add" hidden aria-label="Add issue"></button>
   <!-- Favorite toggle for the active repo (settings, top right) -->
-  <button id="favFab" class="fab-fav off" hidden aria-label="Favorite"></button>
+  <button id="favFab" class="fab-fav" hidden aria-label="Add to favorites"></button>
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
 
   <main class="content" id="content">
@@ -963,23 +961,17 @@
     tag.classList.toggle("at-left", inConfig);   // sin fab a la izquierda en ajustes
     if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
-  // Favorite fab (settings, top right): heart filled if the active repo is a
-  // favorite; tapping it marks/unmarks the active repo.
+  // Favorite fab (settings, top right): a filled heart that adds the active repo
+  // to favorites (mark only, never unmarks). Shown only in Settings with a repo.
   function syncFavFab() {
     var fab = $("favFab"); if (!fab) return;
-    var repo = getSelectedRepo(), ok = repo && repo.indexOf("/") !== -1;
-    var show = ok && $("view-config").classList.contains("active");
-    fab.hidden = !show;
-    if (show) {
-      var fav = isFav(repo);
-      fab.classList.toggle("on", fav); fab.classList.toggle("off", !fav);
-      fab.setAttribute("aria-label", fav ? "Remove from favorites" : "Add to favorites");
-    }
+    var repo = getSelectedRepo();
+    fab.hidden = !(repo && repo.indexOf("/") !== -1 && $("view-config").classList.contains("active"));
   }
   $("favFab").innerHTML = svg("heart", 22);
   $("favFab").addEventListener("click", function () {
     var repo = getSelectedRepo();
-    if (repo && repo.indexOf("/") !== -1) { toggleFav(repo); syncFavFab(); }
+    if (repo && repo.indexOf("/") !== -1 && !isFav(repo)) addFav(repo);
   });
 
   // Reads a repo list from localStorage, sanitized and trimmed to 10 (and if it was
@@ -1050,10 +1042,6 @@
   function removeFav(full) {
     persist(LS_KEYS.favs, JSON.stringify(getFavs().filter(function (x) { return x !== full; })));
     renderFavs();
-  }
-  function toggleFav(full) {
-    if (isFav(full)) removeFav(full); else addFav(full);
-    updateActiveRepoBanners();
   }
   // Favorites table: kept in the order they're added (no reordering).
   // Tapping a row selects the repo; the ✕ removes it.
