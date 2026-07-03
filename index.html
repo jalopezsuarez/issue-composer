@@ -330,9 +330,13 @@
   /* Mientras se arrastra, el scroll horizontal se desactiva (clase .dragging) para
      que el pan del tablero no robe el gesto del drag. */
   .kanban.dragging { overflow-x: hidden; }
-  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-  .kcol-head { padding: 10px 12px; font-weight: 700; font-size: .85rem; border-bottom: 1px solid rgba(0,0,0,.08); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; }
-  .kcol-body { padding: 10px; min-height: 40px; }
+  .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: none; border-radius: 12px; overflow: hidden; }
+  /* Cabecera estilo Notion: chip (punto + nombre) y el recuento en gris al lado. */
+  .kcol-head { padding: 12px 12px 10px; display: flex; align-items: center; gap: 8px; }
+  .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 999px; font-weight: 600; font-size: .82rem; color: #1f2328; }
+  .kchip .kdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .kcount { color: var(--muted); font-weight: 600; font-size: .82rem; }
+  .kcol-body { padding: 0 10px 10px; min-height: 40px; }
   /* touch-action pan-x pan-y: permite scroll horizontal del tablero y vertical de
      la página al deslizar sobre una tarjeta; el drag se inicia por pulsación larga. */
   .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
@@ -1376,13 +1380,14 @@
   var KAN = { repo: null, loading: false, issues: [], dragging: false };
   // Estados FIJOS (no editables). En GitHub se guardan como etiqueta "status:<key>".
   var STATUS_PREFIX = "status:";
+  // color: pastel del chip; dot: punto de color (más fuerte) de la cabecera.
   var STATUSES = [
-    { name: "pending",   color: "f4e8bb" },  // amarillo pastel
-    { name: "progress",  color: "cfe0f6" },  // azul pastel
-    { name: "review",    color: "e7d9f7" },  // morado pastel
-    { name: "done",      color: "d3ebd9" },  // verde pastel
-    { name: "archive",   color: "e8e8e8" },  // gris pastel
-    { name: "resources", color: "f6ddc5" }   // naranja pastel
+    { name: "pending",   color: "f4e8bb", dot: "d4a72c" },  // amarillo
+    { name: "progress",  color: "cfe0f6", dot: "3b82f6" },  // azul
+    { name: "review",    color: "e7d9f7", dot: "8250df" },  // morado
+    { name: "done",      color: "d3ebd9", dot: "2da44e" },  // verde
+    { name: "archive",   color: "e8e8e8", dot: "8b949e" },  // gris
+    { name: "resources", color: "f6ddc5", dot: "e8853f" }   // naranja
   ];
   function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name === name) return STATUSES[i]; return null; }
   function statusLabelName(name) { return STATUS_PREFIX + name; }                 // "status:done"
@@ -1491,8 +1496,11 @@
       });
       var colEl = document.createElement("div");
       colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
-      colEl.style.background = "#" + col.color;   // fondo de columna con el color del estado
-      colEl.innerHTML = '<div class="kcol-head" style="background:#' + col.color + '"><span>' + esc(col.name) + '</span><span class="pill kcount">' + list.length + "</span></div><div class=\"kcol-body\"></div>";
+      colEl.style.background = "#" + col.color + "40";   // fondo de columna: tinte muy claro del estado
+      colEl.innerHTML = '<div class="kcol-head">' +
+          '<span class="kchip" style="background:#' + col.color + '"><span class="kdot" style="background:#' + col.dot + '"></span>' + esc(col.name) + "</span>" +
+          '<span class="kcount">' + list.length + "</span>" +
+        '</div><div class="kcol-body"></div>';
       var body = colEl.querySelector(".kcol-body");
       list.forEach(function (it) { body.appendChild(makeCard(it)); });
       board.appendChild(colEl);
