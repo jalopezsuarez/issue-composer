@@ -322,12 +322,13 @@
   .lbl { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(0,0,0,.15); color: var(--text); }
   /* Zona de estado en filas a todo el ancho */
   .strows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .strow { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fff; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; color: var(--text); font-weight: 600; font-size: .9rem; cursor: pointer; }
+  /* Filas de estado con el estilo de la cabecera del kanban: punto en tono oscuro y
+     nombre en el tono del estado (peso medium); la fila activa toma el pastel del estado. */
+  .strow { width: 100%; display: flex; align-items: center; gap: 9px; padding: 11px 14px; background: #fff; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; font-weight: 500; font-size: .9rem; cursor: pointer; }
   .strow:last-child { border-bottom: none; }
-  .strow .stdot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); flex: none; }
+  .strow .stdot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .strow .stname { flex: 1; text-align: left; }
-  .strow .stcheck { flex: none; display: none; color: var(--black); }
-  .strow.on { background: var(--bg); }
+  .strow .stcheck { flex: none; display: none; color: inherit; }
   .strow.on .stcheck { display: flex; }
 
   /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
@@ -1142,8 +1143,9 @@
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
-              return '<button type="button" class="strow' + (statusOf(issue) === s.name ? " on" : "") + '" data-st="' + esc(s.name) + '">' +
-                '<span class="stdot" style="background:#' + s.color + '"></span>' +
+              var on = statusOf(issue) === s.name;
+              return '<button type="button" class="strow' + (on ? " on" : "") + '" data-st="' + esc(s.name) + '" style="color:#' + s.dot + (on ? ";background:#" + s.color : "") + '">' +
+                '<span class="stdot" style="background:#' + s.dot + '"></span>' +
                 '<span class="stname">' + esc(s.name) + "</span>" +
                 '<span class="stcheck">' + svg("check", 16) + "</span></button>";
             }).join("") + "</div></div>" +
@@ -1442,7 +1444,12 @@
     var row = document.getElementById("statusRow");
     if (row) {
       var bs = row.querySelectorAll(".strow");
-      for (var i = 0; i < bs.length; i++) { bs[i].classList.toggle("on", bs[i].getAttribute("data-st") === cur); bs[i].disabled = false; }
+      for (var i = 0; i < bs.length; i++) {
+        var on = bs[i].getAttribute("data-st") === cur, rs = statusByName(bs[i].getAttribute("data-st"));
+        bs[i].classList.toggle("on", on);
+        bs[i].style.background = (on && rs) ? "#" + rs.color : "";   // fila activa: pastel del estado
+        bs[i].disabled = false;
+      }
     }
     var meta = document.querySelector(".detail-meta");
     var tag = meta && meta.querySelector(".sttag");
