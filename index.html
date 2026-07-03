@@ -582,12 +582,7 @@
   var ghUserLogin = null;   // login del usuario del token (para editar/borrar comentarios propios)
   var currentTone = "funcionalidad";   // simple | funcionalidad | incidencia
   var commentTone = "funcionalidad";
-  // Normaliza el modo guardado (migra claves antiguas estructurado/tecnico).
-  function normalizeTone(t) {
-    if (t === "estructurado") return "funcionalidad";
-    if (t === "tecnico") return "incidencia";
-    return ({ simple: 1, funcionalidad: 1, incidencia: 1 }[t]) ? t : null;
-  }
+  var VALID_TONES = { simple: 1, funcionalidad: 1, incidencia: 1 };
   var currentLang = "es";   // idioma de generación (es por defecto)
 
   // ----- Helpers DOM -----
@@ -686,7 +681,7 @@
       if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
-      var nt = normalizeTone(tone); if (nt) { currentTone = nt; commentTone = nt; }
+      if (tone && VALID_TONES[tone]) { currentTone = tone; commentTone = tone; }
       if (lang === "en" || lang === "es") currentLang = lang;
     } catch (e) {}
   }
