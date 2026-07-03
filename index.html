@@ -687,9 +687,10 @@
       "Respondes SOLO con un objeto JSON válido {\"title\",\"body\"} (sin fences ni texto fuera del JSON). " +
       "'title': conciso, específico y en imperativo, < 70 caracteres y sin punto final. ";
     if (tone === "simple") {
-      base += "MODO SIMPLE: transforma lo MÍNIMO la nota del usuario — corrige ortografía y aplica formato Markdown ligero, " +
-        "conservando sus palabras, orden e intención. PROHIBIDO añadir secciones, pasos, criterios ni información que el usuario no haya escrito. " +
-        "El 'title' resume su nota.";
+      base += "MODO SIMPLE: reescribe la nota del usuario para dejarla correcta y legible. Corrige ortografía, gramática y puntuación, " +
+        "y aplica una estructura básica (mayúsculas, párrafos y saltos de línea; usa listas solo si el usuario ya las insinúa). " +
+        "Haz los cambios MÍNIMOS pero NECESARIOS para que se entienda y esté bien escrito, conservando sus palabras, orden, tono e intención. " +
+        "PROHIBIDO añadir secciones, pasos, criterios ni información que el usuario no haya aportado. El 'title' resume su nota en una frase.";
     } else if (tone === "tecnico") {
       base += "MODO TÉCNICO (análisis de ingeniería en profundidad, va más allá de describir el problema: lo diagnostica y propone cómo resolverlo). " +
         "'body' en Markdown con estas secciones (omite las que no apliquen): **Contexto**, **Descripción**, " +
@@ -715,7 +716,9 @@
       "Ten en cuenta la descripción de la incidencia y los comentarios previos que se aportan: responde de forma coherente al hilo " +
       "(aporta algo nuevo, no repitas lo ya dicho) y parte del texto propuesto por el usuario. ";
     if (tone === "simple") {
-      base += "MODO SIMPLE: transforma lo MÍNIMO el texto propuesto — corrige y formatea, conserva palabras e intención. No añadas secciones ni información nueva.";
+      base += "MODO SIMPLE: reescribe el texto propuesto para dejarlo correcto y legible. Corrige ortografía, gramática y puntuación, " +
+        "y dale una estructura básica (mayúsculas, párrafos y saltos de línea). Haz los cambios MÍNIMOS pero NECESARIOS, " +
+        "conservando las palabras, el tono y la intención del usuario. No añadas secciones ni información nueva.";
     } else if (tone === "tecnico") {
       base += "MODO TÉCNICO (diagnóstico de ingeniería, no solo un resumen): organiza en **Resumen**, **Detalle/propuesta**, " +
         "**Referencias al código** (rutas y símbolos reales revisados), **Causa raíz**, **Impacto**, **Casos límite** y **Próximos pasos**." + GROUNDING;
