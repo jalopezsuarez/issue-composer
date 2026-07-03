@@ -281,7 +281,7 @@
 
   /* Detalle de incidencia + comentarios */
   .detail-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px; }
-  .detail-head h3 { margin: 0 0 8px; font-size: 1.39rem; word-break: break-word; overflow-wrap: anywhere; }
+  .detail-head h3 { margin: 0 0 8px; font-size: 1.5rem; word-break: break-word; overflow-wrap: anywhere; }
   .detail-head h3.editable { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .comment { background: var(--surface); border-bottom: 1px solid var(--border-soft); padding: 14px 16px; }
@@ -351,6 +351,7 @@
   .kbody { font-size: .88rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
   .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; font-weight: 500; }
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
+  .knum { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eef0f2; color: var(--text); font-weight: 600; font-size: .7rem; margin-right: 5px; vertical-align: 1px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
   .kcard.kdrag-src { opacity: .3; }
   .kcard.closed { background: #fff; }   /* cerrada: fondo blanco */
@@ -510,7 +511,7 @@
         </div>
         <div class="pad" id="ioImport" style="display:none">
           <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Pega aquí el JSON de ajustes generado en otro lugar…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
-          <button type="button" id="btnImport" style="margin-top:8px">Importar</button>
+          <button type="button" id="btnImport" class="block" style="margin-top:8px">Importar</button>
           <div class="group-hint" id="ioImportMsg" style="padding:6px 0 0"></div>
         </div>
       </div>
@@ -803,7 +804,7 @@
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-io") === mode);
     $("ioExport").style.display = (mode === "export") ? "" : "none";
     $("ioImport").style.display = (mode === "import") ? "" : "none";
-    if (mode === "export") refreshExport();
+    // El textarea de exportación empieza vacío: solo se rellena al pulsar "Exportar".
   }
   (function wireIo() {
     var bs = $("ioControl").querySelectorAll("button");
@@ -1633,7 +1634,7 @@
     var closedTag = it.state === "closed" ? '<span class="kclosed">cerrada</span> ' : "";
     // El estado no se muestra en la tarjeta: ya lo indica la columna donde está.
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
-      '<div class="ksub">' + closedTag + "#" + it.number + " · " + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
+      '<div class="ksub">' + closedTag + '<span class="knum">#' + it.number + "</span>" + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
       labelsHtml(userLabels(it));
     attachCardInteractions(card, it);
     return card;
