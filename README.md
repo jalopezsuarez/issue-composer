@@ -80,10 +80,10 @@ Disponibles al crear issues y al redactar comentarios:
 | Modo | Revisa el código | Qué produce |
 |------|:---:|-------------|
 | **Simple** | No (instantáneo) | Transforma lo mínimo tu texto: corrige y da formato Markdown ligero, conservando tus palabras e intención. No añade secciones ni información nueva. |
-| **Estructurado** | Sí | Informe claro y organizado: *Contexto, Descripción, Pasos de reproducción, Comportamiento esperado vs actual, Archivos implicados, Criterios de aceptación*. Sin diagnóstico de causa raíz. |
-| **Técnico** | Sí | Análisis de ingeniería: añade *Causa raíz, Impacto, Casos límite, Propuesta de solución (archivos y pasos) y Plan de pruebas*. Diagnostica y propone cómo resolverlo. |
+| **Funcionalidad** | Sí | Desarrolla una **nueva funcionalidad** como Historia de Usuario / PBI: *Historia de usuario, Descripción y contexto, Estado en el código, Alcance, Áreas/archivos implicados, Criterios de aceptación, Notas técnicas y dependencias*. |
+| **Incidencia** | Sí | Informe de **bug**: *Descripción, Pasos de reproducción, Comportamiento esperado vs actual, Estado en el código, Archivos implicados, Causa raíz probable, Impacto, Casos límite, Propuesta de solución, Criterios de aceptación*. |
 
-En los comentarios, la IA tiene en cuenta la **descripción de la incidencia y los comentarios previos** del hilo para responder de forma coherente. Todos los modos que analizan el código se fundamentan en las rutas y símbolos **reales** revisados (no inventan).
+En los modos **Funcionalidad** e **Incidencia**, la IA analiza primero el código y el README para valorar si lo que describes tiene sentido y en qué **estado** está (ya implementado, parcial o pendiente), y lo refleja en la sección *Estado en el código* citando rutas y símbolos **reales** (no inventa). En los comentarios también tiene en cuenta la **descripción de la incidencia y los comentarios previos** del hilo para responder de forma coherente.
 
 ---
 
@@ -152,7 +152,7 @@ Las lecturas usan `cache: "no-store"` para que los cambios se reflejen al recarg
 
 ### Integración con el LLM
 
-- **Selección de código** (modos Estructurado/Técnico): se cachea por sesión la rama por defecto, el README y el árbol de ficheros; el LLM elige hasta **5 rutas** relevantes que se descargan y se le pasan como contexto.
+- **Selección de código** (modos Funcionalidad/Incidencia): se cachea por sesión la rama por defecto, el README y el árbol de ficheros; el LLM elige hasta **5 rutas** relevantes que se descargan y se le pasan como contexto.
 - **Redacción de issue**: responde SOLO con un JSON `{"title","body"}` (parseo tolerante que quita fences ```` ```json ````).
 - **Redacción de comentario**: responde SOLO con el texto Markdown del comentario.
 
