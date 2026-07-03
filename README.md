@@ -1,144 +1,144 @@
 # Issue Composer
 
-Aplicación web de una sola página (un único `index.html`, **sin dependencias ni build**) para **redactar y publicar issues de GitHub con ayuda de un LLM**, gestionarlos en un **tablero Kanban** y comentarlos. Diseñada como una **app móvil estilo iPhone** (estética iOS + GitHub, monocromo, efecto *glass*), pensada para usarse desde el teléfono pero funcional en cualquier navegador moderno.
+Single-page web app (a single `index.html`, **no dependencies or build**) to **write and publish GitHub issues with the help of an LLM**, manage them on a **Kanban board** and comment on them. Designed as an **iPhone-style mobile app** (iOS + GitHub aesthetic, monochrome, *glass* effect), meant to be used from the phone but functional in any modern browser.
 
 🔗 **Demo (GitHub Pages):** https://jalopezsuarez.github.io/issue-composer/
 
-> Toda la lógica vive en el navegador. **No hay backend**: las peticiones salen directamente a la API de GitHub y a tu proveedor LLM. Tus credenciales se guardan solo en el `localStorage` de tu navegador.
+> All the logic lives in the browser. **There is no backend**: requests go directly to the GitHub API and to your LLM provider. Your credentials are stored only in your browser's `localStorage`.
 
 ---
 
-## Índice
+## Contents
 
-- [Vistas](#vistas)
-- [Modos de redacción (tono)](#modos-de-redacción-tono)
-- [Puesta en marcha](#puesta-en-marcha)
-  - [1. Token de GitHub](#1-token-de-github)
-  - [2. Proveedor LLM](#2-proveedor-llm)
-  - [3. Idioma](#3-idioma)
-- [Gestos e interacción](#gestos-e-interacción)
-- [Cómo funciona por dentro](#cómo-funciona-por-dentro)
-  - [Integración con GitHub](#integración-con-github)
-  - [Integración con el LLM](#integración-con-el-llm)
-  - [Estados y orden del Kanban](#estados-y-orden-del-kanban)
-  - [Persistencia (localStorage)](#persistencia-localstorage)
-- [Privacidad y seguridad](#privacidad-y-seguridad)
-- [Despliegue](#despliegue)
-- [Notas de UI y compatibilidad](#notas-de-ui-y-compatibilidad)
-- [Limitaciones conocidas](#limitaciones-conocidas)
-- [Estructura del proyecto](#estructura-del-proyecto)
+- [Views](#views)
+- [Writing modes](#writing-modes)
+- [Getting started](#getting-started)
+  - [1. GitHub token](#1-github-token)
+  - [2. LLM provider](#2-llm-provider)
+  - [3. Language](#3-language)
+- [Gestures and interaction](#gestures-and-interaction)
+- [How it works under the hood](#how-it-works-under-the-hood)
+  - [GitHub integration](#github-integration)
+  - [LLM integration](#llm-integration)
+  - [Kanban statuses and order](#kanban-statuses-and-order)
+  - [Persistence (localStorage)](#persistence-localstorage)
+- [Privacy and security](#privacy-and-security)
+- [Deployment](#deployment)
+- [UI and compatibility notes](#ui-and-compatibility-notes)
+- [Known limitations](#known-limitations)
+- [Project structure](#project-structure)
 
 ---
 
-## Vistas
+## Views
 
-La navegación es una **cápsula flotante** (abajo a la derecha) con tres destinos, más un botón **+** para crear:
+Navigation is a **floating capsule** (bottom right) with three destinations, plus a **+** button to create:
 
 ### 🗂️ Kanban
-Tablero por **estado** con una columna por cada estado fijo. Cada tarjeta muestra título, un extracto del cuerpo (2 líneas), número, comentarios y fecha de actualización. Permite:
-- **Arrastrar entre columnas** para cambiar el estado de la incidencia.
-- **Reordenar dentro de una columna** arrastrando verticalmente (orden manual persistente).
-- Tocar una tarjeta para abrir su **detalle**.
+Board by **status** with one column per fixed status. Each card shows the title, an excerpt of the body (2 lines), number, comments and last-updated date. It allows:
+- **Dragging between columns** to change the issue's status.
+- **Reordering within a column** by dragging vertically (persistent manual order).
+- Tapping a card to open its **detail**.
 
-Orden dentro de cada columna: primero las que tienen orden manual (`order:n` ascendente), luego el resto por fecha (más reciente arriba); las cerradas al fondo.
+Order within each column: first the ones with a manual order (`order:n` ascending), then the rest by date (most recent on top); closed ones at the bottom.
 
-### 📋 Incidencias
-Listado con **scroll infinito** (25 por página), orden **Recientes/Antiguas** conmutable, y navegación al detalle. Cada fila muestra en dos líneas: cápsula `open/closed` + estado, y `#nº · usuario · comentarios · fecha`.
+### 📋 Issues
+List with **infinite scroll** (25 per page), a switchable **Newest/Oldest** order, and navigation to the detail. Each row shows on two lines: `open/closed` capsule + status, and `#no · user · comments · date`.
 
-### ✏️ Crear (botón +)
-Compositor de issues con IA:
-1. Escribes una **nota** describiendo lo que quieres.
-2. Eliges el **modo** de redacción.
-3. **Generar con IA**: si el modo lo requiere, la IA **revisa el código base** (README + hasta 5 ficheros que ella elige como relevantes) y redacta **título + cuerpo** en Markdown.
-4. Revisas/editas el resultado y **Publicas** el issue.
+### ✏️ Create (+ button)
+AI issue composer:
+1. You write a **note** describing what you want.
+2. You choose the writing **mode**.
+3. **Generate with AI**: if the mode requires it, the AI **reviews the codebase** (README + up to 5 files it picks as relevant) and writes a **title + body** in Markdown.
+4. You review/edit the result and **Publish** the issue.
 
-### 🔍 Detalle de incidencia
-- Descripción renderizada en **Markdown** (encabezados, listas, checklists, código, citas, enlaces…).
-- **Etiquetas** del usuario (las internas `status:`/`order:` quedan ocultas).
-- **Estado**: fila para cambiarlo al instante (se guarda como etiqueta).
-- **Cerrar / Reabrir** la incidencia.
-- Enlace a **GitHub**.
-- **Comentarios**: se listan, se pueden **crear con IA** (con su propio selector de modo) y **editar/borrar** los propios (según permisos).
-- Tocar el **título** abre el editor para renombrarlo.
+### 🔍 Issue detail
+- Description rendered in **Markdown** (headings, lists, checklists, code, quotes, links…).
+- The user's **labels** (the internal `status:`/`order:` ones stay hidden).
+- **Status**: a row to change it instantly (stored as a label).
+- **Close / Reopen** the issue.
+- Link to **GitHub**.
+- **Comments**: they're listed, can be **created with AI** (with their own mode selector) and your own can be **edited/deleted** (per permissions).
+- Tapping the **title** opens the editor to rename it.
 
-### ⚙️ Configuración
-- **Repositorios recientes** (los últimos 10 usados) para seleccionar con un toque.
-- **Repo activo** (banner amarillo).
-- **GitHub**: token + búsqueda/selección de repositorio (o `owner/repo` manual).
-- **Proveedor LLM**: Base URL, API key y Model.
-- **Idioma de generación**: Español / English.
+### ⚙️ Settings
+- **Recent repositories** (the last 10 used) to select with a tap.
+- **Active repo** (yellow banner).
+- **GitHub**: token + repository search/selection (or manual `owner/repo`).
+- **LLM provider**: Base URL, API key and Model.
+- **Generation language**: Spanish / English.
 
-### 🖊️ Editor a pantalla completa
-Vista reutilizable (un único `textarea` sin bordes, a pantalla completa) para editar **un elemento a la vez**: el **título** de la incidencia, su **cuerpo** o un **comentario**. Botón **atrás** (cancelar) arriba a la izquierda y **guardar** (↑) arriba a la derecha. Se ajusta dinámicamente al alto visible y al teclado.
+### 🖊️ Full-screen editor
+A reusable view (a single borderless, full-screen `textarea`) to edit **one element at a time**: the issue **title**, its **body** or a **comment**. **Back** button (cancel) at the top left and **save** (↑) at the top right. It adapts dynamically to the visible height and the keyboard.
 
 ---
 
-## Modos de redacción (tono)
+## Writing modes
 
-Disponibles al crear issues y al redactar comentarios:
+Available when creating issues and when writing comments:
 
-| Modo | Revisa el código | Qué produce |
+| Mode | Reviews the code | What it produces |
 |------|:---:|-------------|
-| **Simple** | No (instantáneo) | Transforma lo mínimo tu texto: corrige y da formato Markdown ligero, conservando tus palabras e intención. No añade secciones ni información nueva. |
-| **Funcionalidad** | Sí | Desarrolla una **nueva funcionalidad** como Historia de Usuario / PBI: *Historia de usuario, Descripción y contexto, Estado en el código, Alcance, Áreas/archivos implicados, Criterios de aceptación, Notas técnicas y dependencias*. |
-| **Incidencia** | Sí | Informe de **bug**: *Descripción, Pasos de reproducción, Comportamiento esperado vs actual, Estado en el código, Archivos implicados, Causa raíz probable, Impacto, Casos límite, Propuesta de solución, Criterios de aceptación*. |
+| **Simple** | No (instant) | Transforms your text as little as possible: fixes it and applies light Markdown formatting, keeping your words and intent. Doesn't add sections or new information. |
+| **Feature** | Yes | Develops a **new feature** as a User Story / PBI: *User story, Description and context, Status in the code, Scope, Areas/files involved, Acceptance criteria, Technical notes and dependencies*. |
+| **Bug** | Yes | **Bug** report: *Description, Reproduction steps, Expected vs actual behavior, Status in the code, Files involved, Probable root cause, Impact, Edge cases, Proposed fix, Acceptance criteria*. |
 
-En los modos **Funcionalidad** e **Incidencia**, la IA analiza primero el código y el README para valorar si lo que describes tiene sentido y en qué **estado** está (ya implementado, parcial o pendiente), y lo refleja en la sección *Estado en el código* citando rutas y símbolos **reales** (no inventa). En los comentarios también tiene en cuenta la **descripción de la incidencia y los comentarios previos** del hilo para responder de forma coherente.
+In the **Feature** and **Bug** modes, the AI first analyzes the code and the README to assess whether what you describe makes sense and what **state** it's in (already implemented, partial or pending), and reflects it in the *Status in the code* section citing **real** paths and symbols (it doesn't make things up). In comments it also takes into account the **issue description and the thread's previous comments** to respond consistently.
 
 ---
 
-## Puesta en marcha
+## Getting started
 
-Abre la [demo](https://jalopezsuarez.github.io/issue-composer/) (o tu despliegue) y ve a **Configuración**.
+Open the [demo](https://jalopezsuarez.github.io/issue-composer/) (or your deployment) and go to **Settings**.
 
-### 1. Token de GitHub
+### 1. GitHub token
 
-Crea un **Personal Access Token** en GitHub y pégalo en el campo *Personal Access Token*. Pulsa **Conectar** para cargar tus repositorios (propios, como colaborador y de tus organizaciones), o escribe `owner/repo` a mano.
+Create a **Personal Access Token** on GitHub and paste it into the *Personal Access Token* field. Press **Connect** to load your repositories (your own, as a collaborator, and from your organizations), or type `owner/repo` by hand.
 
-Permisos recomendados:
-- **Token fine-grained**: acceso a los repos deseados con permisos de *Issues* (lectura y escritura) y *Metadata* (lectura).
-- **Token classic**: scope `repo`.
-- Si tu organización usa **SAML SSO**, autoriza el token para esa organización.
+Recommended permissions:
+- **Fine-grained token**: access to the desired repos with *Issues* (read and write) and *Metadata* (read) permissions.
+- **Classic token**: `repo` scope.
+- If your organization uses **SAML SSO**, authorize the token for that organization.
 
-> Un **404** al añadir un repo casi siempre significa que el token no puede verlo (permisos insuficientes, SSO sin autorizar o `owner/repo` mal escrito).
+> A **404** when adding a repo almost always means the token can't see it (insufficient permissions, SSO not authorized, or `owner/repo` misspelled).
 
-### 2. Proveedor LLM
+### 2. LLM provider
 
-Compatible con cualquier API **estilo OpenAI**:
+Compatible with any **OpenAI-style** API:
 
-| Campo | Ejemplo |
+| Field | Example |
 |-------|---------|
 | **Base URL** | `https://api.openai.com/v1` |
 | **API key** | `sk-…` |
 | **Model** | `gpt-4o-mini` |
 
-Se hace `POST {baseURL}/chat/completions` con `Authorization: Bearer`, `max_tokens: 1500`, `temperature: 0.3`, y se lee `data.choices[0].message.content`.
+It does `POST {baseURL}/chat/completions` with `Authorization: Bearer`, `max_tokens: 1500`, `temperature: 0.3`, and reads `data.choices[0].message.content`.
 
-> **CORS**: si el LLM falla con «Failed to fetch», habilita CORS para el origen de la app en tu proveedor/proxy.
+> **CORS**: if the LLM fails with "Failed to fetch", enable CORS for the app's origin in your provider/proxy.
 
-### 3. Idioma
+### 3. Language
 
-Elige **Español** o **English** para el idioma de los issues y comentarios generados.
-
----
-
-## Gestos e interacción
-
-- **Tocar tarjeta / fila** → abre el detalle.
-- **Arrastrar tarjeta** (Kanban): ratón, arranca al mover; táctil, **pulsación larga** (~180 ms) para «coger» la tarjeta. Auto-scroll cerca de los bordes.
-- **Arrastre horizontal** → cambia de columna (estado). **Arrastre vertical** → reordena dentro de la columna.
-- **Botón +** → abre el compositor de issues.
-- **Recargar** (icono a la izquierda en listado/kanban) → recarga desde la red.
-- **Atrás** (‹, arriba-izquierda) → vuelve; **Guardar** (↑, arriba-derecha) en el editor.
-- Zoom desactivado (sin pinch ni doble-tap) para comportarse como app nativa.
+Choose **Spanish** or **English** for the language of the generated issues and comments.
 
 ---
 
-## Cómo funciona por dentro
+## Gestures and interaction
 
-### Integración con GitHub
+- **Tap card / row** → opens the detail.
+- **Drag card** (Kanban): mouse, starts on move; touch, **long press** (~180 ms) to "pick up" the card. Auto-scroll near the edges.
+- **Horizontal drag** → changes column (status). **Vertical drag** → reorders within the column.
+- **+ button** → opens the issue composer.
+- **Reload** (icon on the left in list/kanban) → reloads from the network.
+- **Back** (‹, top left) → goes back; **Save** (↑, top right) in the editor.
+- Zoom disabled (no pinch or double-tap) to behave like a native app.
 
-API REST v3 (`https://api.github.com`) con cabeceras:
+---
+
+## How it works under the hood
+
+### GitHub integration
+
+REST API v3 (`https://api.github.com`) with headers:
 
 ```
 Authorization: Bearer <token>
@@ -146,85 +146,85 @@ Accept: application/vnd.github+json
 X-GitHub-Api-Version: 2022-11-28
 ```
 
-Endpoints usados: `GET /user`, `GET /user/repos`, `GET /user/orgs`, `GET /orgs/{org}/repos`, `GET /repos/{repo}`, `GET/POST /repos/{repo}/issues`, `PATCH /repos/{repo}/issues/{n}`, `PUT /repos/{repo}/issues/{n}/labels`, `POST /repos/{repo}/labels`, `GET/POST/PATCH/DELETE .../issues/comments`, `GET .../readme`, `GET .../git/trees/{branch}?recursive=1`, `GET .../contents/{path}`.
+Endpoints used: `GET /user`, `GET /user/repos`, `GET /user/orgs`, `GET /orgs/{org}/repos`, `GET /repos/{repo}`, `GET/POST /repos/{repo}/issues`, `PATCH /repos/{repo}/issues/{n}`, `PUT /repos/{repo}/issues/{n}/labels`, `POST /repos/{repo}/labels`, `GET/POST/PATCH/DELETE .../issues/comments`, `GET .../readme`, `GET .../git/trees/{branch}?recursive=1`, `GET .../contents/{path}`.
 
-Las lecturas usan `cache: "no-store"` para que los cambios se reflejen al recargar (GitHub responde con `Cache-Control: private, max-age=60`).
+Reads use `cache: "no-store"` so changes are reflected on reload (GitHub responds with `Cache-Control: private, max-age=60`).
 
-### Integración con el LLM
+### LLM integration
 
-- **Selección de código** (modos Funcionalidad/Incidencia): se cachea por sesión la rama por defecto, el README y el árbol de ficheros; el LLM elige hasta **5 rutas** relevantes que se descargan y se le pasan como contexto.
-- **Redacción de issue**: responde SOLO con un JSON `{"title","body"}` (parseo tolerante que quita fences ```` ```json ````).
-- **Redacción de comentario**: responde SOLO con el texto Markdown del comentario.
+- **Code selection** (Feature/Bug modes): the default branch, the README and the file tree are cached per session; the LLM picks up to **5 relevant paths** that are downloaded and passed as context.
+- **Issue writing**: responds ONLY with a JSON `{"title","body"}` (tolerant parsing that strips ```` ```json ```` fences).
+- **Comment writing**: responds ONLY with the comment's Markdown text.
 
-### Estados y orden del Kanban
+### Kanban statuses and order
 
-Estados **fijos**, guardados como etiquetas `status:<clave>`:
+**Fixed** statuses, stored as `status:<key>` labels:
 
 `pending` · `progress` · `review` · `done` · `archive` · `resources`
 
-El **orden manual** dentro de una columna se guarda como etiqueta `order:<n>`. Ambas familias de etiquetas son internas y **no se muestran** como chips de usuario. El cambio de estado se hace en una sola llamada `PUT .../labels` (creando la etiqueta si no existe).
+The **manual order** within a column is stored as an `order:<n>` label. Both label families are internal and are **not shown** as user chips. The status change is done in a single `PUT .../labels` call (creating the label if it doesn't exist).
 
-### Persistencia (localStorage)
+### Persistence (localStorage)
 
-| Clave | Contenido |
+| Key | Content |
 |-------|-----------|
 | `ic_gh_token` | GitHub Personal Access Token |
-| `ic_llm_base_url` / `ic_llm_api_key` / `ic_llm_model` | Configuración del LLM |
-| `ic_repo` | Repositorio activo |
-| `ic_recent` | Repositorios recientes (máx. 10) |
-| `ic_favs` | Repositorios favoritos (máx. 10) |
-| `ic_tone` | Modo de redacción |
-| `ic_lang` | Idioma de generación |
-| `ic_tab` | Última pestaña usada |
+| `ic_llm_base_url` / `ic_llm_api_key` / `ic_llm_model` | LLM configuration |
+| `ic_repo` | Active repository |
+| `ic_recent` | Recent repositories (max. 10) |
+| `ic_favs` | Favorite repositories (max. 10) |
+| `ic_tone` | Writing mode |
+| `ic_lang` | Generation language |
+| `ic_tab` | Last used tab |
 
 ---
 
-## Privacidad y seguridad
+## Privacy and security
 
-- El **GitHub token** y las **credenciales del LLM** se guardan en el `localStorage` del navegador (a petición del usuario): quedan en el disco del navegador y son accesibles a scripts del mismo origen.
-- Úsalo en un **equipo de confianza** y con un token de **permisos mínimos**.
-- Sin backend ni telemetría: las llamadas van directas del navegador a GitHub y al LLM.
-
----
-
-## Despliegue
-
-Es un sitio **estático** (un único `index.html`). Se publica en **GitHub Pages** con el workflow [`.github/workflows/static.yml`](.github/workflows/static.yml), que sube la raíz del repo en cada push a `main`.
-
-Para desplegarlo en tu propio repo:
-1. Copia `index.html` (y opcionalmente `.github/workflows/static.yml`).
-2. En **Settings → Pages**, elige **GitHub Actions** como origen.
-3. Haz push a `main`.
-
-También puedes abrir `index.html` directamente en el navegador (sin servidor) para usarlo en local.
+- The **GitHub token** and the **LLM credentials** are stored in the browser's `localStorage` (at the user's request): they stay on the browser's disk and are accessible to same-origin scripts.
+- Use it on a **trusted device** and with a **minimal-permissions** token.
+- No backend or telemetry: the calls go directly from the browser to GitHub and to the LLM.
 
 ---
 
-## Notas de UI y compatibilidad
+## Deployment
 
-- **Vanilla**: HTML + CSS + JS embebidos en un solo archivo, sin frameworks ni proceso de build.
-- **Estética iOS/glass**: `backdrop-filter` (blur), botones flotantes translúcidos, tipografía del sistema, iconos SVG monocromos (octicons).
-- **Safe areas**: respeta `env(safe-area-inset-*)`; la franja superior del *safe-area* y el fondo tras el teclado son transparentes.
-- **Viewport dinámico**: la altura se ajusta al viewport visible (`visualViewport`) para que el editor y su textarea encajen con el teclado abierto.
-- Pensado para **Safari/Chrome recientes** en móvil; funciona en escritorio (ancho máximo 480 px, centrado).
+It's a **static** site (a single `index.html`). It's published on **GitHub Pages** with the [`.github/workflows/static.yml`](.github/workflows/static.yml) workflow, which uploads the repo root on every push to `main`.
 
----
+To deploy it to your own repo:
+1. Copy `index.html` (and optionally `.github/workflows/static.yml`).
+2. In **Settings → Pages**, choose **GitHub Actions** as the source.
+3. Push to `main`.
 
-## Limitaciones conocidas
-
-- **Transparencia del safe-area**: en una pestaña normal de Safari el lienzo del navegador es blanco, así que la zona transparente puede verse blanca; se aprovecha mejor como **PWA instalada** o según el fondo del sistema.
-- **CORS del LLM**: depende de que tu proveedor/proxy permita el origen de la app.
-- No hay sincronización en tiempo real: usa **Recargar** para traer cambios hechos fuera de la app.
+You can also open `index.html` directly in the browser (no server) to use it locally.
 
 ---
 
-## Estructura del proyecto
+## UI and compatibility notes
+
+- **Vanilla**: HTML + CSS + JS embedded in a single file, no frameworks or build process.
+- **iOS/glass aesthetic**: `backdrop-filter` (blur), translucent floating buttons, system typography, monochrome SVG icons (octicons).
+- **Safe areas**: respects `env(safe-area-inset-*)`; the top strip of the *safe area* and the background behind the keyboard are transparent.
+- **Dynamic viewport**: the height adapts to the visible viewport (`visualViewport`) so the editor and its textarea fit with the keyboard open.
+- Designed for recent **Safari/Chrome** on mobile; works on desktop (max width 480 px, centered).
+
+---
+
+## Known limitations
+
+- **Safe-area transparency**: in a regular Safari tab the browser canvas is white, so the transparent area may appear white; it's best used as an **installed PWA** or depending on the system background.
+- **LLM CORS**: depends on your provider/proxy allowing the app's origin.
+- No real-time sync: use **Reload** to bring in changes made outside the app.
+
+---
+
+## Project structure
 
 ```
 .
-├── index.html                     # Toda la app (HTML + CSS + JS)
+├── index.html                     # The whole app (HTML + CSS + JS)
 ├── README.md
 └── .github/
     └── workflows/
-        └── static.yml             # Despliegue a GitHub Pages
+        └── static.yml             # Deployment to GitHub Pages
 ```
