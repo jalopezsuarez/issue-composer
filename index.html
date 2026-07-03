@@ -353,11 +353,11 @@
   .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; font-weight: 500; }
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
   .knum { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eef0f2; color: var(--text); font-weight: 600; font-size: .7rem; margin-right: 5px; vertical-align: 1px; }
+  .ksub .statechip { vertical-align: 1px; margin-right: 6px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
   .kcard.kdrag-src { opacity: .3; }
   .kcard.closed { background: #fff; }   /* cerrada: fondo blanco */
   .kcard.closed .ktitle { color: var(--muted); }   /* tareas terminadas: título en gris */
-  .kclosed { font-size: .66rem; font-weight: 700; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 1px 6px; }
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
@@ -1635,10 +1635,9 @@
     // Resumen del detalle: 2 líneas en gris (texto plano del cuerpo del issue).
     var excerpt = (it.body || "").replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`\-]/g, " ").replace(/\s+/g, " ").trim();
     var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
-    var closedTag = it.state === "closed" ? '<span class="kclosed">cerrada</span> ' : "";
-    // El estado no se muestra en la tarjeta: ya lo indica la columna donde está.
+    // Cápsula open/closed a la izquierda del número de la incidencia.
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
-      '<div class="ksub">' + closedTag + '<span class="knum">#' + it.number + "</span>" + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
+      '<div class="ksub">' + stateTag(it.state) + '<span class="knum">#' + it.number + "</span>" + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
       labelsHtml(userLabels(it));
     attachCardInteractions(card, it);
     return card;
