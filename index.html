@@ -241,22 +241,10 @@
   .rtable tbody tr { cursor: pointer; }
   .rtable tbody tr:active { background: var(--bg); }
   .rtable tbody tr.sel td { font-weight: 700; }
-  .rtable tbody tr { -webkit-user-select: none; user-select: none; }
-  .rtable tbody tr.fav-drag { opacity: .7; background: var(--bg); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
-  /* Favoritos: 3 zonas invisibles a 100% de alto por fila -> 25% asa | 50% seleccionar | 25% eliminar.
-     El asa (.grip) lleva touch-action:none para capturar el arrastre sin hacer scroll. */
-  .grip { display: flex; box-sizing: border-box; align-items: center; justify-content: flex-start; color: var(--muted); cursor: grab; touch-action: none; -webkit-touch-callout: none; }
-  .grip:active { cursor: grabbing; }
-  .grip svg { width: 16px; height: 16px; }
-  #favList .rtable { table-layout: fixed; }
-  #favList .rtable td.grip-cell, #favList .rtable td.del { padding: 0; position: relative; }
-  #favList .grip { position: absolute; inset: 0; padding: 0 14px; }         /* asa a 100% de alto */
-  #favList .rdel { position: absolute; inset: 0; width: auto; padding: 0 16px; }  /* zona eliminar a 100% de alto */
   .rtable tbody tr.sel td.repo svg { color: var(--black); }
-  /* Técnica de doble zona: los primeros ~75% de la fila seleccionan el repo;
-     la celda .del ocupa el 25% derecho y es toda ella zona de eliminar (✕). */
-  .rtable td.del { width: 25%; text-align: right; padding: 0; }
-  .rdel { width: 100%; background: none; border: none; color: var(--muted); padding: 11px 16px 11px 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-end; }
+  /* Celda de eliminar (✕): ancho natural, alineada a la derecha. */
+  .rtable td.del { width: 44px; text-align: right; padding: 6px 10px 6px 0; }
+  .rdel { background: none; border: none; color: var(--muted); padding: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
   .rdel:active { background: var(--bg); color: var(--danger); }
   .rdel svg { width: 16px; height: 16px; }
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
@@ -470,7 +458,7 @@
       <div class="group">
         <div class="pad">
           <div class="group-title" style="padding:0 0 4px">Repositorios</div>
-          <div class="group-hint" style="padding:0 0 8px">Listas propias de esta app (no son estrellas de GitHub). Toca una fila para seleccionar el repo; la ✕ lo elimina. Los favoritos se añaden con el corazón del repo activo y se reordenan arrastrando el asa (⠿).</div>
+          <div class="group-hint" style="padding:0 0 8px">Listas propias de esta app (no son estrellas de GitHub). Toca una fila para seleccionar el repo; la ✕ lo elimina. Los favoritos se añaden con el corazón del repo activo.</div>
           <div class="segmented" id="repoTabControl">
             <button type="button" data-rtab="recent">Recientes</button>
             <button type="button" data-rtab="fav">Favoritos</button>
@@ -582,7 +570,6 @@
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     heart: "M8 1.314C12.438-3.248 23.534 4.735 8 15 -7.534 4.735 3.562-3.248 8 1.314z",
-    grip: "M10 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2ZM6 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm0-4a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z",
     lock: "M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     up: "M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z",
@@ -1018,71 +1005,22 @@
     if (isFav(full)) removeFav(full); else addFav(full);
     updateActiveRepoBanners();
   }
-  // Guarda el orden actual de las filas de favoritos (tras arrastrar).
-  function persistFavOrder() {
-    var tbody = document.querySelector("#favList tbody"); if (!tbody) return;
-    var order = [].slice.call(tbody.children).map(function (tr) { return tr.getAttribute("data-full"); }).filter(Boolean);
-    persist(LS_KEYS.favs, JSON.stringify(order.slice(0, 10)));
-  }
-  // Reordenar favoritos arrastrando por el asa (.grip). El asa tiene
-  // touch-action:none, así que el gesto se captura sin hacer scroll ni seleccionar
-  // texto. El resto de la fila conserva toque = seleccionar y ✕ = quitar.
-  function attachFavDrag(handle, row) {
-    var dragging = false, pointerId = null;
-    handle.addEventListener("pointerdown", function (e) {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      e.preventDefault();               // evita selección de texto / inicio de scroll
-      pointerId = e.pointerId; dragging = true;
-      try { handle.setPointerCapture(pointerId); } catch (_) {}
-      row.classList.add("fav-drag");
-      handle.addEventListener("pointermove", onMove);
-      handle.addEventListener("pointerup", onUp);
-      handle.addEventListener("pointercancel", onUp);
-    });
-    function onMove(e) {
-      if (!dragging) return;
-      e.preventDefault();
-      var tbody = row.parentNode, sibs = [].slice.call(tbody.children), before = null;
-      for (var i = 0; i < sibs.length; i++) {
-        if (sibs[i] === row) continue;
-        var rc = sibs[i].getBoundingClientRect();
-        if (e.clientY < rc.top + rc.height / 2) { before = sibs[i]; break; }
-      }
-      if (before) { if (before !== row) tbody.insertBefore(row, before); }
-      else tbody.appendChild(row);
-    }
-    function onUp() {
-      handle.removeEventListener("pointermove", onMove);
-      handle.removeEventListener("pointerup", onUp);
-      handle.removeEventListener("pointercancel", onUp);
-      if (!dragging) return;
-      dragging = false; row.classList.remove("fav-drag");
-      try { handle.releasePointerCapture(pointerId); } catch (_) {}
-      persistFavOrder(); renderFavs();
-    }
-  }
+  // Tabla de favoritos: se mantienen en el orden en que se añaden (sin reordenar).
+  // Tocar una fila selecciona el repo; la ✕ lo quita.
   function renderFavs() {
     var el = $("favList"); if (!el) return;
     var list = getFavs();
     if (!list.length) { el.innerHTML = '<div class="rt-empty">Sin favoritos. Añádelos con el corazón del repo activo.</div>'; return; }
     var cur = getSelectedRepo();
-    var rows = list.map(function (full) {
+    var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
-        '<td class="grip-cell"><span class="grip" aria-label="Arrastrar para reordenar">' + svg("grip", 16) + "</span></td>" +
+        '<td class="num">' + (i + 1) + "</td>" +
         '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Quitar de favoritos">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
-    el.innerHTML = '<table class="rtable"><colgroup><col style="width:25%"><col style="width:50%"><col style="width:25%"></colgroup>' +
-      '<thead><tr><th class="grip-cell"></th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
+    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
-    for (var i = 0; i < trs.length; i++) {
-      var tr = trs[i];
-      attachFavDrag(tr.querySelector(".grip"), tr);
-      tr.addEventListener("click", function (e) {
-        if (e.target.closest(".grip") || e.target.closest(".del")) return;   // asa y ✕ tienen su propia acción
-        selectRepo(this.getAttribute("data-full"));
-      });
-    }
+    for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeFav(this.getAttribute("data-full")); });
   }
