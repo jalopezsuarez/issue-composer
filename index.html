@@ -686,7 +686,8 @@
       if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
-      var nt = normalizeTone(tone); if (nt) { currentTone = nt; commentTone = nt; }
+      var nt = normalizeTone(tone);
+      if (nt) { currentTone = nt; commentTone = nt; if (nt !== tone) persist(LS_KEYS.tone, nt); }  // migra el valor guardado una sola vez
       if (lang === "en" || lang === "es") currentLang = lang;
     } catch (e) {}
   }
