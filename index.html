@@ -250,14 +250,20 @@
   .rdel svg { width: 16px; height: 16px; }
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
 
-  /* Banner de repo activo (solo en Configuración) */
-  .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; border-bottom: 1px solid #e6c93a; padding: 8px 10px 8px 16px; font-size: .84rem; color: #1f2328; }
+  /* Banner de repo activo (solo en Configuración). +4px de alto (10px arriba/abajo). */
+  .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; border-bottom: 1px solid #e6c93a; padding: 10px 10px 10px 16px; font-size: .84rem; color: #1f2328; }
   .repo-banner b { font-weight: 700; color: #1f2328; }
+  /* Repos privados: verde de "open" con candado, texto e iconos en blanco. */
+  .repo-banner.priv { background: #1f883d; border-bottom-color: #176c31; color: #fff; }
+  .repo-banner.priv b { color: #fff; }
+  .repo-banner.priv svg { color: #fff; }
   /* Corazón de favorito en el banner de repo activo */
   .fav-heart { margin-left: auto; flex: none; background: none; border: none; padding: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
   .fav-heart svg { width: 20px; height: 20px; }
   .fav-heart.on svg { fill: #1f2328; stroke: none; }
   .fav-heart.off svg { fill: none; stroke: #1f2328; stroke-width: 1.4px; }
+  .repo-banner.priv .fav-heart.on svg { fill: #fff; stroke: none; }
+  .repo-banner.priv .fav-heart.off svg { fill: none; stroke: #fff; }
   .fav-heart:active { opacity: .6; }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
 
@@ -565,6 +571,7 @@
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     heart: "M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 0 0 8 13.393a20.561 20.561 0 0 0 3.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 0 1-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5Z",
+    lock: "M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     up: "M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z",
     gear: "M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.039.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.364-1.891l.814-.806c.049-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c-.01-.147.039-.246.088-.294l.814-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm0 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z",
@@ -896,18 +903,27 @@
   $("repoSelect").addEventListener("change", function () { if (this.value) { $("repoManual").value = ""; addRecent(this.value); } rememberRepo(); });
   $("repoManual").addEventListener("input", rememberRepo);
 
+  // ¿El repo (owner/name) es privado según la lista cargada? (public por defecto).
+  function isPrivateRepo(full) {
+    var reps = loadedRepos || [];
+    for (var i = 0; i < reps.length; i++) if (reps[i].full_name === full) return !!reps[i].private;
+    return false;
+  }
   function updateActiveRepoBanners() {
     var el = $("repoBannerSettings"); if (!el) return;
     var repo = getSelectedRepo();
     var ok = repo && repo.indexOf("/") !== -1;
     if (ok) {
+      var priv = isPrivateRepo(repo);
+      el.className = "repo-banner" + (priv ? " priv" : "");   // privado -> verde con candado
       var fav = isFav(repo);
-      el.innerHTML = svg("repo", 16) + "<span>Repo activo: <b>" + esc(repo) + "</b></span>" +
+      el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span>Repo activo: <b>" + esc(repo) + "</b></span>" +
         '<button type="button" class="fav-heart ' + (fav ? "on" : "off") + '" id="bannerFav" aria-label="' +
         (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '" title="' + (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '">' + svg("heart", 20) + "</button>";
       var b = $("bannerFav");
       if (b) b.addEventListener("click", function () { toggleFav(repo); });
     } else {
+      el.className = "repo-banner";
       el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
     }
   }
