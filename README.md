@@ -172,6 +172,7 @@ El **orden manual** dentro de una columna se guarda como etiqueta `order:<n>`. A
 | `ic_llm_base_url` / `ic_llm_api_key` / `ic_llm_model` | Configuración del LLM |
 | `ic_repo` | Repositorio activo |
 | `ic_recent` | Repositorios recientes (máx. 10) |
+| `ic_favs` | Repositorios favoritos (máx. 10) |
 | `ic_tone` | Modo de redacción |
 | `ic_lang` | Idioma de generación |
 | `ic_tab` | Última pestaña usada |

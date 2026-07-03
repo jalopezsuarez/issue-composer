@@ -251,6 +251,12 @@
   /* Banner de repo activo (solo en Configuración) */
   .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; border-bottom: 1px solid #e6c93a; padding: 8px 10px 8px 16px; font-size: .84rem; color: #1f2328; }
   .repo-banner b { font-weight: 700; color: #1f2328; }
+  /* Corazón de favorito en el banner de repo activo */
+  .fav-heart { margin-left: auto; flex: none; background: none; border: none; padding: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+  .fav-heart svg { width: 20px; height: 20px; }
+  .fav-heart.on svg { fill: #1f2328; stroke: none; }
+  .fav-heart.off svg { fill: none; stroke: #1f2328; stroke-width: 1.4px; }
+  .fav-heart:active { opacity: .6; }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
 
   /* Barra de orden en incidencias */
@@ -441,11 +447,27 @@
     <section class="view" id="view-config">
       <!-- Banner de repo activo, justo encima de Recientes -->
       <div class="repo-banner" id="repoBannerSettings"></div>
-      <!-- 1. Repositorios recientes -->
+      <!-- 1. Repositorios: recientes / favoritos -->
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Repositorios recientes</div>
-        <div class="group-hint" style="padding:0">Los últimos 10 que has usado en Issue Composer. Toca uno para seleccionarlo.</div></div>
-        <div id="recentList"></div>
+        <div class="pad">
+          <div class="group-title" style="padding:0 0 4px">Repositorios</div>
+          <div class="group-hint" style="padding:0 0 8px">Toca uno para seleccionarlo. Elimínalo con la ✕ de su fila.</div>
+          <div class="segmented" id="repoTabControl">
+            <button type="button" data-rtab="recent">Recientes</button>
+            <button type="button" data-rtab="fav">Favoritos</button>
+          </div>
+        </div>
+        <div id="recentPanel"><div id="recentList"></div></div>
+        <div id="favPanel" style="display:none">
+          <div class="pad" style="padding-top:0">
+            <div style="display:flex; gap:8px; align-items:center">
+              <input type="text" id="favInput" placeholder="owner/repo" autocomplete="off" spellcheck="false" style="flex:1" />
+              <button type="button" id="favAdd" style="flex:none">Añadir</button>
+            </div>
+            <div class="group-hint" id="favMsg" style="padding:6px 0 0"></div>
+          </div>
+          <div id="favList"></div>
+        </div>
       </div>
 
       <!-- 2. GitHub: token + selección de repo -->
@@ -547,6 +569,7 @@
   var PATHS = {
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
+    heart: "M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 0 0 8 13.393a20.561 20.561 0 0 0 3.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 0 1-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     up: "M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z",
     gear: "M8 0a8.2 8.2 0 0 1 .701.031C9.444.095 9.99.645 10.16 1.29l.288 1.107c.018.066.079.158.212.224.231.114.454.243.668.386.123.082.233.09.299.071l1.103-.303c.644-.176 1.392.021 1.82.63.27.385.506.792.704 1.218.315.675.111 1.422-.364 1.891l-.814.806c-.049.048-.098.147-.088.294.016.257.016.515 0 .772-.01.147.039.246.088.294l.814.806c.475.469.679 1.216.364 1.891a7.977 7.977 0 0 1-.704 1.217c-.428.61-1.176.807-1.82.63l-1.102-.302c-.067-.019-.177-.011-.3.071a5.909 5.909 0 0 1-.668.386c-.133.066-.194.158-.211.224l-.29 1.106c-.168.646-.715 1.196-1.458 1.26a8.006 8.006 0 0 1-1.402 0c-.743-.064-1.289-.614-1.458-1.26l-.289-1.106c-.018-.066-.079-.158-.212-.224a5.738 5.738 0 0 1-.668-.386c-.123-.082-.233-.09-.299-.071l-1.103.303c-.644.176-1.392-.021-1.82-.63a8.12 8.12 0 0 1-.704-1.218c-.315-.675-.111-1.422.364-1.891l.814-.806c.049-.048.098-.147.088-.294a6.214 6.214 0 0 1 0-.772c-.01-.147.039-.246.088-.294l.814-.806C.635 6.045.431 5.298.746 4.623a7.92 7.92 0 0 1 .704-1.217c.428-.61 1.176-.807 1.82-.63l1.102.302c.067.019.177.011.3-.071.214-.143.437-.272.668-.386.133-.066.194-.158.211-.224l.29-1.106C6.009.645 6.556.095 7.299.03 7.53.01 7.764 0 8 0Zm0 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7ZM6 8a2 2 0 1 1 4 0 2 2 0 0 1-4 0Z",
@@ -573,8 +596,10 @@
   var LS_KEYS = {
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
-    recent: "ic_recent", lang: "ic_lang"
+    recent: "ic_recent", favs: "ic_favs", lang: "ic_lang"
   };
+  // Claves cuyo valor es un array JSON (recientes/favoritos): se exportan/importan como lista.
+  var ARRAY_KEYS = { recent: 1, favs: 1 };
   // NOTA DE SEGURIDAD: el GitHub PAT se persiste en localStorage a petición del
   // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
   // Úsalo en equipo de confianza y con permisos mínimos (scope repo).
@@ -801,7 +826,7 @@
   // ----- Exportar / Importar ajustes -----
   // El JSON incluye el 100% de los parámetros de la pantalla de ajustes:
   // token de GitHub, LLM (base URL, API key, modelo), repo activo, tono, pestaña,
-  // repos recientes e idioma de generación.
+  // repos recientes, repos favoritos e idioma de generación.
   function buildSettingsExport() {
     var out = {};
     for (var k in LS_KEYS) {
@@ -809,7 +834,7 @@
       var v;
       try { v = localStorage.getItem(LS_KEYS[k]); } catch (e) { v = null; }
       if (v === null) continue;
-      if (k === "recent") { try { out[k] = JSON.parse(v); } catch (e) { out[k] = []; } }
+      if (ARRAY_KEYS[k]) { try { out[k] = JSON.parse(v); } catch (e) { out[k] = []; } }
       else out[k] = v;
     }
     return out;
@@ -854,7 +879,7 @@
       for (var k in LS_KEYS) {
         if (!LS_KEYS.hasOwnProperty(k) || !data.hasOwnProperty(k)) continue;
         var v = data[k];
-        if (k === "recent") { try { v = JSON.stringify(Array.isArray(v) ? v : []); } catch (e) { v = "[]"; } }
+        if (ARRAY_KEYS[k]) { try { v = JSON.stringify((Array.isArray(v) ? v : []).slice(0, 10)); } catch (e) { v = "[]"; } }
         else if (typeof v !== "string") v = String(v);
         persist(LS_KEYS[k], v);
         n++;
@@ -877,10 +902,19 @@
   $("repoManual").addEventListener("input", rememberRepo);
 
   function updateActiveRepoBanners() {
+    var el = $("repoBannerSettings"); if (!el) return;
     var repo = getSelectedRepo();
     var ok = repo && repo.indexOf("/") !== -1;
-    var html = svg("repo", 16) + (ok ? "<span>Repo activo: <b>" + esc(repo) + "</b></span>" : "<span>Sin repo — elígelo en <b>Configuración</b></span>");
-    var el = $("repoBannerSettings"); if (el) el.innerHTML = html;
+    if (ok) {
+      var fav = isFav(repo);
+      el.innerHTML = svg("repo", 16) + "<span>Repo activo: <b>" + esc(repo) + "</b></span>" +
+        '<button type="button" class="fav-heart ' + (fav ? "on" : "off") + '" id="bannerFav" aria-label="' +
+        (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '" title="' + (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '">' + svg("heart", 20) + "</button>";
+      var b = $("bannerFav");
+      if (b) b.addEventListener("click", function () { toggleFav(repo); });
+    } else {
+      el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
+    }
   }
 
   // ----- Repositorios recientes (uso propio en Issue Composer), máx 10 -----
@@ -897,7 +931,7 @@
     persist(LS_KEYS.repo, full);
     addRecent(full);
     updateActiveRepoBanners();
-    renderRecents();                          // refresca el resaltado
+    renderRecents(); renderFavs();            // refresca el resaltado en ambas
   }
   function removeRecent(full) {
     persist(LS_KEYS.recent, JSON.stringify(getRecents().filter(function (x) { return x !== full; })));
@@ -920,6 +954,66 @@
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeRecent(this.getAttribute("data-full")); });
   }
+
+  // ----- Repositorios favoritos (uso propio en Issue Composer), máx 10 -----
+  function getFavs() { try { return JSON.parse(localStorage.getItem(LS_KEYS.favs) || "[]"); } catch (e) { return []; } }
+  function isFav(full) { return getFavs().indexOf(full) !== -1; }
+  function addFav(full) {
+    if (!full || full.indexOf("/") === -1) return false;
+    var arr = getFavs().filter(function (x) { return x !== full; });
+    arr.unshift(full);
+    persist(LS_KEYS.favs, JSON.stringify(arr.slice(0, 10)));
+    renderFavs();
+    return true;
+  }
+  function removeFav(full) {
+    persist(LS_KEYS.favs, JSON.stringify(getFavs().filter(function (x) { return x !== full; })));
+    renderFavs();
+  }
+  function toggleFav(full) {
+    if (isFav(full)) removeFav(full); else addFav(full);
+    updateActiveRepoBanners();
+  }
+  function renderFavs() {
+    var el = $("favList"); if (!el) return;
+    var list = getFavs();
+    if (!list.length) { el.innerHTML = '<div class="rt-empty">Sin favoritos. Añade uno arriba o con el corazón del repo activo.</div>'; return; }
+    var cur = getSelectedRepo();
+    var rows = list.map(function (full, i) {
+      return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
+        '<td class="num">' + (i + 1) + "</td>" +
+        '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td>" +
+        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Quitar de favoritos">' + svg("x", 16) + "</button></td></tr>";
+    }).join("");
+    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
+    var trs = el.querySelectorAll("tbody tr");
+    for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
+    var dels = el.querySelectorAll(".rdel");
+    for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeFav(this.getAttribute("data-full")); });
+  }
+  // Segmento Recientes | Favoritos
+  function setRepoTab(tab) {
+    tab = (tab === "fav") ? "fav" : "recent";
+    var bs = $("repoTabControl").querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-rtab") === tab);
+    $("recentPanel").style.display = (tab === "recent") ? "" : "none";
+    $("favPanel").style.display = (tab === "fav") ? "" : "none";
+    if (tab === "fav") renderFavs(); else renderRecents();
+  }
+  (function wireRepoTabs() {
+    var bs = $("repoTabControl").querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setRepoTab(this.getAttribute("data-rtab")); });
+    function doAddFav() {
+      var val = $("favInput").value.trim(), msg = $("favMsg");
+      if (!val || val.indexOf("/") === -1) { msg.textContent = "Escribe un repositorio como owner/repo."; return; }
+      if (isFav(val)) { msg.textContent = "Ese repositorio ya está en favoritos."; return; }
+      if (getFavs().length >= 10) { msg.textContent = "Máximo 10 favoritos; quita alguno primero."; return; }
+      addFav(val); $("favInput").value = ""; msg.textContent = "Añadido a favoritos.";
+    }
+    $("favAdd").addEventListener("click", doAddFav);
+    $("favInput").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doAddFav(); } });
+    setRepoTab("recent");
+  })();
 
   // ----- GitHub fetch -----
   function ghHeaders() {
