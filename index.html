@@ -98,6 +98,19 @@
   .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active { background: rgba(255,255,255,.5); }
   .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden] { display: none; }
   .fab-save:disabled { opacity: .5; cursor: not-allowed; }
+  /* Repo activo: etiqueta flotante y transparente junto a recargar (izquierda). */
+  .view-repo-tag {
+    position: fixed; z-index: 60;
+    top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px));
+    left: 64px; height: 44px;
+    display: inline-flex; align-items: center; gap: 6px;
+    max-width: calc(100% - 64px - 60px);
+    font-size: .84rem; font-weight: 600; color: var(--text);
+    background: transparent; pointer-events: none; overflow: hidden;
+  }
+  .view-repo-tag[hidden] { display: none; }
+  .view-repo-tag svg { width: 15px; height: 15px; flex: none; color: var(--muted); }
+  .view-repo-tag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .fab-back svg { width: 28px; height: 28px; margin-left: -2px; }
   .fab-reload svg { width: 20px; height: 20px; }
   .fab-add svg { width: 24px; height: 24px; }
@@ -383,6 +396,8 @@
   <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
   <!-- En listado/kanban: recargar a la izquierda y añadir incidencia a la derecha -->
   <button id="viewReload" class="fab-reload" hidden aria-label="Recargar"></button>
+  <!-- Repo activo flotante y transparente, a la derecha de recargar (kanban/listado) -->
+  <div id="viewRepoTag" class="view-repo-tag" hidden></div>
   <button id="viewAdd" class="fab-add" hidden aria-label="Añadir incidencia"></button>
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Guardar"></button>
 
@@ -916,22 +931,33 @@
     return !!getPrivCache()[full];
   }
   function updateActiveRepoBanners() {
-    var el = $("repoBannerSettings"); if (!el) return;
+    var el = $("repoBannerSettings");
     var repo = getSelectedRepo();
     var ok = repo && repo.indexOf("/") !== -1;
-    if (ok) {
-      var priv = isPrivateRepo(repo);
-      el.className = "repo-banner" + (priv ? " priv" : "");   // privado -> verde con candado
-      var fav = isFav(repo);
-      el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span>Repo activo: <b>" + esc(repo) + "</b></span>" +
-        '<button type="button" class="fav-heart ' + (fav ? "on" : "off") + '" id="bannerFav" aria-label="' +
-        (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '" title="' + (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '">' + svg("heart", 20) + "</button>";
-      var b = $("bannerFav");
-      if (b) b.addEventListener("click", function () { toggleFav(repo); });
-    } else {
-      el.className = "repo-banner";
-      el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
+    if (el) {
+      if (ok) {
+        var priv = isPrivateRepo(repo);
+        el.className = "repo-banner" + (priv ? " priv" : "");   // privado -> verde con candado
+        var fav = isFav(repo);
+        el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span><b>" + esc(repo) + "</b></span>" +
+          '<button type="button" class="fav-heart ' + (fav ? "on" : "off") + '" id="bannerFav" aria-label="' +
+          (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '" title="' + (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '">' + svg("heart", 20) + "</button>";
+        var b = $("bannerFav");
+        if (b) b.addEventListener("click", function () { toggleFav(repo); });
+      } else {
+        el.className = "repo-banner";
+        el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
+      }
     }
+    syncRepoTag();
+  }
+  // Etiqueta flotante del repo activo (junto a recargar, en kanban/listado).
+  function syncRepoTag() {
+    var tag = $("viewRepoTag"); if (!tag) return;
+    var repo = getSelectedRepo(), ok = repo && repo.indexOf("/") !== -1;
+    var show = ok && !$("viewReload").hidden;   // se muestra cuando está visible recargar
+    tag.hidden = !show;
+    if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
 
   // Lee una lista de repos de localStorage, saneada y recortada a 10 (y si estaba
@@ -1345,7 +1371,7 @@
     activateIssuesContainer();
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando…</div>';
 
@@ -1464,7 +1490,7 @@
   function openEditor(opts) {
     editState = opts;
     markActiveView("edit");
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
     var ta = $("editBody");
     ta.placeholder = opts.placeholder || "Escribe aquí…";
     ta.value = opts.value || "";
@@ -1477,7 +1503,7 @@
     editState = null;
     markActiveView("issues");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true;
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
   }
   // Atajos para no repetir la fontanería del PATCH en cada llamada.
   function editIssueField(repo, number, field, value) {
