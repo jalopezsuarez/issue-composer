@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
-<!-- Viewport fijo de móvil: sin zoom (ni pinch-in ni pinch-out) y con safe-areas del iPhone. -->
+<!-- Fixed mobile viewport: no zoom (neither pinch-in nor pinch-out) and with iPhone safe areas. -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<!-- Título e icono al añadir a la pantalla de inicio de iOS (web app) -->
+<!-- Title and icon when adding to the iOS home screen (web app) -->
 <meta name="apple-mobile-web-app-title" content="Issue Composer" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<!-- default: barra de estado blanca con reloj oscuro (legible sobre el safe-area blanco). -->
+<!-- default: white status bar with dark clock (legible over the white safe area). -->
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<!-- Tinte de la barra de URL/estado en iOS Safari: blanco -->
+<!-- URL/status bar tint in iOS Safari: white -->
 <meta name="theme-color" content="#ffffff" />
-<!-- Fuerza apariencia clara: el teclado de iOS sale claro/blanco (no oscuro). -->
+<!-- Forces light appearance: the iOS keyboard shows light/white (not dark). -->
 <meta name="color-scheme" content="light" />
-<!-- Favicon SVG (preferido) + PNG (fallback): fondo blanco con círculo negro central
-     (r=32, círculo centrado con margen blanco uniforme). -->
+<!-- Favicon SVG (preferred) + PNG (fallback): white background with a central black circle
+     (r=32, circle centered with a uniform white margin). -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='32' fill='black'/></svg>" />
 <link rel="icon" type="image/png" href="favicon.png" />
 <title>GH Issue Composer</title>
 <style>
   :root {
-    /* Paleta estilo GitHub: negros, grises y blancos (monocromo) */
+    /* GitHub-style palette: blacks, grays and whites (monochrome) */
     --bg: #f6f8fa;
     --surface: #ffffff;
     --text: #1f2328;
@@ -34,16 +34,16 @@
     --danger-bg: #fff1f0;
     --ok: #1f2328;
     --ok-bg: #f6f8fa;
-    /* Hueco (arriba y abajo) para las zonas de botones flotantes: 8px + 44px + 8px. */
+    /* Gap (top and bottom) for the floating-button zones: 8px + 44px + 8px. */
     --topbar: 60px;
     --botbar: 68px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  /* Tipografía aumentada respecto al por defecto (19px en vez de 16). */
-  /* Base blanca en html/body: la franja del safe-area (y el fondo tras el teclado)
-     el color de la vista lo pinta #viewbg (solo entre el safe-area y el borde inferior
-     visible), así el safe-area de arriba y el fondo tras el teclado quedan transparentes.
-     color-scheme: light fuerza el teclado de iOS en claro. */
+  /* Typography enlarged from the default (19px instead of 16). */
+  /* White base on html/body: the safe-area strip (and the background behind the keyboard);
+     the view color is painted by #viewbg (only between the safe area and the visible
+     bottom edge), so the top safe area and the background behind the keyboard stay transparent.
+     color-scheme: light forces the iOS keyboard to be light. */
   html { font-size: 19px; background: transparent; color-scheme: light; }
   html, body { height: 100%; }
   body {
@@ -52,9 +52,9 @@
     background: transparent;
     color: var(--text);
     line-height: 1.5;
-    position: fixed; inset: 0; overflow: hidden;       /* app fija de móvil */
+    position: fixed; inset: 0; overflow: hidden;       /* fixed mobile app */
     overscroll-behavior: none;
-    touch-action: pan-y;                                /* permite scroll vertical, bloquea pinch/zoom */
+    touch-action: pan-y;                                /* allows vertical scroll, blocks pinch/zoom */
     -webkit-text-size-adjust: 100%;
   }
 
@@ -63,24 +63,24 @@
     display: flex; flex-direction: column;
     background: transparent; position: relative; overflow: hidden;
   }
-  /* Capa de color de la vista: se posiciona empezando JUSTO bajo el safe-area con
-     top:env(...) (fiable en Safari, a diferencia de env() en background-size). Así el
-     safe-area de arriba y el fondo tras el teclado quedan transparentes (fuera de #viewbg). */
+  /* View color layer: positioned starting JUST below the safe area with
+     top:env(...) (reliable in Safari, unlike env() in background-size). This way the
+     top safe area and the background behind the keyboard stay transparent (outside #viewbg). */
   #viewbg {
     position: fixed; left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 480px;
-    /* De la base del safe-area al borde inferior VISIBLE (--apph): al abrir el teclado
-       encoge y deja transparente la zona que queda por detrás del teclado. */
+    /* From the base of the safe area to the VISIBLE bottom edge (--apph): when the keyboard
+       opens it shrinks and leaves the area behind the keyboard transparent. */
     top: env(safe-area-inset-top);
     height: calc(var(--apph, 100dvh) - env(safe-area-inset-top));
     z-index: 0;
     background: var(--cbg, var(--bg));
   }
 
-  /* ===== Botones flotantes glass =====
-     Base común: fondo casi nulo (mínimo) manteniendo el blur, borde blanco tenue,
-     peso ligero. Atrás (izquierda, en detalle/crear); en listado/kanban recargar
-     (izquierda) y añadir (derecha, diseño espejo). */
+  /* ===== Floating glass buttons =====
+     Common base: almost no background (minimal) while keeping the blur, faint white border,
+     light weight. Back (left, in detail/create); in list/kanban reload
+     (left) and add (right, mirrored layout). */
   .fab-back, .fab-reload, .fab-add, .fab-save {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px)); z-index: 60;
@@ -98,7 +98,7 @@
   .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active { background: rgba(255,255,255,.5); }
   .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden] { display: none; }
   .fab-save:disabled { opacity: .5; cursor: not-allowed; }
-  /* Repo activo: etiqueta flotante y transparente junto a recargar (izquierda). */
+  /* Active repo: floating, transparent label next to reload (left). */
   .view-repo-tag {
     position: fixed; z-index: 60;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px));
@@ -116,16 +116,16 @@
   .fab-add svg { width: 24px; height: 24px; }
   .fab-save svg { width: 24px; height: 24px; }
 
-  /* ===== Spinner modal centrado (bloquea durante un cambio) ===== */
+  /* ===== Centered modal spinner (blocks during a change) ===== */
   .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
   .busy[hidden] { display: none; }
   .busy-box { display: flex; align-items: center; gap: 10px; background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; font-size: .9rem; font-weight: 600; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
   .busy-box .spinner { width: 18px; height: 18px; }
 
-  /* ===== Contenido scrollable (al máximo, sólo respeta la safe-area) ===== */
-  /* Hueco superior en todas las vistas (safe-area + navigation invisible) para que
-     el contenido no quede bajo los botones flotantes (atrás/recargar/añadir).
-     El contenido es transparente y deja ver #viewbg (color de la vista) por debajo. */
+  /* ===== Scrollable content (maximized, only respects the safe area) ===== */
+  /* Top gap in every view (safe area + invisible navigation) so the
+     content doesn't sit under the floating buttons (back/reload/add).
+     The content is transparent and lets #viewbg (the view color) show through beneath it. */
   .content {
     flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
     position: relative; z-index: 1; background: transparent;
@@ -135,9 +135,9 @@
   .view { display: none; }
   .view.active { display: block; }
 
-  /* ===== Editor a pantalla completa: solo un textarea sin bordes que ocupa toda
-     la pantalla visible (--apph, con fallback 100dvh) y se ajusta al teclado.
-     Atrás y Guardar son fabs flotantes arriba. ===== */
+  /* ===== Full-screen editor: just a borderless textarea that fills the entire
+     visible screen (--apph, with a 100dvh fallback) and adapts to the keyboard.
+     Back and Save are floating fabs at the top. ===== */
   #view-edit {
     position: fixed; top: var(--vvtop, 0); left: 50%; transform: translateX(-50%);
     width: 100%; max-width: 480px; height: var(--apph, 100dvh);
@@ -153,9 +153,9 @@
   }
   #editBody:focus { outline: none; box-shadow: none; border: none; }
 
-  /* ===== Navegación en cápsula glass (abajo a la derecha) =====
-     Mismo material glass que los botones flotantes, pero los tres agrupados en
-     una cápsula (estilo iOS): fondo casi nulo con blur, borde blanco tenue y sombra. */
+  /* ===== Glass capsule navigation (bottom right) =====
+     Same glass material as the floating buttons, but the three grouped into
+     a capsule (iOS style): almost no background with blur, faint white border and shadow. */
   .navcap {
     position: fixed; z-index: 60;
     right: 12px; bottom: calc(env(safe-area-inset-bottom) + 12px);
@@ -174,13 +174,13 @@
     display: inline-flex; align-items: center; justify-content: center;
     color: var(--muted);
   }
-  /* Iconos más ligeros (menos peso visual). */
+  /* Lighter icons (less visual weight). */
   .navcap-btn svg { width: 24px; height: 24px; opacity: .8; }
   .navcap-btn.active { color: var(--black); background: rgba(0,0,0,.06); }
   .navcap-btn.active svg { opacity: 1; }
   .navcap-btn:active { background: rgba(0,0,0,.12); }
 
-  /* ===== Grupos full-width estilo iOS (sin tarjetas) ===== */
+  /* ===== Full-width iOS-style groups (no cards) ===== */
   .group { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 22px; }
   .group:first-child { margin-top: 14px; }
   .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 7px; }
@@ -216,7 +216,7 @@
   button svg { width: 17px; height: 17px; }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-  /* Segmented control (tono) monocromo */
+  /* Monochrome segmented control (mode) */
   .segmented { display: flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
   .segmented button {
     flex: 1; background: #fff; color: var(--text);
@@ -244,7 +244,7 @@
 
   .pill { font-size: .72rem; background: var(--bg); color: var(--muted); padding: 2px 8px; border-radius: 999px; font-weight: 600; border: 1px solid var(--border); }
 
-  /* Tabla de repositorios recientes */
+  /* Recent repositories table */
   .rtable { width: 100%; border-collapse: collapse; }
   .rtable th, .rtable td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border-soft); font-size: .86rem; }
   .rtable th { font-size: .7rem; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 700; }
@@ -255,25 +255,25 @@
   .rtable tbody tr:active { background: var(--bg); }
   .rtable tbody tr.sel td { font-weight: 700; }
   .rtable tbody tr.sel td.repo svg { color: var(--black); }
-  /* Celda de eliminar (✕): ancho natural, alineada a la derecha. */
+  /* Delete cell (✕): natural width, right-aligned. */
   .rtable td.del { width: 44px; text-align: right; padding: 6px 10px 6px 0; }
   .rdel { background: none; border: none; color: var(--muted); padding: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
   .rdel:active { background: var(--bg); color: var(--danger); }
   .rdel svg { width: 16px; height: 16px; }
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
 
-  /* Banner de repo activo (solo en Configuración). +4px de alto (10px arriba/abajo).
-     Fijo (sticky) arriba: siempre visible al hacer scroll de ajustes. */
+  /* Active repo banner (only in Settings). +4px in height (10px top/bottom).
+     Fixed (sticky) at the top: always visible while scrolling settings. */
   .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; border-bottom: 1px solid #e6c93a; padding: 10px 10px 10px 16px; font-size: .84rem; color: #1f2328; }
-  /* Banner de ajustes SIEMPRE fijo y pegado arriba del todo (cubre el safe-area,
-     así el texto del scroll no asoma por encima). +2px de alto, contenido centrado. */
+  /* Settings banner ALWAYS fixed and stuck to the very top (covers the safe area,
+     so the scrolling text doesn't peek above it). +2px in height, content centered. */
   #repoBannerSettings { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; z-index: 30; padding: calc(env(safe-area-inset-top) + 11px) 10px 11px 16px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
   .repo-banner b { font-weight: 700; color: #1f2328; }
-  /* Repos privados: verde de "open" con candado, texto e iconos en blanco. */
+  /* Private repos: "open" green with a lock, text and icons in white. */
   .repo-banner.priv { background: #1f883d; border-bottom-color: #176c31; color: #fff; }
   .repo-banner.priv b { color: #fff; }
   .repo-banner.priv svg { color: #fff; }
-  /* Corazón de favorito en el banner de repo activo */
+  /* Favorite heart in the active repo banner */
   .fav-heart { margin-left: auto; flex: none; background: none; border: none; padding: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
   .fav-heart svg { width: 20px; height: 20px; }
   .fav-heart.on svg { fill: #1f2328; stroke: none; }
@@ -283,12 +283,12 @@
   .fav-heart:active { opacity: .6; }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
 
-  /* Barra de orden en incidencias */
+  /* Sort bar in issues */
   .list-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
   .list-toolbar button { flex: 1; background: #fff; color: var(--text); border: 1px solid var(--border); padding: 9px 10px; font-size: .82rem; }
   .list-toolbar button svg { width: 15px; height: 15px; }
 
-  /* Lista de incidencias full-width */
+  /* Full-width issues list */
   .list { list-style: none; margin: 0; padding: 0; background: var(--surface); }
   .list-row { display: flex; align-items: center; gap: 10px; padding: 13px 14px; border-bottom: 1px solid var(--border-soft); cursor: pointer; }
   .list-row:active { background: var(--bg); }
@@ -296,22 +296,22 @@
   .list-row .lead svg { width: 18px; height: 18px; }
   .list-row .meta { flex: 1; min-width: 0; }
   .row-title { font-weight: 600; font-size: .92rem; word-break: break-word; }
-  /* Subfila en dos líneas: 1) cápsula open/closed + estado; 2) #n · usuario ·
-     comentarios · fecha (se recorta con «…» si no cabe). */
+  /* Two-line subrow: 1) open/closed capsule + status; 2) #n · user ·
+     comments · date (truncated with "…" if it doesn't fit). */
   .row-sub { font-size: .76rem; color: var(--muted); margin-top: 3px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
   .rsub-badges { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
   .rsub-meta { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .row-sub svg { width: 13px; height: 13px; vertical-align: -2px; }
   .chev { color: #afb8c1; flex: none; display: flex; }
   .chev svg { width: 16px; height: 16px; }
-  /* Los badges de estado (open/closed) y de status usan el mismo estilo que la
-     cápsula de la cabecera del kanban (.kchip / .kdot). */
+  /* The state (open/closed) and status badges use the same style as the
+     kanban header capsule (.kchip / .kdot). */
 
   .loader { text-align: center; color: var(--muted); padding: 18px; font-size: .85rem; }
-  .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centrado dentro del flex del tablero */
+  .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centered within the board flex */
   .empty-state { text-align: center; color: var(--muted); padding: 44px 16px; font-size: .9rem; }
 
-  /* Detalle de incidencia + comentarios */
+  /* Issue detail + comments */
   .detail-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px; }
   .detail-head h3 { margin: 0 0 8px; font-size: 1.5rem; word-break: break-word; overflow-wrap: anywhere; }
   .detail-head h3.editable { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
@@ -343,18 +343,18 @@
   .md a { text-decoration: underline; }
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; border: 1px solid var(--border); padding: 7px 12px; border-radius: 8px; background: #fff; }
-  /* Botón Cerrar/Reabrir con fondo propio */
+  /* Close/Reopen button with its own background */
   .btnstate.close { background: #fff1f0; color: #cf222e; border: 1px solid #ffccc7; }
   .btnstate.reopen { background: #eaf7ee; color: #1a7f37; border: 1px solid #bce8c7; }
 
-  /* Etiquetas (solo lectura) */
+  /* Labels (read-only) */
   .lblrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .list-row .lblrow, .kcard .lblrow { margin-top: 7px; }
   .lbl { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; border: 1px solid rgba(0,0,0,.15); color: var(--text); }
-  /* Zona de estado en filas a todo el ancho */
+  /* Status area in full-width rows */
   .strows { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  /* Filas de estado con el estilo de la cabecera del kanban: punto en tono oscuro y
-     nombre en el tono del estado (peso medium); la fila activa toma el pastel del estado. */
+  /* Status rows styled like the kanban header: dark-toned dot and
+     name in the status color (medium weight); the active row takes the status pastel. */
   .strow { width: 100%; display: flex; align-items: center; gap: 9px; padding: 11px 14px; background: #fff; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; font-weight: 500; font-size: .9rem; cursor: pointer; }
   .strow:last-child { border-bottom: none; }
   .strow .stdot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
@@ -362,21 +362,21 @@
   .strow .stcheck { flex: none; display: none; color: inherit; }
   .strow.on .stcheck { display: flex; }
 
-  /* ===== Kanban (columnas que caben en pantalla, sin scroll horizontal:
-     así el arrastre entre columnas no compite con el pan del scroller) ===== */
+  /* ===== Kanban (columns that fit on screen, no horizontal scroll:
+     this way dragging between columns doesn't compete with the scroller pan) ===== */
   .kanban { display: flex; gap: 10px; padding: 10px; align-items: stretch; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  /* Mientras se arrastra, el scroll horizontal se desactiva (clase .dragging) para
-     que el pan del tablero no robe el gesto del drag. */
+  /* While dragging, horizontal scroll is disabled (.dragging class) so
+     the board pan doesn't steal the drag gesture. */
   .kanban.dragging { overflow-x: hidden; }
   .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: none; border-radius: 12px; overflow: hidden; }
-  /* Cabecera estilo Notion: chip (punto + nombre) y el recuento en gris al lado. */
+  /* Notion-style header: chip (dot + name) and the count in gray beside it. */
   .kcol-head { padding: 12px 12px 10px; display: flex; align-items: center; gap: 8px; }
   .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 2px 12px; border-radius: 999px; font-weight: 500; font-size: .77rem; line-height: 1.25; flex: none; }
   .kchip .kdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   .kcount { color: var(--muted); font-weight: 500; font-size: .77rem; }
   .kcol-body { padding: 0 10px 10px; min-height: 40px; }
-  /* touch-action pan-x pan-y: permite scroll horizontal del tablero y vertical de
-     la página al deslizar sobre una tarjeta; el drag se inicia por pulsación larga. */
+  /* touch-action pan-x pan-y: allows horizontal board scroll and vertical page
+     scroll when sliding over a card; the drag starts on long press. */
   .kcard { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
   .kcard:active { cursor: grabbing; }
   .ktitle { font-weight: 600; font-size: .93rem; word-break: break-word; }
@@ -387,23 +387,23 @@
   .ksub .statechip { vertical-align: 1px; margin-right: 6px; }
   .kcol.kover { border-color: var(--black); background: #e9ebee; }
   .kcard.kdrag-src { opacity: .3; }
-  .kcard.closed { background: #fff; }   /* cerrada: fondo blanco */
-  .kcard.closed .ktitle { color: var(--muted); }   /* tareas terminadas: título en gris */
+  .kcard.closed { background: #fff; }   /* closed: white background */
+  .kcard.closed .ktitle { color: var(--muted); }   /* finished tasks: title in gray */
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- Capa de color de la vista (bajo el safe-area); el safe-area queda blanco -->
+  <!-- View color layer (below the safe area); the safe area stays white -->
   <div id="viewbg"></div>
-  <!-- Back flotante glass: visible al volver (detalle y crear) -->
-  <button id="navBack" class="fab-back" hidden aria-label="Atrás"></button>
-  <!-- En listado/kanban: recargar a la izquierda y añadir incidencia a la derecha -->
-  <button id="viewReload" class="fab-reload" hidden aria-label="Recargar"></button>
-  <!-- Repo activo flotante y transparente, a la derecha de recargar (kanban/listado) -->
+  <!-- Floating glass back: visible when going back (detail and create) -->
+  <button id="navBack" class="fab-back" hidden aria-label="Back"></button>
+  <!-- In list/kanban: reload on the left and add issue on the right -->
+  <button id="viewReload" class="fab-reload" hidden aria-label="Reload"></button>
+  <!-- Active repo, floating and transparent, to the right of reload (kanban/list) -->
   <div id="viewRepoTag" class="view-repo-tag" hidden></div>
-  <button id="viewAdd" class="fab-add" hidden aria-label="Añadir incidencia"></button>
-  <button id="btnSaveEdit" class="fab-save" hidden aria-label="Guardar"></button>
+  <button id="viewAdd" class="fab-add" hidden aria-label="Add issue"></button>
+  <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
 
   <main class="content" id="content">
 
@@ -413,7 +413,7 @@
       <div class="kanban" id="kanbanBoard"></div>
     </section>
 
-    <!-- ====== INCIDENCIAS ====== -->
+    <!-- ====== ISSUES ====== -->
     <section class="view" id="view-issues">
       <div id="issuesListWrap">
         <div class="list-toolbar">
@@ -428,59 +428,59 @@
       </div>
     </section>
 
-    <!-- ====== CREAR (COMPOSER IA) ====== -->
+    <!-- ====== CREATE (AI COMPOSER) ====== -->
     <section class="view" id="view-composer">
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Nota y análisis del código</div>
-        <div class="group-hint" style="padding:0 0 10px">La IA revisa el código base del repo antes de redactar para ser más precisa.</div></div>
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Note and code analysis</div>
+        <div class="group-hint" style="padding:0 0 10px">The AI reviews the repo's codebase before writing so it's more precise.</div></div>
         <div class="field">
-          <label for="note">Nota</label>
-          <textarea id="note" rows="5" placeholder="Ej.: El botón de login no responde en móvil…"></textarea>
+          <label for="note">Note</label>
+          <textarea id="note" rows="5" placeholder="E.g.: The login button doesn't respond on mobile…"></textarea>
         </div>
         <div class="field">
-          <label>Modo de redacción</label>
+          <label>Writing mode</label>
           <div class="segmented" id="toneControl">
             <button type="button" data-tone="simple">Simple</button>
-            <button type="button" data-tone="funcionalidad">Funcionalidad</button>
-            <button type="button" data-tone="incidencia">Incidencia</button>
+            <button type="button" data-tone="feature">Feature</button>
+            <button type="button" data-tone="bug">Bug</button>
           </div>
           <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
         </div>
         <div class="field actions">
-          <button id="btnAnalyze" class="block">Generar con IA</button>
-          <button id="btnClearNote" class="secondary block" type="button">Borrar nota</button>
+          <button id="btnAnalyze" class="block">Generate with AI</button>
+          <button id="btnClearNote" class="secondary block" type="button">Clear note</button>
         </div>
         <div id="analyzeStatus" class="status"></div>
         <div id="analyzeMsg" class="msg"></div>
       </div>
 
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0">Revisar y publicar</div></div>
+        <div class="pad"><div class="group-title" style="padding:0">Review and publish</div></div>
         <div class="field">
-          <label for="issueTitle">Título</label>
-          <input type="text" id="issueTitle" placeholder="Título del issue" />
+          <label for="issueTitle">Title</label>
+          <input type="text" id="issueTitle" placeholder="Issue title" />
         </div>
         <div class="field">
-          <label for="issueBody">Cuerpo (Markdown)</label>
-          <textarea id="issueBody" rows="12" placeholder="Cuerpo del issue en Markdown…"></textarea>
+          <label for="issueBody">Body (Markdown)</label>
+          <textarea id="issueBody" rows="12" placeholder="Issue body in Markdown…"></textarea>
         </div>
-        <div class="field"><button id="btnPublish" class="block">Publicar issue</button></div>
+        <div class="field"><button id="btnPublish" class="block">Publish issue</button></div>
         <div id="publishMsg" class="msg"></div>
       </div>
     </section>
 
-    <!-- ====== CONFIGURACIÓN ====== -->
+    <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-config">
-      <!-- Banner de repo activo, justo encima de Recientes -->
+      <!-- Active repo banner, right above Recent -->
       <div class="repo-banner" id="repoBannerSettings"></div>
-      <!-- 1. Repositorios: recientes / favoritos -->
+      <!-- 1. Repositories: recent / favorites -->
       <div class="group">
         <div class="pad">
-          <div class="group-title" style="padding:0 0 4px">Repositorios</div>
-          <div class="group-hint" style="padding:0 0 8px">Listas propias de esta app (no son estrellas de GitHub). Toca una fila para seleccionar el repo; la ✕ lo elimina. Los favoritos se añaden con el corazón del repo activo.</div>
+          <div class="group-title" style="padding:0 0 4px">Repositories</div>
+          <div class="group-hint" style="padding:0 0 8px">Lists local to this app (not GitHub stars). Tap a row to select the repo; the ✕ removes it. Favorites are added with the heart on the active repo.</div>
           <div class="segmented" id="repoTabControl">
-            <button type="button" data-rtab="recent">Recientes</button>
-            <button type="button" data-rtab="fav">Favoritos</button>
+            <button type="button" data-rtab="recent">Recent</button>
+            <button type="button" data-rtab="fav">Favorites</button>
           </div>
         </div>
         <div id="recentPanel"><div id="recentList"></div></div>
@@ -489,72 +489,72 @@
         </div>
       </div>
 
-      <!-- 2. GitHub: token + selección de repo -->
+      <!-- 2. GitHub: token + repo selection -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">GitHub</div>
-        <div class="group-hint" style="padding:0">Token y selección de repositorio.</div></div>
+        <div class="group-hint" style="padding:0">Token and repository selection.</div></div>
         <div class="field">
           <label for="ghToken">Personal Access Token</label>
           <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
         </div>
-        <div class="field"><button id="btnConnect" class="block">Conectar</button></div>
+        <div class="field"><button id="btnConnect" class="block">Connect</button></div>
         <div class="field">
-          <label for="repoSearch">Buscar repositorio</label>
-          <input type="text" id="repoSearch" placeholder="Filtra por nombre…" autocomplete="off" disabled />
+          <label for="repoSearch">Search repository</label>
+          <input type="text" id="repoSearch" placeholder="Filter by name…" autocomplete="off" disabled />
         </div>
         <div class="field">
-          <label for="repoSelect">Selecciona un repositorio <span id="repoCount" class="pill" style="display:none"></span></label>
-          <select id="repoSelect"><option value="">— Conecta para cargar tus repos —</option></select>
+          <label for="repoSelect">Select a repository <span id="repoCount" class="pill" style="display:none"></span></label>
+          <select id="repoSelect"><option value="">— Connect to load your repos —</option></select>
         </div>
         <div class="field">
-          <label for="repoManual">O escribe owner/repo (tiene prioridad)</label>
+          <label for="repoManual">Or type owner/repo (takes priority)</label>
           <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" />
-          <div class="actions" style="margin-top:10px"><button id="btnAddRepo" class="secondary block">Añadir a la lista</button></div>
+          <div class="actions" style="margin-top:10px"><button id="btnAddRepo" class="secondary block">Add to the list</button></div>
         </div>
         <div id="repoMsg" class="msg"></div>
       </div>
 
-      <!-- 3. Proveedor LLM (al fondo) -->
+      <!-- 3. LLM provider (at the bottom) -->
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Proveedor LLM</div>
-        <div class="group-hint" style="padding:0">Compatible con OpenAI.</div></div>
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">LLM provider</div>
+        <div class="group-hint" style="padding:0">OpenAI-compatible.</div></div>
         <div class="field"><label for="llmBaseUrl">Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
         <div class="field"><label for="llmApiKey">API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
         <div class="field"><label for="llmModel">Model</label><input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" /></div>
       </div>
 
-      <!-- 4. Idioma de generación (debajo del LLM) -->
+      <!-- 4. Generation language (below the LLM) -->
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Idioma de generación</div>
-        <div class="group-hint" style="padding:0">Idioma de los issues y comentarios generados por IA.</div></div>
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Generation language</div>
+        <div class="group-hint" style="padding:0">Language of the AI-generated issues and comments.</div></div>
         <div class="field">
-          <label>Idioma</label>
+          <label>Language</label>
           <div class="segmented" id="langControl">
-            <button type="button" data-lang="es">Español</button>
+            <button type="button" data-lang="es">Spanish</button>
             <button type="button" data-lang="en">English</button>
           </div>
         </div>
       </div>
 
-      <!-- 5. Configuración: exportar / importar todos los ajustes -->
+      <!-- 5. Settings: export / import all settings -->
       <div class="group">
-        <div class="pad"><div class="group-title" style="padding:0 0 4px">Configuración</div>
-        <div class="group-hint" style="padding:0">Exporta o importa todos los ajustes (tokens, LLM, GitHub, idioma).</div></div>
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Settings</div>
+        <div class="group-hint" style="padding:0">Export or import all settings (tokens, LLM, GitHub, language).</div></div>
         <div class="field">
-          <label>Acción</label>
+          <label>Action</label>
           <div class="segmented" id="ioControl">
-            <button type="button" data-io="export">Exportar</button>
-            <button type="button" data-io="import">Importar</button>
+            <button type="button" data-io="export">Export</button>
+            <button type="button" data-io="import">Import</button>
           </div>
         </div>
         <div class="pad" id="ioExport">
           <textarea id="ioExportText" rows="8" readonly spellcheck="false" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
-          <button type="button" id="btnDoExport" class="block" style="margin-top:8px">Exportar</button>
+          <button type="button" id="btnDoExport" class="block" style="margin-top:8px">Export</button>
           <div class="group-hint" id="ioExportMsg" style="padding:6px 0 0"></div>
         </div>
         <div class="pad" id="ioImport" style="display:none">
-          <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Pega aquí el JSON de ajustes generado en otro lugar…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
-          <button type="button" id="btnImport" class="block" style="margin-top:8px">Importar</button>
+          <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Paste the settings JSON generated elsewhere here…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
+          <button type="button" id="btnImport" class="block" style="margin-top:8px">Import</button>
           <div class="group-hint" id="ioImportMsg" style="padding:6px 0 0"></div>
         </div>
       </div>
@@ -563,28 +563,28 @@
 
   </main>
 
-  <nav class="navcap" id="navcap" aria-label="Navegación">
+  <nav class="navcap" id="navcap" aria-label="Navigation">
     <button class="navcap-btn" data-view="kanban" aria-label="Kanban"><span class="ico" data-icon="project"></span></button>
-    <button class="navcap-btn" data-view="issues" aria-label="Incidencias"><span class="ico" data-icon="list"></span></button>
-    <button class="navcap-btn" data-view="config" aria-label="Configuración"><span class="ico" data-icon="gear"></span></button>
+    <button class="navcap-btn" data-view="issues" aria-label="Issues"><span class="ico" data-icon="list"></span></button>
+    <button class="navcap-btn" data-view="config" aria-label="Settings"><span class="ico" data-icon="gear"></span></button>
   </nav>
 
-  <!-- ====== EDITAR (overlay a pantalla completa: el textarea crece/decrece con la
-       pantalla y el botón Guardar queda pegado abajo/al teclado) ====== -->
-  <!-- Editor a pantalla completa: solo el textarea (sin bordes). Atrás/Guardar son fabs. -->
+  <!-- ====== EDIT (full-screen overlay: the textarea grows/shrinks with the
+       screen and the Save button stays stuck to the bottom/keyboard) ====== -->
+  <!-- Full-screen editor: just the textarea (borderless). Back/Save are fabs. -->
   <section class="view" id="view-edit">
-    <textarea id="editBody" placeholder="Escribe aquí en Markdown…"></textarea>
+    <textarea id="editBody" placeholder="Write here in Markdown…"></textarea>
   </section>
 
-  <!-- Spinner modal centrado: bloquea la pantalla mientras hay un cambio en curso -->
-  <div id="busy" class="busy" hidden><div class="busy-box"><span class="spinner"></span><span id="busyText">Cargando…</span></div></div>
+  <!-- Centered modal spinner: blocks the screen while a change is in progress -->
+  <div id="busy" class="busy" hidden><div class="busy-box"><span class="spinner"></span><span id="busyText">Loading…</span></div></div>
 </div>
 
 <script>
 (function () {
   "use strict";
 
-  // ===== Iconos SVG monocromos (octicons, fill currentColor) =====
+  // ===== Monochrome SVG icons (octicons, fill currentColor) =====
   var PATHS = {
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
@@ -611,32 +611,32 @@
     return '<svg viewBox="0 0 16 16" width="' + size + '" height="' + size + '" fill="currentColor" aria-hidden="true">' + ps + "</svg>";
   }
 
-  // ----- Constantes -----
+  // ----- Constants -----
   var GH_API = "https://api.github.com";
   var LS_KEYS = {
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
     recent: "ic_recent", favs: "ic_favs", lang: "ic_lang", repoTab: "ic_repo_tab"
   };
-  // Claves cuyo valor es un array JSON (recientes/favoritos): se exportan/importan como lista.
+  // Keys whose value is a JSON array (recent/favorites): exported/imported as a list.
   var ARRAY_KEYS = { recent: 1, favs: 1 };
-  // NOTA DE SEGURIDAD: el GitHub PAT se persiste en localStorage a petición del
-  // usuario (queda en el disco del navegador, accesible a scripts del mismo origen).
-  // Úsalo en equipo de confianza y con permisos mínimos (scope repo).
+  // SECURITY NOTE: the GitHub PAT is persisted in localStorage at the user's
+  // request (it stays on the browser's disk, accessible to same-origin scripts).
+  // Use it on a trusted device and with minimal permissions (repo scope).
   var ghTokenMem = "";
-  var ghUserLogin = null;   // login del usuario del token (para editar/borrar comentarios propios)
-  var currentTone = "funcionalidad";   // simple | funcionalidad | incidencia
-  var commentTone = "funcionalidad";
-  var VALID_TONES = { simple: 1, funcionalidad: 1, incidencia: 1 };
-  var currentLang = "es";   // idioma de generación (es por defecto)
+  var ghUserLogin = null;   // login of the token's user (to edit/delete own comments)
+  var currentTone = "feature";   // simple | feature | bug
+  var commentTone = "feature";
+  var VALID_TONES = { simple: 1, feature: 1, bug: 1 };
+  var currentLang = "es";   // generation language (es by default)
 
-  // ----- Helpers DOM -----
+  // ----- DOM helpers -----
   function $(id) { return document.getElementById(id); }
   function showMsg(el, type, html) { el.className = "msg show " + type; el.innerHTML = html; }
   function hideMsg(el) { el.className = "msg"; el.innerHTML = ""; }
-  // Spinner modal centrado: bloquea la pantalla durante un cambio/carga en curso.
-  // Texto unificado en todo el sistema: "Cargando…".
-  function showBusy() { $("busyText").textContent = "Cargando…"; $("busy").hidden = false; }
+  // Centered modal spinner: blocks the screen during a change/load in progress.
+  // Unified text across the whole system: "Loading…".
+  function showBusy() { $("busyText").textContent = "Loading…"; $("busy").hidden = false; }
   function hideBusy() { $("busy").hidden = true; }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) {
@@ -654,38 +654,38 @@
            d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
-  // ===== Pintar iconos estáticos (tab bar, back, toolbar) =====
+  // ===== Paint static icons (tab bar, back, toolbar) =====
   (function paintIcons() {
     var icoEls = document.querySelectorAll("[data-icon]");
     for (var i = 0; i < icoEls.length; i++) icoEls[i].innerHTML = svg(icoEls[i].getAttribute("data-icon"), 24);
-    // Chevron de "atrás" dibujado con trazo fino (no relleno) para que sea más ligero.
+    // "Back" chevron drawn with a thin stroke (no fill) to make it lighter.
     $("navBack").innerHTML = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4.5 8 12l7 7.5"></path></svg>';
   })();
 
-  // ====================== NAVEGACIÓN ENTRE VISTAS ======================
+  // ====================== VIEW NAVIGATION ======================
   var VIEWS = ["kanban", "issues", "composer", "config", "edit"];
-  // Marca una vista (y su botón de la cápsula) como activa, sin recargar su contenido.
+  // Marks a view (and its capsule button) as active, without reloading its content.
   function markActiveView(name) {
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
     var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
-    $("navcap").hidden = (name === "edit");   // oculta la navegación mientras se edita
-    $("btnSaveEdit").hidden = (name !== "edit");   // Guardar (fab arriba-derecha) solo al editar
-    // Color de la vista (lo pinta #viewbg bajo el safe-area). Blanco en Incidencias/
-    // detalle y en el editor (para que el fondo tras el teclado sea blanco), gris en el resto.
+    $("navcap").hidden = (name === "edit");   // hides the navigation while editing
+    $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
+    // View color (painted by #viewbg below the safe area). White in Issues/
+    // detail and in the editor (so the background behind the keyboard is white), gray otherwise.
     var white = (name === "issues" || name === "edit");
     document.documentElement.style.setProperty("--cbg", white ? "var(--surface)" : "var(--bg)");
   }
   function showView(name) {
     markActiveView(name);
     var isList = (name === "issues" || name === "kanban");
-    $("viewReload").hidden = !isList;   // recargar (izquierda)
-    $("viewAdd").hidden = !isList;       // añadir incidencia (derecha)
+    $("viewReload").hidden = !isList;   // reload (left)
+    $("viewAdd").hidden = !isList;       // add issue (right)
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
-    else if (name === "composer") { $("navBack").hidden = false; }   // vista "push": volver con el back
+    else if (name === "composer") { $("navBack").hidden = false; }   // "push" view: go back with the back button
     else { $("navBack").hidden = true; }
-    if (name !== "composer") persist(LS_KEYS.tab, name);  // composer es transitorio, no se recuerda
+    if (name !== "composer") persist(LS_KEYS.tab, name);  // composer is transient, not remembered
     $("content").scrollTop = 0;
     updateActiveRepoBanners();
   }
@@ -693,27 +693,27 @@
     var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].addEventListener("click", function () { showView(this.getAttribute("data-view")); });
   })();
-  var detailOrigin = "issues";    // vista de origen del detalle (issues/kanban)
-  var composerOrigin = "issues";  // vista de origen al abrir "Crear" con el botón +
+  var detailOrigin = "issues";    // origin view of the detail (issues/kanban)
+  var composerOrigin = "issues";  // origin view when opening "Create" with the + button
   $("navBack").addEventListener("click", function () {
     if ($("view-edit").classList.contains("active")) { closeEditor(); return; }
     if ($("view-composer").classList.contains("active")) { showView(composerOrigin); return; }
     if (detailOrigin === "kanban") showView("kanban");
     else showIssuesList();
   });
-  // Recargar (izquierda) del listado/kanban activo.
+  // Reload (left) of the active list/kanban.
   $("viewReload").innerHTML = svg("reload", 20);
   $("viewReload").addEventListener("click", function () {
     if ($("view-kanban").classList.contains("active")) loadKanban();
     else resetAndLoadIssues();
   });
-  // Añadir incidencia (derecha): abre "Crear" como vista push, volviendo al origen.
+  // Add issue (right): opens "Create" as a push view, returning to the origin.
   $("viewAdd").innerHTML = svg("plus", 24);
   $("viewAdd").addEventListener("click", function () {
     composerOrigin = $("view-kanban").classList.contains("active") ? "kanban" : "issues";
     showView("composer");
   });
-  // Guardar (derecha, arriba) de la vista de edición: mismo estilo que atrás/recargar.
+  // Save (top-right) of the edit view: same style as back/reload.
   $("btnSaveEdit").innerHTML = svg("up", 24);
 
   // ----- localStorage -----
@@ -738,7 +738,7 @@
   $("llmModel").addEventListener("input", function () { persist(LS_KEYS.llmModel, this.value.trim()); });
   $("ghToken").addEventListener("input", function () { ghTokenMem = this.value.trim(); persist(LS_KEYS.ghToken, ghTokenMem); });
 
-  // ----- Tono -----
+  // ----- Mode -----
   function buildToneControl(el, getVal, setVal) {
     var btns = el.querySelectorAll("button");
     function paint() { for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("active", btns[i].getAttribute("data-tone") === getVal()); }
@@ -746,89 +746,89 @@
     paint();
   }
   var TONE_HINT = {
-    simple: "Simple: corrige y ordena tu texto con cambios mínimos (no analiza el código, instantáneo).",
-    funcionalidad: "Funcionalidad: desarrolla una nueva funcionalidad / historia de usuario (PBI); revisa el código para ver si ya existe o está por implementar.",
-    incidencia: "Incidencia: informe de bug con reproducción, causa raíz y propuesta de solución; revisa el código para validar el problema."
+    simple: "Simple: fixes and tidies your text with minimal changes (doesn't analyze the code, instant).",
+    feature: "Feature: develops a new feature / user story (PBI); reviews the code to see whether it already exists or is yet to be implemented.",
+    bug: "Bug: bug report with reproduction, root cause and a proposed fix; reviews the code to validate the problem."
   };
   function paintToneHint() { var el = $("toneHint"); if (el) el.textContent = TONE_HINT[currentTone] || ""; }
-  // ¿Este modo revisa el código base?
+  // Does this mode review the codebase?
   function toneReviewsCode(tone) { return tone !== "simple"; }
 
-  // ---- Prompts por CONTEXTO (issue / comentario) y MODO (simple/funcionalidad/incidencia) ----
-  // Reglas comunes a los modos que analizan el código (funcionalidad/incidencia).
-  var GROUNDING = " Usa Markdown limpio (sin bloques de código que envuelvan todo). " +
-    "Fundaméntate ESTRICTAMENTE en el código y el README aportados: cita rutas y símbolos reales; " +
-    "no inventes archivos, funciones ni comportamientos, y si algo no consta en el material, dilo como suposición explícita. " +
-    "Omite las secciones que no apliquen en lugar de rellenarlas con texto vacío.";
-  // Instrucción de análisis previo del código: valorar si lo que expone el usuario
-  // ya está implementado, parcialmente o pendiente, antes de redactar.
-  var CODE_ASSESS = " ANTES de redactar, analiza el código y el README aportados para valorar si lo que describe el usuario " +
-    "tiene sentido y en qué estado está (ya implementado, parcialmente implementado o por implementar); " +
-    "refléjalo en la sección **Estado en el código** citando rutas y símbolos reales que lo justifiquen.";
+  // ---- Prompts by CONTEXT (issue / comment) and MODE (simple/feature/bug) ----
+  // Rules common to the modes that analyze the code (feature/bug).
+  var GROUNDING = " Use clean Markdown (no code blocks wrapping everything). " +
+    "Ground yourself STRICTLY in the provided code and README: cite real paths and symbols; " +
+    "don't invent files, functions or behaviors, and if something isn't in the material, state it as an explicit assumption. " +
+    "Omit sections that don't apply instead of filling them with empty text.";
+  // Prior code-analysis instruction: assess whether what the user describes
+  // is already implemented, partially, or pending, before writing.
+  var CODE_ASSESS = " BEFORE writing, analyze the provided code and README to assess whether what the user describes " +
+    "makes sense and what state it's in (already implemented, partially implemented, or yet to be implemented); " +
+    "reflect this in the **Status in the code** section, citing real paths and symbols that justify it.";
   function issueSystemPrompt(tone) {
-    var base = "Redactas issues de GitHub claros y accionables. " +
-      "Respondes SOLO con un objeto JSON válido {\"title\",\"body\"} (sin fences ni texto fuera del JSON). " +
-      "'title': conciso, específico y en imperativo, < 70 caracteres y sin punto final. ";
+    var base = "You write clear, actionable GitHub issues. " +
+      "You respond ONLY with a valid JSON object {\"title\",\"body\"} (no fences or text outside the JSON). " +
+      "'title': concise, specific and imperative, < 70 characters and without a trailing period. ";
     if (tone === "simple") {
-      base += "MODO SIMPLE: reescribe la nota del usuario para dejarla correcta y legible. Corrige ortografía, gramática y puntuación, " +
-        "y aplica una estructura básica (mayúsculas, párrafos y saltos de línea; usa listas solo si el usuario ya las insinúa). " +
-        "Haz los cambios MÍNIMOS pero NECESARIOS para que se entienda y esté bien escrito, conservando sus palabras, orden, tono e intención. " +
-        "PROHIBIDO añadir secciones, pasos, criterios ni información que el usuario no haya aportado. El 'title' resume su nota en una frase.";
-    } else if (tone === "funcionalidad") {
-      base += "MODO FUNCIONALIDAD (desarrollas una NUEVA funcionalidad como Historia de Usuario / Product Backlog Item, no un bug). " +
-        "El 'title' describe la funcionalidad en imperativo (p. ej. 'Añadir…', 'Permitir…')." + CODE_ASSESS +
-        " 'body' en Markdown con estas secciones (omite las que no apliquen): " +
-        "**Historia de usuario** (formato 'Como <rol>, quiero <objetivo>, para <beneficio>'), " +
-        "**Descripción y contexto**, **Estado en el código** (ya implementada / parcial / pendiente, con rutas y símbolos reales), " +
-        "**Alcance** (qué entra y qué queda fuera), **Áreas/archivos implicados** (rutas reales del código revisado), " +
-        "**Criterios de aceptación** como checklist '- [ ]' verificables y orientados a valor, y " +
-        "**Notas técnicas y dependencias** (si aplica). " +
-        "Si ya está implementada, dilo claramente y propón solo lo que falte o mejoras concretas." + GROUNDING;
-    } else { // incidencia
-      base += "MODO INCIDENCIA (informe de un BUG/defecto: descríbelo, diagnostícalo y propón cómo resolverlo). " +
-        "El 'title' resume el fallo en imperativo (p. ej. 'Corregir…')." + CODE_ASSESS +
-        " 'body' en Markdown con estas secciones (omite las que no apliquen): " +
-        "**Descripción**, **Pasos de reproducción** (numerados), **Comportamiento esperado vs actual**, " +
-        "**Estado en el código** (¿el fallo es coherente con el código?, ¿parece ya corregido o sigue presente?, con rutas/símbolos reales), " +
-        "**Archivos implicados** (rutas reales), **Causa raíz probable** (razonada, con referencia a rutas/símbolos), " +
-        "**Impacto**, **Casos límite**, **Propuesta de solución** (archivos a tocar y pasos concretos) y " +
-        "**Criterios de aceptación** como checklist '- [ ]' verificables." + GROUNDING;
+      base += "SIMPLE MODE: rewrite the user's note to make it correct and readable. Fix spelling, grammar and punctuation, " +
+        "and apply a basic structure (capitalization, paragraphs and line breaks; use lists only if the user already hints at them). " +
+        "Make the MINIMAL but NECESSARY changes so it's understandable and well written, keeping their words, order, tone and intent. " +
+        "You are FORBIDDEN from adding sections, steps, criteria or information the user didn't provide. The 'title' summarizes their note in one sentence.";
+    } else if (tone === "feature") {
+      base += "FEATURE MODE (you develop a NEW feature as a User Story / Product Backlog Item, not a bug). " +
+        "The 'title' describes the feature in the imperative (e.g. 'Add…', 'Allow…')." + CODE_ASSESS +
+        " 'body' in Markdown with these sections (omit those that don't apply): " +
+        "**User story** (format 'As a <role>, I want <goal>, so that <benefit>'), " +
+        "**Description and context**, **Status in the code** (already implemented / partial / pending, with real paths and symbols), " +
+        "**Scope** (what's in and what's out), **Areas/files involved** (real paths from the reviewed code), " +
+        "**Acceptance criteria** as a verifiable, value-oriented '- [ ]' checklist, and " +
+        "**Technical notes and dependencies** (if applicable). " +
+        "If it's already implemented, say so clearly and propose only what's missing or concrete improvements." + GROUNDING;
+    } else { // bug
+      base += "BUG MODE (report of a BUG/defect: describe it, diagnose it and propose how to fix it). " +
+        "The 'title' summarizes the failure in the imperative (e.g. 'Fix…')." + CODE_ASSESS +
+        " 'body' in Markdown with these sections (omit those that don't apply): " +
+        "**Description**, **Reproduction steps** (numbered), **Expected vs actual behavior**, " +
+        "**Status in the code** (is the failure consistent with the code? does it seem already fixed or still present?, with real paths/symbols), " +
+        "**Files involved** (real paths), **Probable root cause** (reasoned, referencing paths/symbols), " +
+        "**Impact**, **Edge cases**, **Proposed fix** (files to touch and concrete steps) and " +
+        "**Acceptance criteria** as a verifiable '- [ ]' checklist." + GROUNDING;
     }
     return base + " " + langInstruction();
   }
   function issueUserPrompt(tone, note, ctx) {
-    if (tone === "simple" || !ctx) return "Nota del usuario:\n" + note + "\n\nDevuelve SOLO el JSON {\"title\",\"body\"}.";
-    return "Nota del usuario:\n" + note + "\n\nREADME:\n" + (ctx.readme || "(sin README)") +
-      "\n\nCódigo revisado:\n" + (ctx.codeBlob || "(no se seleccionó código)") + "\n\nDevuelve SOLO el JSON {\"title\",\"body\"}.";
+    if (tone === "simple" || !ctx) return "User's note:\n" + note + "\n\nReturn ONLY the JSON {\"title\",\"body\"}.";
+    return "User's note:\n" + note + "\n\nREADME:\n" + (ctx.readme || "(no README)") +
+      "\n\nReviewed code:\n" + (ctx.codeBlob || "(no code selected)") + "\n\nReturn ONLY the JSON {\"title\",\"body\"}.";
   }
   function commentSystemPrompt(tone) {
-    var base = "Redactas un comentario para una incidencia de GitHub. Respondes SOLO con el texto del comentario en Markdown, sin fences ni JSON. " +
-      "Ten en cuenta la descripción de la incidencia y los comentarios previos que se aportan: responde de forma coherente al hilo " +
-      "(aporta algo nuevo, no repitas lo ya dicho) y parte del texto propuesto por el usuario. ";
+    var base = "You write a comment for a GitHub issue. You respond ONLY with the comment text in Markdown, no fences or JSON. " +
+      "Take into account the issue description and the previous comments provided: respond consistently with the thread " +
+      "(add something new, don't repeat what's already been said) and build on the text the user proposed. ";
     if (tone === "simple") {
-      base += "MODO SIMPLE: reescribe el texto propuesto para dejarlo correcto y legible. Corrige ortografía, gramática y puntuación, " +
-        "y dale una estructura básica (mayúsculas, párrafos y saltos de línea). Haz los cambios MÍNIMOS pero NECESARIOS, " +
-        "conservando las palabras, el tono y la intención del usuario. No añadas secciones ni información nueva.";
-    } else if (tone === "funcionalidad") {
-      base += "MODO FUNCIONALIDAD (aportas o refinas una funcionalidad / historia de usuario en el hilo, no un bug)." + CODE_ASSESS +
-        " Organiza en **Resumen**, **Propuesta funcional** (historia de usuario si aplica), " +
-        "**Estado en el código** (ya implementada / parcial / pendiente, con rutas y símbolos reales), " +
-        "**Criterios de aceptación** ('- [ ]') y **Próximos pasos**." + GROUNDING;
-    } else { // incidencia
-      base += "MODO INCIDENCIA (diagnóstico de un bug, no solo un resumen)." + CODE_ASSESS +
-        " Organiza en **Resumen**, **Detalle**, **Estado en el código** (coherencia del fallo con el código; ¿resuelto o presente?), " +
-        "**Referencias al código** (rutas y símbolos reales revisados), **Causa raíz**, **Impacto** y **Próximos pasos**." + GROUNDING;
+      base += "SIMPLE MODE: rewrite the proposed text to make it correct and readable. Fix spelling, grammar and punctuation, " +
+        "and give it a basic structure (capitalization, paragraphs and line breaks). Make the MINIMAL but NECESSARY changes, " +
+        "keeping the user's words, tone and intent. Don't add sections or new information.";
+    } else if (tone === "feature") {
+      base += "FEATURE MODE (you contribute or refine a feature / user story in the thread, not a bug)." + CODE_ASSESS +
+        " Organize into **Summary**, **Feature proposal** (user story if applicable), " +
+        "**Status in the code** (already implemented / partial / pending, with real paths and symbols), " +
+        "**Acceptance criteria** ('- [ ]') and **Next steps**." + GROUNDING;
+    } else { // bug
+      base += "BUG MODE (diagnosis of a bug, not just a summary)." + CODE_ASSESS +
+        " Organize into **Summary**, **Detail**, **Status in the code** (consistency of the failure with the code; resolved or present?), " +
+        "**Code references** (real reviewed paths and symbols), **Root cause**, **Impact** and **Next steps**." + GROUNDING;
     }
     return base + " " + langInstruction();
   }
   function commentUserPrompt(tone, issue, thread, note, ctx) {
-    var s = "Incidencia #" + issue.number + ": " + issue.title + "\n\nDescripción:\n" + (issue.body || "(sin descripción)") +
-      "\n\nÚltimos comentarios:\n" + (thread || "(ninguno)");
-    if (tone !== "simple" && ctx) s += "\n\nREADME:\n" + (ctx.readme || "(sin README)") + "\n\nCódigo revisado:\n" + (ctx.codeBlob || "(no se seleccionó código)");
-    return s + "\n\nTexto propuesto por el usuario:\n" + note + "\n\nRedacta el comentario final.";
+    var s = "Issue #" + issue.number + ": " + issue.title + "\n\nDescription:\n" + (issue.body || "(no description)") +
+      "\n\nLatest comments:\n" + (thread || "(none)");
+    if (tone !== "simple" && ctx) s += "\n\nREADME:\n" + (ctx.readme || "(no README)") + "\n\nReviewed code:\n" + (ctx.codeBlob || "(no code selected)");
+    return s + "\n\nText proposed by the user:\n" + note + "\n\nWrite the final comment.";
   }
 
-  // ----- Idioma de generación -----
+  // ----- Generation language -----
   function setLang(l) {
     currentLang = (l === "en") ? "en" : "es";
     persist(LS_KEYS.lang, currentLang);
@@ -840,13 +840,13 @@
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setLang(this.getAttribute("data-lang")); });
   })();
   function langInstruction() {
-    return currentLang === "en" ? "Write the output in English." : "Escribe el resultado en español.";
+    return currentLang === "en" ? "Write the output in English." : "Write the output in Spanish.";
   }
 
-  // ----- Exportar / Importar ajustes -----
-  // El JSON incluye el 100% de los parámetros de la pantalla de ajustes:
-  // token de GitHub, LLM (base URL, API key, modelo), repo activo, tono, pestaña,
-  // repos recientes, repos favoritos e idioma de generación.
+  // ----- Export / Import settings -----
+  // The JSON includes 100% of the settings-screen parameters:
+  // GitHub token, LLM (base URL, API key, model), active repo, mode, tab,
+  // recent repos, favorite repos and generation language.
   function buildSettingsExport() {
     var out = {};
     for (var k in LS_KEYS) {
@@ -868,19 +868,19 @@
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-io") === mode);
     $("ioExport").style.display = (mode === "export") ? "" : "none";
     $("ioImport").style.display = (mode === "import") ? "" : "none";
-    // El textarea de exportación empieza vacío: solo se rellena al pulsar "Exportar".
+    // The export textarea starts empty: it's only filled when "Export" is pressed.
   }
   (function wireIo() {
     var bs = $("ioControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setIoMode(this.getAttribute("data-io")); });
-    // El botón Exportar regenera el JSON y lo copia al portapapeles en un solo paso.
+    // The Export button regenerates the JSON and copies it to the clipboard in one step.
     $("btnDoExport").addEventListener("click", function () {
       refreshExport();
       var txt = $("ioExportText").value, msg = $("ioExportMsg");
       function done(ok) {
         var m = ok
-          ? "Ajustes exportados y copiados al portapapeles."
-          : "Ajustes exportados. No se pudo copiar automáticamente; cópialos manualmente del cuadro.";
+          ? "Settings exported and copied to the clipboard."
+          : "Settings exported. Couldn't copy automatically; copy them manually from the box.";
         msg.textContent = m;
         alert(m);
       }
@@ -891,10 +891,10 @@
     });
     $("btnImport").addEventListener("click", function () {
       var msg = $("ioImportMsg"), raw = $("ioImportText").value.trim();
-      if (!raw) { msg.textContent = "Pega un JSON de ajustes."; alert("Pega un JSON de ajustes antes de importar."); return; }
+      if (!raw) { msg.textContent = "Paste a settings JSON."; alert("Paste a settings JSON before importing."); return; }
       var data;
-      try { data = JSON.parse(raw); } catch (e) { msg.textContent = "JSON no válido."; alert("El JSON pegado no es válido."); return; }
-      if (!data || typeof data !== "object") { msg.textContent = "JSON no válido."; alert("El JSON pegado no es válido."); return; }
+      try { data = JSON.parse(raw); } catch (e) { msg.textContent = "Invalid JSON."; alert("The pasted JSON is not valid."); return; }
+      if (!data || typeof data !== "object") { msg.textContent = "Invalid JSON."; alert("The pasted JSON is not valid."); return; }
       var n = 0;
       for (var k in LS_KEYS) {
         if (!LS_KEYS.hasOwnProperty(k) || !data.hasOwnProperty(k)) continue;
@@ -904,14 +904,14 @@
         persist(LS_KEYS[k], v);
         n++;
       }
-      msg.textContent = "Importados " + n + " ajustes. Recargando…";
-      alert("Se han importado " + n + " ajustes correctamente. La app se recargará para aplicarlos.");
+      msg.textContent = "Imported " + n + " settings. Reloading…";
+      alert(n + " settings were imported successfully. The app will reload to apply them.");
       setTimeout(function () { location.reload(); }, 300);
     });
     setIoMode("export");
   })();
 
-  // ----- Selección de repo -----
+  // ----- Repo selection -----
   function getSelectedRepo() {
     var manual = $("repoManual").value.trim();
     if (manual) return manual;
@@ -921,14 +921,14 @@
   $("repoSelect").addEventListener("change", function () { if (this.value) { $("repoManual").value = ""; addRecent(this.value); } rememberRepo(); });
   $("repoManual").addEventListener("input", rememberRepo);
 
-  // Caché interna de privacidad por repo: cada vez que se activa un repo se
-  // determina si es privado/público (desde la lista cargada) y se guarda, para
-  // que el banner acierte el color aun sin reconectar (p. ej. al recargar).
+  // Internal per-repo privacy cache: each time a repo is activated, whether it's
+  // private/public is determined (from the loaded list) and stored, so the
+  // banner gets the color right even without reconnecting (e.g. on reload).
   var PRIV_KEY = "ic_repo_priv";
   function getPrivCache() { try { var c = JSON.parse(localStorage.getItem(PRIV_KEY) || "{}"); return (c && typeof c === "object") ? c : {}; } catch (e) { return {}; } }
   function rememberPrivacy(full, isPriv) { var c = getPrivCache(); if (c[full] === !!isPriv) return; c[full] = !!isPriv; persist(PRIV_KEY, JSON.stringify(c)); }
-  // ¿El repo (owner/name) es privado? Prioriza la lista cargada (y actualiza la
-  // caché); si no está cargada, usa el último estado conocido guardado.
+  // Is the repo (owner/name) private? Prioritizes the loaded list (and updates the
+  // cache); if it's not loaded, uses the last known stored state.
   function isPrivateRepo(full) {
     var reps = loadedRepos || [];
     for (var i = 0; i < reps.length; i++) if (reps[i].full_name === full) { rememberPrivacy(full, reps[i].private); return !!reps[i].private; }
@@ -941,22 +941,22 @@
     if (el) {
       if (ok) {
         var priv = isPrivateRepo(repo);
-        el.className = "repo-banner" + (priv ? " priv" : "");   // privado -> verde con candado
+        el.className = "repo-banner" + (priv ? " priv" : "");   // private -> green with a lock
         var fav = isFav(repo);
         el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span><b>" + esc(repo) + "</b></span>" +
           '<button type="button" class="fav-heart ' + (fav ? "on" : "off") + '" id="bannerFav" aria-label="' +
-          (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '" title="' + (fav ? "Quitar de favoritos" : "Añadir a favoritos") + '">' + svg("heart", 20) + "</button>";
+          (fav ? "Remove from favorites" : "Add to favorites") + '" title="' + (fav ? "Remove from favorites" : "Add to favorites") + '">' + svg("heart", 20) + "</button>";
         var b = $("bannerFav");
         if (b) b.addEventListener("click", function () { toggleFav(repo); });
       } else {
         el.className = "repo-banner";
-        el.innerHTML = svg("repo", 16) + "<span>Sin repo — elígelo en <b>Configuración</b></span>";
+        el.innerHTML = svg("repo", 16) + "<span>No repo — pick one in <b>Settings</b></span>";
       }
     }
     syncRepoTag();
   }
-  // Etiqueta flotante del repo activo, junto al fab superior izquierdo
-  // (recargar en kanban/listado, atrás en crear/detalle). No en ajustes ni editor.
+  // Floating label of the active repo, next to the top-left fab
+  // (reload in kanban/list, back in create/detail). Not in settings or editor.
   function syncRepoTag() {
     var tag = $("viewRepoTag"); if (!tag) return;
     var repo = getSelectedRepo(), ok = repo && repo.indexOf("/") !== -1;
@@ -967,8 +967,8 @@
     if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
 
-  // Lee una lista de repos de localStorage, saneada y recortada a 10 (y si estaba
-  // pasada de tamaño la reescribe, para autolimpiar datos antiguos).
+  // Reads a repo list from localStorage, sanitized and trimmed to 10 (and if it was
+  // oversized it rewrites it, to auto-clean old data).
   function readRepoList(key) {
     try {
       var a = JSON.parse(localStorage.getItem(key) || "[]");
@@ -978,25 +978,25 @@
       return a;
     } catch (e) { return []; }
   }
-  // ----- Repositorios recientes (uso propio en Issue Composer), máx 10 -----
+  // ----- Recent repositories (local use in Issue Composer), max 10 -----
   function getRecents() { return readRepoList(LS_KEYS.recent); }
-  // Los recientes NO se reordenan: si el repo ya está, se mantiene en su sitio;
-  // los nuevos se añaden AL FINAL. Al superar 10 se descarta el más antiguo.
+  // Recents are NOT reordered: if the repo is already there, it stays in place;
+  // new ones are added AT THE END. When exceeding 10 the oldest is dropped.
   function addRecent(full) {
     if (!full || full.indexOf("/") === -1) return;
     var arr = getRecents();
-    if (arr.indexOf(full) !== -1) return;   // ya está: no cambia de posición
-    arr.push(full);                          // nuevos abajo
+    if (arr.indexOf(full) !== -1) return;   // already there: doesn't change position
+    arr.push(full);                          // new ones at the bottom
     if (arr.length > 10) arr = arr.slice(arr.length - 10);
     persist(LS_KEYS.recent, JSON.stringify(arr));
     renderRecents();
   }
   function selectRepo(full) {
-    $("repoManual").value = full;            // el manual tiene prioridad
+    $("repoManual").value = full;            // the manual field takes priority
     persist(LS_KEYS.repo, full);
     addRecent(full);
     updateActiveRepoBanners();
-    renderRecents(); renderFavs();            // refresca el resaltado en ambas
+    renderRecents(); renderFavs();            // refreshes the highlight in both
   }
   function removeRecent(full) {
     persist(LS_KEYS.recent, JSON.stringify(getRecents().filter(function (x) { return x !== full; })));
@@ -1005,28 +1005,28 @@
   function renderRecents() {
     var el = $("recentList"); if (!el) return;
     var list = getRecents();
-    if (!list.length) { el.innerHTML = '<div class="rt-empty">Aún no has usado ningún repositorio.</div>'; return; }
+    if (!list.length) { el.innerHTML = '<div class="rt-empty">You haven\'t used any repository yet.</div>'; return; }
     var cur = getSelectedRepo();
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
         '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
-        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Eliminar de recientes">' + svg("x", 16) + "</button></td></tr>";
+        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Remove from recent">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
-    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
+    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeRecent(this.getAttribute("data-full")); });
   }
 
-  // ----- Repositorios favoritos (uso propio en Issue Composer), máx 10 -----
+  // ----- Favorite repositories (local use in Issue Composer), max 10 -----
   function getFavs() { return readRepoList(LS_KEYS.favs); }
   function isFav(full) { return getFavs().indexOf(full) !== -1; }
   function addFav(full) {
     if (!full || full.indexOf("/") === -1) return false;
     var arr = getFavs().filter(function (x) { return x !== full; });
-    arr.push(full);                          // nuevos abajo
+    arr.push(full);                          // new ones at the bottom
     if (arr.length > 10) arr = arr.slice(arr.length - 10);
     persist(LS_KEYS.favs, JSON.stringify(arr));
     renderFavs();
@@ -1040,29 +1040,29 @@
     if (isFav(full)) removeFav(full); else addFav(full);
     updateActiveRepoBanners();
   }
-  // Tabla de favoritos: se mantienen en el orden en que se añaden (sin reordenar).
-  // Tocar una fila selecciona el repo; la ✕ lo quita.
+  // Favorites table: kept in the order they're added (no reordering).
+  // Tapping a row selects the repo; the ✕ removes it.
   function renderFavs() {
     var el = $("favList"); if (!el) return;
     var list = getFavs();
-    if (!list.length) { el.innerHTML = '<div class="rt-empty">Sin favoritos. Añádelos con el corazón del repo activo.</div>'; return; }
+    if (!list.length) { el.innerHTML = '<div class="rt-empty">No favorites. Add them with the heart on the active repo.</div>'; return; }
     var cur = getSelectedRepo();
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
         '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
-        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Quitar de favoritos">' + svg("x", 16) + "</button></td></tr>";
+        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Remove from favorites">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
-    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
+    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeFav(this.getAttribute("data-full")); });
   }
-  // Segmento Recientes | Favoritos
+  // Recent | Favorites segment
   function setRepoTab(tab) {
     tab = (tab === "fav") ? "fav" : "recent";
-    persist(LS_KEYS.repoTab, tab);   // recuerda el segmento elegido al recargar
+    persist(LS_KEYS.repoTab, tab);   // remembers the chosen segment on reload
     var bs = $("repoTabControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-rtab") === tab);
     $("recentPanel").style.display = (tab === "recent") ? "" : "none";
@@ -1083,8 +1083,8 @@
   function ghFetch(url, opts) {
     opts = opts || {};
     opts.headers = Object.assign({}, ghHeaders(), opts.headers || {});
-    // GitHub responde con "Cache-Control: private, max-age=60"; sin esto el navegador
-    // servía un GET cacheado tras cambiar una etiqueta y el estado parecía revertirse.
+    // GitHub responds with "Cache-Control: private, max-age=60"; without this the browser
+    // served a cached GET after changing a label and the state appeared to revert.
     if (!("cache" in opts)) opts.cache = "no-store";
     return fetch(url, opts).then(function (res) {
       return res.text().then(function (txt) {
@@ -1096,9 +1096,9 @@
     });
   }
 
-  // ----- JSON tolerante -----
+  // ----- Tolerant JSON -----
   function parseLooseJSON(text) {
-    if (text == null) throw new Error("Respuesta vacía del LLM");
+    if (text == null) throw new Error("Empty response from the LLM");
     var s = String(text).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim().replace(/^`+|`+$/g, "").trim();
     try { return JSON.parse(s); }
     catch (e) {
@@ -1106,14 +1106,14 @@
       if (fa !== -1 && (fo === -1 || fa < fo)) { start = fa; close = "]"; }
       else if (fo !== -1) { start = fo; close = "}"; }
       if (start !== -1) { var last = s.lastIndexOf(close); if (last > start) return JSON.parse(s.slice(start, last + 1)); }
-      throw new Error("No se pudo parsear JSON del LLM: " + e.message);
+      throw new Error("Couldn't parse JSON from the LLM: " + e.message);
     }
   }
 
   // ----- LLM -----
   function llmComplete(messages) {
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) return Promise.reject(new Error("Configura Base URL, API key y Model del LLM."));
+    if (!baseUrl || !apiKey || !model) return Promise.reject(new Error("Configure the LLM Base URL, API key and Model."));
     var url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
     return fetch(url, {
       method: "POST",
@@ -1124,16 +1124,16 @@
         var data = null;
         try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
         if (!res.ok) { var m = (data && data.error && data.error.message) ? data.error.message : (txt || res.statusText); throw new Error("LLM " + res.status + ": " + m); }
-        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) throw new Error("Respuesta del LLM sin choices[0].message");
+        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) throw new Error("LLM response without choices[0].message");
         return data.choices[0].message.content;
       });
     }).catch(function (err) {
-      if (err && /Failed to fetch/i.test(err.message)) throw new Error("No se pudo contactar con el endpoint LLM (\"Failed to fetch\"). Habilita CORS para este origen.");
+      if (err && /Failed to fetch/i.test(err.message)) throw new Error("Couldn't reach the LLM endpoint (\"Failed to fetch\"). Enable CORS for this origin.");
       throw err;
     });
   }
 
-  // =================== CONFIG: REPOS ===================
+  // =================== SETTINGS: REPOS ===================
   var loadedRepos = [];
   function fetchAllPages(buildUrl) {
     var acc = [];
@@ -1150,7 +1150,7 @@
   function renderRepoOptions() {
     var sel = $("repoSelect"), filter = $("repoSearch").value.trim().toLowerCase(), stored = getStoredRepo(), prev = sel.value;
     var list = loadedRepos.filter(function (r) { return !filter || r.full_name.toLowerCase().indexOf(filter) !== -1; });
-    sel.innerHTML = '<option value="">— Selecciona un repositorio —</option>';
+    sel.innerHTML = '<option value="">— Select a repository —</option>';
     var toSelect = "";
     list.forEach(function (r) {
       var opt = document.createElement("option");
@@ -1162,14 +1162,14 @@
     });
     if (toSelect) sel.value = toSelect;
     var c = $("repoCount"); c.style.display = "inline-block";
-    c.textContent = list.length + (filter ? " de " + loadedRepos.length : "") + " repos";
+    c.textContent = list.length + (filter ? " of " + loadedRepos.length : "") + " repos";
   }
   $("repoSearch").addEventListener("input", renderRepoOptions);
 
   $("btnConnect").addEventListener("click", function () {
     var btn = this, msg = $("repoMsg"); hideMsg(msg);
-    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu GitHub Personal Access Token."); return; }
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Conectando…';
+    if (!ghTokenMem) { showMsg(msg, "error", "Enter your GitHub Personal Access Token."); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Connecting…';
     fetchAllPages(function (page) { return GH_API + "/user/repos?per_page=100&affiliation=owner,collaborator,organization_member&page=" + page; })
       .then(function (userRepos) {
         return ghFetch(GH_API + "/user/orgs?per_page=100").then(function (orgs) {
@@ -1188,38 +1188,38 @@
         loadedRepos = allRepos.filter(function (r) { if (!r || !r.full_name || seen[r.full_name]) return false; seen[r.full_name] = true; return true; })
           .sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); });
         $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();
-        renderRecents(); renderFavs();   // ya con loadedRepos: pinta el candado de los privados
+        renderRecents(); renderFavs();   // now with loadedRepos: paints the lock on private ones
         var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
-        showMsg(msg, "success", "Cargados " + loadedRepos.length + " repositorios." + (matched ? " Restaurado: <strong>" + esc(stored) + "</strong>." : ""));
+        showMsg(msg, "success", "Loaded " + loadedRepos.length + " repositories." + (matched ? " Restored: <strong>" + esc(stored) + "</strong>." : ""));
       }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Conectar"; });
+      .then(function () { btn.disabled = false; btn.textContent = "Connect"; });
   });
 
   $("btnAddRepo").addEventListener("click", function () {
     var btn = this, msg = $("repoMsg"); hideMsg(msg);
     var full = $("repoManual").value.trim().replace(/^\/+|\/+$/g, "");
-    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu GitHub Personal Access Token."); return; }
-    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) { showMsg(msg, "error", "Escribe el repositorio como owner/repo."); return; }
-    btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Verificando…';
+    if (!ghTokenMem) { showMsg(msg, "error", "Enter your GitHub Personal Access Token."); return; }
+    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) { showMsg(msg, "error", "Write the repository as owner/repo."); return; }
+    btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Verifying…';
     ghFetch(GH_API + "/repos/" + full).then(function (r) {
       var exists = loadedRepos.some(function (x) { return x.full_name === r.full_name; });
       if (!exists) { loadedRepos.push({ full_name: r.full_name, private: !!r.private }); loadedRepos.sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); }); }
       $("repoSearch").disabled = false; $("repoSearch").value = ""; $("repoManual").value = "";
       renderRepoOptions(); $("repoSelect").value = r.full_name; persist(LS_KEYS.repo, r.full_name); addRecent(r.full_name); updateActiveRepoBanners();
-      showMsg(msg, exists ? "info" : "success", (exists ? "Ya estaba en la lista: " : "Añadido a la lista: ") + "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " (priv)" : "") + ".");
+      showMsg(msg, exists ? "info" : "success", (exists ? "Already in the list: " : "Added to the list: ") + "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " (priv)" : "") + ".");
     }).catch(function (err) {
       var extra = /\b404\b/.test(err.message)
-        ? " — un 404 suele significar que tu token NO puede ver este repo: (1) token fine-grained sin acceso al repo/org; (2) token classic sin scope repo; (3) SAML SSO sin autorizar; (4) owner/repo mal escrito."
-        : " — comprueba el nombre, los permisos del token y la autorización SAML SSO si aplica.";
+        ? " — a 404 usually means your token CANNOT see this repo: (1) fine-grained token without access to the repo/org; (2) classic token without the repo scope; (3) SAML SSO not authorized; (4) owner/repo misspelled."
+        : " — check the name, the token permissions and SAML SSO authorization if applicable.";
       showMsg(msg, "error", esc(err.message) + extra);
     }).then(function () { btn.disabled = false; btn.textContent = prev; });
   });
 
-  // =================== INCIDENCIAS: LISTA + SCROLL INFINITO ===================
+  // =================== ISSUES: LIST + INFINITE SCROLL ===================
   var PER_PAGE = 25;
   var issuesState = { repo: null, dir: "desc", page: 0, loading: false, done: false, items: [] };
 
-  function sortLabel() { return issuesState.dir === "asc" ? "Antiguas" : "Recientes"; }
+  function sortLabel() { return issuesState.dir === "asc" ? "Oldest" : "Newest"; }
   function paintSortBtn() { $("btnSort").innerHTML = svg("sort", 15) + "<span>" + sortLabel() + "</span>"; }
   paintSortBtn();
   $("btnSort").addEventListener("click", function () { issuesState.dir = issuesState.dir === "asc" ? "desc" : "asc"; paintSortBtn(); resetAndLoadIssues(); });
@@ -1227,15 +1227,15 @@
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
     $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false;
-    if (issuesState.items.length) renderIssuesList();   // re-pinta desde caché (refleja cambios al volver)
+    if (issuesState.items.length) renderIssuesList();   // re-paints from cache (reflects changes on return)
     updateActiveRepoBanners();
   }
-  // ---- Mini-render de Markdown seguro (sin dependencias). El texto se escapa
-  // primero y luego se aplican transformaciones, de modo que no hay riesgo de HTML
-  // inyectado. Cubre: encabezados, negrita/cursiva, código inline y en bloque,
-  // enlaces (solo http/https), listas, checklists, citas y reglas horizontales. ----
+  // ---- Safe mini-Markdown renderer (no dependencies). The text is escaped
+  // first and then transformations are applied, so there's no risk of injected
+  // HTML. Covers: headings, bold/italic, inline and block code,
+  // links (http/https only), lists, checklists, quotes and horizontal rules. ----
   function mdInline(s) {
-    // s ya viene escapado. Protegemos el código inline para no formatear dentro.
+    // s comes in already escaped. We protect inline code so we don't format inside it.
     var codes = [];
     s = s.replace(/`([^`]+)`/g, function (_, c) { codes.push(c); return "" + (codes.length - 1) + ""; });
     s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (_, t, u) {
@@ -1273,7 +1273,7 @@
       if (bullet) { flushPara(); if (listType !== "ul" || listTask) { flushList(); listType = "ul"; listTask = false; } items.push("<li>" + mdInline(bullet[1]) + "</li>"); i++; continue; }
       var ol = line.match(/^\s*\d+\.\s+(.*)$/);
       if (ol) { flushPara(); if (listType !== "ol") { flushList(); listType = "ol"; } items.push("<li>" + mdInline(ol[1]) + "</li>"); i++; continue; }
-      var bq = line.match(/^&gt;\s?(.*)$/);  // ">" ya viene escapado como "&gt;"
+      var bq = line.match(/^&gt;\s?(.*)$/);  // ">" already comes escaped as "&gt;"
       if (bq) { flushList(); flushPara(); out.push("<blockquote>" + mdInline(bq[1]) + "</blockquote>"); i++; continue; }
       para.push(line.trim()); i++;
     }
@@ -1281,14 +1281,14 @@
     return out.join("");
   }
   function renderMd(text) { return '<div class="md">' + mdToHtml(text) + "</div>"; }
-  // Login del usuario del token (cacheado); permite mostrar editar/borrar en comentarios propios.
+  // Login of the token's user (cached); enables showing edit/delete on own comments.
   function getMe() {
     if (ghUserLogin !== null) return Promise.resolve(ghUserLogin);
     return ghFetch(GH_API + "/user").then(function (u) { ghUserLogin = (u && u.login) || ""; return ghUserLogin; }).catch(function () { ghUserLogin = ""; return ""; });
   }
   function renderComment(c) {
     var mine = c.user && ghUserLogin && c.user.login === ghUserLogin;
-    var acts = mine ? '<span class="cactions"><button type="button" class="clink cedit" data-cid="' + c.id + '">Editar</button><button type="button" class="clink cdel" data-cid="' + c.id + '">Borrar</button></span>' : "";
+    var acts = mine ? '<span class="cactions"><button type="button" class="clink cedit" data-cid="' + c.id + '">Edit</button><button type="button" class="clink cdel" data-cid="' + c.id + '">Delete</button></span>' : "";
     return '<div class="comment" data-cid="' + c.id + '" data-raw="' + encodeURIComponent(c.body || "") + '">' +
       '<div class="who">' + esc(c.user ? c.user.login : "?") + " · " + esc(fmtShort(c.created_at)) + acts + "</div>" +
       '<div class="cbody">' + renderMd(c.body) + "</div></div>";
@@ -1297,8 +1297,8 @@
   function renderIssueRow(it) {
     var li = document.createElement("li");
     li.className = "list-row";
-    // La cápsula open/closed va en la subfila, a la izquierda del estado
-    // (pending/done…), dejando más ancho a la derecha de la fila (solo el chevrón).
+    // The open/closed capsule goes in the subrow, to the left of the status
+    // (pending/done…), leaving more width on the right of the row (just the chevron).
     li.innerHTML =
       '<span class="lead">' + svg("issue", 18) + "</span>" +
       '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
@@ -1306,16 +1306,16 @@
           '<span class="rsub-badges">' + stateTag(it.state) + statusTag(it) + "</span>" +
           '<span class="rsub-meta"><span class="knum">#' + it.number + "</span>" + esc(it.user ? it.user.login : "?") +
             " · " + svg("comment", 13) + " " + (it.comments || 0) +
-            " · act. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
+            " · upd. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
         labelsHtml(userLabels(it)) + "</div>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
     return li;
   }
-  // Re-pinta la lista desde la caché en memoria (refleja cambios sin recargar de red).
+  // Re-paints the list from the in-memory cache (reflects changes without reloading from the network).
   function renderIssuesList() {
     var ul = $("issuesList"); ul.innerHTML = "";
-    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>'; return; }
+    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = '<div class="empty-state">No issues in this repository.</div>'; return; }
     issuesState.items.forEach(function (it) { ul.appendChild(renderIssueRow(it)); });
   }
   function resetAndLoadIssues() {
@@ -1326,21 +1326,21 @@
   function maybeAutoLoadIssues() {
     var repo = getSelectedRepo();
     if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) return;
-    if (issuesState.repo !== repo) { issuesState.repo = repo; resetAndLoadIssues(); }   // repo cambiado → red
-    else if (!issuesState.items.length && !issuesState.loading) resetAndLoadIssues();    // sin datos → red
-    else renderIssuesList();                                                             // ya cargado → caché (con cambios)
+    if (issuesState.repo !== repo) { issuesState.repo = repo; resetAndLoadIssues(); }   // repo changed → network
+    else if (!issuesState.items.length && !issuesState.loading) resetAndLoadIssues();    // no data → network
+    else renderIssuesList();                                                             // already loaded → cache (with changes)
   }
 
   function loadMoreIssues() {
     if (issuesState.loading || issuesState.done) return;
     var repo = getSelectedRepo();
-    if (!ghTokenMem) { showMsg($("issuesMsg"), "error", "Introduce tu token en Configuración."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg($("issuesMsg"), "error", "Selecciona un repositorio en Configuración."); return; }
+    if (!ghTokenMem) { showMsg($("issuesMsg"), "error", "Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { showMsg($("issuesMsg"), "error", "Select a repository in Settings."); return; }
     issuesState.repo = repo;
-    if (issuesState.page === 0) addRecent(repo);   // usar el repo cuenta como reciente
+    if (issuesState.page === 0) addRecent(repo);   // using the repo counts as recent
     issuesState.loading = true;
     var page = issuesState.page + 1;
-    var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Cargando…';
+    var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Loading…';
 
     var url = GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + PER_PAGE + "&sort=updated&direction=" + issuesState.dir + "&page=" + page;
     ghFetch(url).then(function (items) {
@@ -1350,7 +1350,7 @@
       var issues = items.filter(function (it) { return !it.pull_request; });
       var ul = $("issuesList");
       issues.forEach(function (it) { issuesState.items.push(it); ul.appendChild(renderIssueRow(it)); });
-      if (!issuesState.items.length && issuesState.done) ul.innerHTML = '<div class="empty-state">No hay incidencias en este repositorio.</div>';
+      if (!issuesState.items.length && issuesState.done) ul.innerHTML = '<div class="empty-state">No issues in this repository.</div>';
     }).catch(function (err) {
       showMsg($("issuesMsg"), "error", esc(err.message)); issuesState.done = true;
     }).then(function () {
@@ -1360,7 +1360,7 @@
     });
   }
 
-  // Scroll infinito sobre el contenedor de contenido.
+  // Infinite scroll over the content container.
   $("content").addEventListener("scroll", function () {
     if (!$("view-issues").classList.contains("active")) return;
     if ($("issuesListWrap").style.display === "none") return;
@@ -1368,11 +1368,11 @@
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) loadMoreIssues();
   });
 
-  // =================== DETALLE + COMENTARIOS ===================
+  // =================== DETAIL + COMMENTS ===================
   var currentIssue = null; // {repo, number, state}
 
-  // Activa el contenedor de la vista Incidencias (donde vive el detalle) sin
-  // recargar el listado; permite abrir un detalle viniendo también del Kanban.
+  // Activates the Issues view container (where the detail lives) without
+  // reloading the list; allows opening a detail coming from the Kanban too.
   function activateIssuesContainer() { markActiveView("issues"); }
 
   function openIssue(repo, number, origin) {
@@ -1382,12 +1382,12 @@
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
     $("content").scrollTop = 0;
-    box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Cargando…</div>';
+    box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Loading…</div>';
 
     Promise.all([
       ghFetch(GH_API + "/repos/" + repo + "/issues/" + number),
       ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments?per_page=100").catch(function () { return []; }),
-      getMe()   // conocer el login para mostrar editar/borrar en comentarios propios
+      getMe()   // learn the login to show edit/delete on own comments
     ]).then(function (res) {
       var issue = res[0], comments = Array.isArray(res[1]) ? res[1] : [];
       currentIssue = { repo: repo, number: number, state: issue.state };
@@ -1399,12 +1399,12 @@
             stateTag(issue.state) +
             statusTag(issue) +
             "<span>" + esc(issue.user ? issue.user.login : "?") + "</span>" +
-            "<span>· abierto " + esc(fmtShort(issue.created_at)) + "</span>" +
-            "<span>· actualizado " + esc(fmtShort(issue.updated_at)) + "</span>" +
+            "<span>· opened " + esc(fmtShort(issue.created_at)) + "</span>" +
+            "<span>· updated " + esc(fmtShort(issue.updated_at)) + "</span>" +
           "</div>" +
           labelsHtml(userLabels(issue)) +
-          (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(sin descripción)</div>') +
-          '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Estado</div>' +
+          (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(no description)</div>') +
+          '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Status</div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
               var on = statusOf(issue) === s.name;
               return '<button type="button" class="strow' + (on ? " on" : "") + '" data-st="' + esc(s.name) + '" style="color:#' + s.dot + (on ? ";background:#" + s.color : "") + '">' +
@@ -1414,38 +1414,38 @@
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
             '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
-            '<button id="btnEditIssue" style="margin-left:auto" class="secondary">Editar</button>' +
-            '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Cerrar" : "Reabrir") + "</button>" +
+            '<button id="btnEditIssue" style="margin-left:auto" class="secondary">Edit</button>' +
+            '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Close" : "Reopen") + "</button>" +
           "</div>" +
         "</div>" +
-        '<div class="pad"><div class="group-title" style="padding:0">Comentarios (<span id="commentsCount">' + comments.length + "</span>)</div></div>";
+        '<div class="pad"><div class="group-title" style="padding:0">Comments (<span id="commentsCount">' + comments.length + "</span>)</div></div>";
 
       html += '<div id="commentsList">';
-      if (comments.length === 0) html += '<div class="empty-state" id="noComments">Sin comentarios.</div>';
+      if (comments.length === 0) html += '<div class="empty-state" id="noComments">No comments.</div>';
       else comments.forEach(function (c) { html += renderComment(c); });
       html += "</div>";
 
-      // ---- Compositor de comentario con IA (texto propuesto + tono + generado editable) ----
+      // ---- AI comment composer (proposed text + mode + editable generated) ----
       html +=
         '<div class="group" style="margin-top:14px">' +
-          '<div class="pad"><div class="group-title" style="padding:0">Nuevo comentario con IA</div></div>' +
-          '<div class="field"><label for="commentNote">Texto propuesto</label>' +
-            '<textarea id="commentNote" rows="3" placeholder="Idea / borrador de lo que quieres comentar…"></textarea></div>' +
-          '<div class="field" style="border-bottom:none"><label>Modo</label><div class="segmented" id="commentToneControl">' +
+          '<div class="pad"><div class="group-title" style="padding:0">New comment with AI</div></div>' +
+          '<div class="field"><label for="commentNote">Proposed text</label>' +
+            '<textarea id="commentNote" rows="3" placeholder="Idea / draft of what you want to comment…"></textarea></div>' +
+          '<div class="field" style="border-bottom:none"><label>Mode</label><div class="segmented" id="commentToneControl">' +
             '<button type="button" data-tone="simple">Simple</button>' +
-            '<button type="button" data-tone="funcionalidad">Funcionalidad</button>' +
-            '<button type="button" data-tone="incidencia">Incidencia</button></div></div>' +
-          '<div class="field actions"><button id="btnGenComment" class="block">Generar con IA</button></div>' +
+            '<button type="button" data-tone="feature">Feature</button>' +
+            '<button type="button" data-tone="bug">Bug</button></div></div>' +
+          '<div class="field actions"><button id="btnGenComment" class="block">Generate with AI</button></div>' +
           '<div id="commentGenStatus" class="status"></div>' +
-          '<div class="field"><label for="commentGenerated">Texto generado (editable, es lo que se publica)</label>' +
-            '<textarea id="commentGenerated" rows="5" placeholder="Aquí aparece el comentario generado; edítalo si quieres…"></textarea></div>' +
-          '<div class="field"><button id="btnPostComment" class="block">Publicar comentario</button></div>' +
+          '<div class="field"><label for="commentGenerated">Generated text (editable, this is what gets published)</label>' +
+            '<textarea id="commentGenerated" rows="5" placeholder="The generated comment appears here; edit it if you want…"></textarea></div>' +
+          '<div class="field"><button id="btnPostComment" class="block">Publish comment</button></div>' +
           '<div id="commentMsg" class="msg"></div>' +
         "</div>";
 
       box.innerHTML = html;
 
-      // wiring del detalle
+      // detail wiring
       $("btnToggleState").addEventListener("click", toggleIssueState);
       $("btnEditIssue").addEventListener("click", function () { editIssueField(repo, number, "body", issue.body || ""); });
       $("detailTitle").addEventListener("click", function () { editIssueField(repo, number, "title", issue.title || ""); });
@@ -1453,10 +1453,10 @@
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
         if (name === statusOf(issue)) return;
-        var prevLabels = (issue.labels || []).slice();   // para revertir si falla
+        var prevLabels = (issue.labels || []).slice();   // to revert if it fails
         showBusy();
-        var p = applyStatus(repo, issue, name);   // muta issue.labels de forma síncrona
-        refreshDetailStatus(issue);                // refleja el nuevo estado al instante
+        var p = applyStatus(repo, issue, name);   // mutates issue.labels synchronously
+        refreshDetailStatus(issue);                // reflects the new status instantly
         p.then(function () { syncIssue(repo, number, { labels: issue.labels.slice() }); })
           .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); alert(err.message); })
           .then(function () { hideBusy(); });
@@ -1470,7 +1470,7 @@
     });
   }
 
-  // ---- Editar / borrar comentarios (solo los propios; la API valida permisos) ----
+  // ---- Edit / delete comments (own ones only; the API validates permissions) ----
   function commentEl(cid) { return document.querySelector('.comment[data-cid="' + cid + '"]'); }
   function onCommentAction(e) {
     var t = e.target;
@@ -1478,7 +1478,7 @@
     if (ed && currentIssue) {
       var cid = ed.getAttribute("data-cid"), el = commentEl(cid);
       var raw = el ? decodeURIComponent(el.getAttribute("data-raw") || "") : "";
-      editCommentBody(currentIssue.repo, cid, raw);   // reutiliza la vista de edición
+      editCommentBody(currentIssue.repo, cid, raw);   // reuses the edit view
     } else if (dl) deleteComment(dl.getAttribute("data-cid"));
   }
   function deleteComment(cid) {
@@ -1492,35 +1492,35 @@
       }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
   }
 
-  // =================== EDITOR GENÉRICO (una sola vista, un elemento cada vez) ===================
-  // Reutilizado para el título de la incidencia, el cuerpo de la incidencia y el
-  // comentario: cada llamada define cómo guardar (save) y qué hacer al terminar (after).
+  // =================== GENERIC EDITOR (a single view, one element at a time) ===================
+  // Reused for the issue title, the issue body and the
+  // comment: each call defines how to save (save) and what to do when done (after).
   var editState = null;   // { save(value)->Promise, after(value, result) }
   function openEditor(opts) {
     editState = opts;
     markActiveView("edit");
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
     var ta = $("editBody");
-    ta.placeholder = opts.placeholder || "Escribe aquí…";
+    ta.placeholder = opts.placeholder || "Write here…";
     ta.value = opts.value || "";
     ta.scrollTop = 0;
-    // preventScroll: evita el salto de scroll que descolocaba la vista al enfocar.
+    // preventScroll: avoids the scroll jump that displaced the view on focus.
     try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
   }
-  // Vuelve al detalle ya renderizado (sin recargar de red).
+  // Returns to the already-rendered detail (without reloading from the network).
   function closeEditor() {
     editState = null;
     markActiveView("issues");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
   }
-  // Atajos para no repetir la fontanería del PATCH en cada llamada.
+  // Shortcuts to avoid repeating the PATCH plumbing on every call.
   function editIssueField(repo, number, field, value) {
     var patch = {}; patch[field] = value;
     openEditor({
       value: value,
-      placeholder: field === "title" ? "Título de la incidencia" : "Cuerpo (Markdown)…",
-      validate: function (v) { if (field === "title" && !v.trim()) return "El título no puede estar vacío."; },
+      placeholder: field === "title" ? "Issue title" : "Body (Markdown)…",
+      validate: function (v) { if (field === "title" && !v.trim()) return "The title can't be empty."; },
       save: function (v) {
         var b = {}; b[field] = (field === "title") ? v.trim() : v;
         return ghFetch(GH_API + "/repos/" + repo + "/issues/" + number, {
@@ -1530,13 +1530,13 @@
       after: function (v) {
         var s = {}; s[field] = (field === "title") ? v.trim() : v;
         syncIssue(repo, number, s);
-        openIssue(repo, number, detailOrigin);   // vuelve al detalle actualizado
+        openIssue(repo, number, detailOrigin);   // returns to the updated detail
       }
     });
   }
   function editCommentBody(repo, cid, value) {
     openEditor({
-      value: value, placeholder: "Comentario (Markdown)…",
+      value: value, placeholder: "Comment (Markdown)…",
       save: function (v) {
         return ghFetch(GH_API + "/repos/" + repo + "/issues/comments/" + cid, {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: v })
@@ -1562,10 +1562,10 @@
       .then(function () { btn.disabled = false; hideBusy(); });
   });
 
-  // Actualiza en sitio la zona de estado (badge open/closed + texto del botón).
+  // Updates the state area in place (open/closed badge + button text).
   function updateStateUI(state) {
     var btn = $("btnToggleState");
-    if (btn) { btn.textContent = state === "open" ? "Cerrar" : "Reabrir"; btn.className = "btnstate " + (state === "open" ? "close" : "reopen"); }
+    if (btn) { btn.textContent = state === "open" ? "Close" : "Reopen"; btn.className = "btnstate " + (state === "open" ? "close" : "reopen"); }
     var badge = document.querySelector(".detail-meta .statechip");
     if (badge) { var c = stateChipColors(state); badge.style.background = "#" + c.bg; badge.style.color = "#fff"; badge.innerHTML = stateChipInner(state); }
   }
@@ -1573,7 +1573,7 @@
     if (!currentIssue) return;
     var prevState = currentIssue.state;
     var newState = prevState === "open" ? "closed" : "open";
-    // Optimista: actualiza la UI al instante; spinner modal hasta confirmar.
+    // Optimistic: updates the UI instantly; modal spinner until confirmed.
     currentIssue.state = newState; updateStateUI(newState);
     showBusy();
     ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/" + currentIssue.number, {
@@ -1585,7 +1585,7 @@
     }).then(function () { hideBusy(); });
   }
 
-  // Etiquetas (solo lectura): chips para mostrar las etiquetas no-estado.
+  // Labels (read-only): chips to show the non-status labels.
   function labelsHtml(labels) {
     if (!labels || !labels.length) return "";
     return '<div class="lblrow">' + labels.map(function (l) {
@@ -1598,102 +1598,102 @@
     var msg = $("commentMsg"); hideMsg(msg);
     var note = $("commentNote").value.trim();
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configura el LLM en Configuración."); return; }
-    if (!note) { showMsg(msg, "error", "Escribe un texto propuesto para el comentario."); return; }
-    var btn = $("btnGenComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Generando…';
+    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM in Settings."); return; }
+    if (!note) { showMsg(msg, "error", "Write a proposed text for the comment."); return; }
+    var btn = $("btnGenComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Generating…';
     function setStat(t) { $("commentGenStatus").textContent = t; }
 
     var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
     var parts = (currentIssue ? currentIssue.repo : "/").split("/"), owner = parts[0], name = parts[1];
     var tone = commentTone;
-    var query = "Incidencia: " + issue.title + "\n" + (issue.body || "") + "\n\nComentario propuesto:\n" + note;
+    var query = "Issue: " + issue.title + "\n" + (issue.body || "") + "\n\nProposed comment:\n" + note;
 
     function draft(ctx) {
-      setStat("Redactando comentario…");
+      setStat("Writing comment…");
       return llmComplete([
         { role: "system", content: commentSystemPrompt(tone) },
         { role: "user", content: commentUserPrompt(tone, issue, thread, note, ctx) }
       ]);
     }
-    // MODO SIMPLE: no revisa el código (rápido y simple). Resto: revisa el código base.
+    // SIMPLE MODE: doesn't review the code (fast and simple). Others: review the codebase.
     var work = toneReviewsCode(tone) ? reviewCodebase(owner, name, query, setStat).then(draft) : draft(null);
 
     work.then(function (content) {
       $("commentGenerated").value = cleanText(content);
       setStat("");
-      showMsg(msg, "success", "Comentario generado. Edítalo si quieres y pulsa Publicar.");
+      showMsg(msg, "success", "Comment generated. Edit it if you want and press Publish.");
     }).catch(function (err) {
       setStat(""); showMsg(msg, "error", esc(err.message));
-    }).then(function () { btn.disabled = false; btn.textContent = "Generar con IA"; });
+    }).then(function () { btn.disabled = false; btn.textContent = "Generate with AI"; });
   }
 
   function postComment(repo, number) {
     var msg = $("commentMsg"); hideMsg(msg);
     var body = $("commentGenerated").value.trim();
-    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
-    if (!body) { showMsg(msg, "error", "No hay texto generado que publicar."); return; }
+    if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
+    if (!body) { showMsg(msg, "error", "There's no generated text to publish."); return; }
     showBusy();
     ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body })
     }).then(function (created) {
-      // Inserta el comentario devuelto directamente (sin recargar; evita la
-      // consistencia eventual de GitHub que hacía que no apareciera al refrescar).
+      // Inserts the returned comment directly (without reloading; avoids GitHub's
+      // eventual consistency that made it not appear on refresh).
       var no = $("noComments"); if (no) no.parentNode.removeChild(no);
       var lst = $("commentsList"); if (lst && created && created.body !== undefined) lst.insertAdjacentHTML("beforeend", renderComment(created));
       var cc = $("commentsCount"); if (cc) cc.textContent = (parseInt(cc.textContent, 10) || 0) + 1;
       $("commentGenerated").value = ""; $("commentNote").value = "";
       syncIssue(repo, number, { commentsInc: 1 });
       hideBusy();
-      showMsg(msg, "success", "Comentario publicado.");
-      $("content").scrollTop = $("content").scrollHeight;   // baja al comentario nuevo
+      showMsg(msg, "success", "Comment published.");
+      $("content").scrollTop = $("content").scrollHeight;   // scrolls down to the new comment
     }).catch(function (err) {
       hideBusy(); showMsg(msg, "error", esc(err.message));
     });
   }
 
-  // =================== KANBAN (tablero por estado, arrastrar para mover) ===================
+  // =================== KANBAN (board by status, drag to move) ===================
   var KAN = { repo: null, loading: false, issues: [], dragging: false };
-  // Estados FIJOS (no editables). En GitHub se guardan como etiqueta "status:<key>".
+  // FIXED statuses (not editable). In GitHub they're stored as a "status:<key>" label.
   var STATUS_PREFIX = "status:";
-  // color: pastel del chip; dot: punto de color (más fuerte) de la cabecera.
+  // color: chip pastel; dot: colored dot (stronger) of the header.
   var STATUSES = [
-    { name: "pending",   color: "f4e8bb", dot: "d4a72c" },  // amarillo
-    { name: "progress",  color: "cfe0f6", dot: "3b82f6" },  // azul
-    { name: "review",    color: "e7d9f7", dot: "8250df" },  // morado
-    { name: "done",      color: "d3ebd9", dot: "2da44e" },  // verde
-    { name: "archive",   color: "e8e8e8", dot: "8b949e" },  // gris
-    { name: "resources", color: "f6ddc5", dot: "e8853f" }   // naranja
+    { name: "pending",   color: "f4e8bb", dot: "d4a72c" },  // yellow
+    { name: "progress",  color: "cfe0f6", dot: "3b82f6" },  // blue
+    { name: "review",    color: "e7d9f7", dot: "8250df" },  // purple
+    { name: "done",      color: "d3ebd9", dot: "2da44e" },  // green
+    { name: "archive",   color: "e8e8e8", dot: "8b949e" },  // gray
+    { name: "resources", color: "f6ddc5", dot: "e8853f" }   // orange
   ];
   function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name === name) return STATUSES[i]; return null; }
   function statusLabelName(name) { return STATUS_PREFIX + name; }                 // "status:done"
   function statusKeyOf(label) { var n = String(label == null ? "" : (label.name || label)).toLowerCase(); if (n.indexOf(STATUS_PREFIX) !== 0) return null; var k = n.slice(STATUS_PREFIX.length).trim(); return statusByName(k) ? k : null; }
   function isStatusLabel(label) { return !!statusKeyOf(label); }
-  // Estado de una incidencia: primera etiqueta "status:<key>" reconocida; si no, la primera (pending).
+  // Status of an issue: first recognized "status:<key>" label; otherwise the first one (pending).
   function statusOf(it) {
     var found = null;
     (it.labels || []).forEach(function (l) { var k = statusKeyOf(l); if (k && !found) found = k; });
     return found || (STATUSES[0] && STATUSES[0].name) || "";
   }
-  // Cápsula con el mismo estilo que la cabecera del kanban (.kchip/.kdot):
-  // fondo pastel, texto y punto en el tono oscuro.
+  // Capsule with the same style as the kanban header (.kchip/.kdot):
+  // pastel background, text and dot in the dark tone.
   function chipInner(dotHex, text) { return '<span class="kdot" style="background:#' + dotHex + '"></span>' + esc(text); }
   function chip(marker, bgHex, dotHex, text) {
     return '<span class="kchip ' + marker + '" style="background:#' + bgHex + ';color:#' + dotHex + '">' + chipInner(dotHex, text) + "</span>";
   }
-  // Cápsula open/closed estilo GitHub: fondo sólido (verde/morado), texto e icono
-  // en blanco (icono issue-abierto / issue-cerrado).
+  // GitHub-style open/closed capsule: solid background (green/purple), text and icon
+  // in white (open-issue / closed-issue icon).
   var STATE_CHIP = { open: { bg: "1f883d", icon: "issue" }, closed: { bg: "8250df", icon: "issueclosed" } };
   function stateChipColors(state) { return STATE_CHIP[state === "closed" ? "closed" : "open"]; }
   function stateChipInner(state) { var c = stateChipColors(state); return svg(c.icon, 13) + esc(state); }
   function stateTag(state) { var c = stateChipColors(state); return '<span class="kchip statechip" style="background:#' + c.bg + ';color:#fff">' + stateChipInner(state) + "</span>"; }
-  // Tag coloreado del estado (pending/done…), con estilo de cápsula del kanban.
+  // Colored status tag (pending/done…), with kanban capsule style.
   function statusTag(it) {
     var s = statusByName(statusOf(it));
     if (!s) return "";
     return chip("sttag", s.color, s.dot, s.name);
   }
 
-  // ----- Orden manual dentro de una columna: etiqueta "order:<n>" -----
+  // ----- Manual order within a column: "order:<n>" label -----
   var ORDER_PREFIX = "order:";
   function orderLabelName(n) { return ORDER_PREFIX + n; }
   function orderKeyOf(label) {
@@ -1703,17 +1703,17 @@
     return isNaN(v) ? null : v;
   }
   function isOrderLabel(label) { return orderKeyOf(label) !== null; }
-  // Orden de una incidencia (primer "order:<n>" válido) o null si no tiene.
+  // Order of an issue (first valid "order:<n>") or null if it has none.
   function orderOf(it) {
     var found = null;
     (it.labels || []).forEach(function (l) { var v = orderKeyOf(l); if (v !== null && found === null) found = v; });
     return found;
   }
-  // Etiqueta interna (estado u orden): no se muestra como chip de usuario.
+  // Internal label (status or order): not shown as a user chip.
   function isInternalLabel(label) { return isStatusLabel(label) || isOrderLabel(label); }
-  // Etiquetas visibles de una incidencia (las del usuario, sin las internas).
+  // Visible labels of an issue (the user's, without the internal ones).
   function userLabels(it) { return (it.labels || []).filter(function (l) { return !isInternalLabel(l.name || l); }); }
-  // Refresca en sitio el estado en el detalle (filas + tag) sin recargar todo.
+  // Refreshes the status in the detail in place (rows + tag) without reloading everything.
   function refreshDetailStatus(it) {
     var cur = statusOf(it);
     var row = document.getElementById("statusRow");
@@ -1722,7 +1722,7 @@
       for (var i = 0; i < bs.length; i++) {
         var on = bs[i].getAttribute("data-st") === cur, rs = statusByName(bs[i].getAttribute("data-st"));
         bs[i].classList.toggle("on", on);
-        bs[i].style.background = (on && rs) ? "#" + rs.color : "";   // fila activa: pastel del estado
+        bs[i].style.background = (on && rs) ? "#" + rs.color : "";   // active row: status pastel
         bs[i].disabled = false;
       }
     }
@@ -1732,8 +1732,8 @@
     if (tag && s) { tag.style.background = "#" + s.color; tag.style.color = "#" + s.dot; tag.innerHTML = chipInner(s.dot, s.name); }
   }
 
-  // Actualiza una incidencia en las cachés (lista + kanban) para que, al volver,
-  // las vistas reflejen el cambio sin recargar de la red.
+  // Updates an issue in the caches (list + kanban) so that, on return,
+  // the views reflect the change without reloading from the network.
   function syncIssue(repo, number, patch) {
     function upd(arr) {
       if (!arr) return;
@@ -1751,18 +1751,18 @@
 
   function maybeAutoLoadKanban() {
     var repo = getSelectedRepo();
-    if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) { $("kanbanBoard").innerHTML = '<div class="empty-state">Selecciona un repositorio en Configuración.</div>'; return; }
-    if (KAN.repo !== repo || KAN.issues.length === 0) loadKanban();   // repo cambiado/sin datos → red
-    else renderKanban();                                             // ya cargado → caché (con cambios)
+    if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) { $("kanbanBoard").innerHTML = '<div class="empty-state">Select a repository in Settings.</div>'; return; }
+    if (KAN.repo !== repo || KAN.issues.length === 0) loadKanban();   // repo changed/no data → network
+    else renderKanban();                                             // already loaded → cache (with changes)
   }
 
   function loadKanban() {
     var repo = getSelectedRepo();
-    if (!ghTokenMem) { showMsg($("kanbanMsg"), "error", "Introduce tu token en Configuración."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg($("kanbanMsg"), "error", "Selecciona un repositorio en Configuración."); return; }
+    if (!ghTokenMem) { showMsg($("kanbanMsg"), "error", "Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { showMsg($("kanbanMsg"), "error", "Select a repository in Settings."); return; }
     hideMsg($("kanbanMsg"));
     KAN.repo = repo; KAN.loading = true; addRecent(repo);
-    $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Cargando…</div>';
+    $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Loading…</div>';
     ghFetch(GH_API + "/repos/" + repo + "/issues?state=all&per_page=100&sort=updated&direction=desc")
       .then(function (items) {
         items = Array.isArray(items) ? items : [];
@@ -1776,8 +1776,8 @@
     var board = $("kanbanBoard"); board.innerHTML = "";
     STATUSES.forEach(function (col) {
       var list = KAN.issues.filter(function (it) { return statusOf(it) === col.name; });
-      // Orden: cerradas al fondo; luego las que tienen "order:<n>" (ascendente) y,
-      // por último, las que no lo tienen ordenadas por fecha (más reciente arriba).
+      // Order: closed at the bottom; then those with "order:<n>" (ascending) and,
+      // last, those without it sorted by date (most recent on top).
       list.sort(function (a, b) {
         if ((a.state === "closed") !== (b.state === "closed")) return a.state === "closed" ? 1 : -1;
         var oa = orderOf(a), ob = orderOf(b);
@@ -1788,7 +1788,7 @@
       });
       var colEl = document.createElement("div");
       colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
-      colEl.style.background = "#" + col.color + "40";   // fondo de columna: tinte muy claro del estado
+      colEl.style.background = "#" + col.color + "40";   // column background: very light tint of the status
       colEl.innerHTML = '<div class="kcol-head">' +
           '<span class="kchip" style="background:#' + col.color + ';color:#' + col.dot + '"><span class="kdot" style="background:#' + col.dot + '"></span>' + esc(col.name) + "</span>" +
           '<span class="kcount" style="color:#' + col.dot + 'b3">' + list.length + "</span>" +
@@ -1802,14 +1802,14 @@
     var card = document.createElement("div");
     card.className = "kcard" + (it.state === "closed" ? " closed" : "");
     card.setAttribute("data-num", it.number);
-    // Borde de la tarjeta con el tono intermedio (color pastel) del estado de su columna.
+    // Card border with the intermediate tone (pastel color) of its column's status.
     var st = statusByName(statusOf(it));
     if (st && st.color) card.style.borderColor = "#" + st.color;
-    // Resumen del detalle: 2 líneas en gris (texto plano del cuerpo del issue).
+    // Detail summary: 2 gray lines (plain text of the issue body).
     var excerpt = (it.body || "").replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`\-]/g, " ").replace(/\s+/g, " ").trim();
-    var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
-    // Solo se muestra la cápsula de estado si la incidencia está cerrada (la abierta
-    // se entiende por defecto). Va a la izquierda del número.
+    var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(no description)</div>';
+    // The status capsule is only shown if the issue is closed (an open one
+    // is assumed by default). It goes to the left of the number.
     var stateChip = it.state === "closed" ? stateTag(it.state) : "";
     card.innerHTML = '<div class="ktitle">' + esc(it.title) + "</div>" + bodyHtml +
       '<div class="ksub">' + stateChip + '<span class="knum">#' + it.number + "</span>" + svg("comment", 12) + " " + (it.comments || 0) + " · " + esc(fmtShort(it.updated_at)) + "</div>" +
@@ -1818,12 +1818,12 @@
     return card;
   }
 
-  // Arrastre fluido (transform + rAF). Inicio según el tipo de puntero:
-  //  · ratón/pen: arrastra al mover > 6px (clásico).
-  //  · táctil: pulsación larga (180 ms) para "coger" la tarjeta; antes de eso un
-  //    movimiento amplio se interpreta como scroll. Pulsación corta = abrir.
-  // El clon (pointer-events:none) sigue al dedo y elementFromPoint detecta la
-  // columna sin parpadeos. Auto-scroll horizontal del tablero cerca de los bordes.
+  // Smooth drag (transform + rAF). Start depends on the pointer type:
+  //  · mouse/pen: drags when moving > 6px (classic).
+  //  · touch: long press (180 ms) to "pick up" the card; before that, a
+  //    large movement is interpreted as scroll. Short press = open.
+  // The clone (pointer-events:none) follows the finger and elementFromPoint detects the
+  // column without flicker. Horizontal board auto-scroll near the edges.
   function attachCardInteractions(card, it) {
     var pressTimer = null, dragging = false, clone = null, pointerId = null, isTouch = false;
     var startX = 0, startY = 0, downAt = 0, grabX = 0, grabY = 0;
@@ -1834,7 +1834,7 @@
       isTouch = (e.pointerType !== "mouse");
       startX = lastX = e.clientX; startY = lastY = e.clientY; downAt = Date.now(); pointerId = e.pointerId; dragging = false;
       clearTimeout(pressTimer);
-      if (isTouch) pressTimer = setTimeout(beginDrag, 180);  // long-press para táctil
+      if (isTouch) pressTimer = setTimeout(beginDrag, 180);  // long-press for touch
       card.addEventListener("pointermove", onMove);
       card.addEventListener("pointerup", onUp);
       card.addEventListener("pointercancel", onUp);
@@ -1845,8 +1845,8 @@
     function onMove(e) {
       lastX = e.clientX; lastY = e.clientY;
       if (!dragging) {
-        if (!isTouch) { if (dist(e) > 6) beginDrag(); }           // ratón: arranca al mover
-        else if (dist(e) > 16) clearTimeout(pressTimer);          // táctil: movimiento amplio antes del long-press = scroll
+        if (!isTouch) { if (dist(e) > 6) beginDrag(); }           // mouse: starts on move
+        else if (dist(e) > 16) clearTimeout(pressTimer);          // touch: large movement before the long-press = scroll
         return;
       }
       e.preventDefault();
@@ -1857,10 +1857,10 @@
       if (!clone) return;
       clone.style.transform = "translate(" + (lastX - grabX) + "px," + (lastY - grabY) + "px) rotate(2deg) scale(1.03)";
       var board = $("kanbanBoard"), vw = window.innerWidth, vh = window.innerHeight;
-      // auto-scroll horizontal cerca de los bordes para alcanzar columnas lejanas
+      // horizontal auto-scroll near the edges to reach faraway columns
       if (lastX > vw - 50) board.scrollLeft += 16;
       else if (lastX < 50) board.scrollLeft -= 16;
-      // auto-scroll vertical para reordenar en columnas largas
+      // vertical auto-scroll to reorder within long columns
       var content = $("content");
       if (lastY > vh - 100) content.scrollTop += 16;
       else if (lastY < 90) content.scrollTop -= 16;
@@ -1879,8 +1879,8 @@
     }
     function beginDrag() {
       if (dragging) return;
-      dragging = true; KAN.dragging = true;   // bloquea el scroll táctil (touchmove)
-      $("kanbanBoard").classList.add("dragging");  // desactiva el scroll horizontal del tablero
+      dragging = true; KAN.dragging = true;   // blocks touch scroll (touchmove)
+      $("kanbanBoard").classList.add("dragging");  // disables the board's horizontal scroll
       var rect = card.getBoundingClientRect();
       grabX = lastX - rect.left; grabY = lastY - rect.top;
       try { card.setPointerCapture(pointerId); } catch (_) {}
@@ -1906,8 +1906,8 @@
       var newStatus = target.getAttribute("data-status");
       if (!newStatus) return;
 
-      // Secuencia final de la columna destino: tarjetas visibles (menos la
-      // arrastrada) con la arrastrada insertada según la Y del puntero.
+      // Final sequence of the destination column: visible cards (minus the
+      // dragged one) with the dragged one inserted according to the pointer's Y.
       var body = target.querySelector(".kcol-body");
       var domCards = [].slice.call(body.querySelectorAll(".kcard")).filter(function (c) { return c !== card; });
       var insertIdx = domCards.length;
@@ -1918,7 +1918,7 @@
       var seq = domCards.map(function (c) { return parseInt(c.getAttribute("data-num"), 10); });
       seq.splice(insertIdx, 0, it.number);
 
-      // ¿Hay algún cambio real (de columna o de posición)?
+      // Is there any real change (of column or position)?
       var changed = seq.some(function (num, idx) {
         var x = findKanIssue(num);
         return x && (statusOf(x) !== newStatus || orderOf(x) !== idx + 1);
@@ -1926,30 +1926,30 @@
       if (!changed) return;
 
       showBusy();
-      var p = applyColumnOrder(KAN.repo, newStatus, seq);   // muta las incidencias en memoria
-      renderKanban();                                        // optimista
-      p.catch(function (err) { showMsg($("kanbanMsg"), "error", "No se pudo reordenar: " + esc(err.message)); loadKanban(); })
+      var p = applyColumnOrder(KAN.repo, newStatus, seq);   // mutates the issues in memory
+      renderKanban();                                        // optimistic
+      p.catch(function (err) { showMsg($("kanbanMsg"), "error", "Couldn't reorder: " + esc(err.message)); loadKanban(); })
         .then(function () { hideBusy(); });
     }
   }
 
-  // Nombres de etiqueta para una incidencia con estado y (opcional) orden dados,
-  // conservando las etiquetas de usuario y descartando las internas anteriores.
+  // Label names for an issue with the given status and (optional) order,
+  // keeping the user labels and discarding the previous internal ones.
   function labelsWith(it, statusName, orderNum) {
     var keep = (it.labels || []).filter(function (l) { return !isInternalLabel(l); }).map(function (l) { return l.name || l; });
     if (statusName) keep.push(statusLabelName(statusName));
     if (orderNum != null) keep.push(orderLabelName(orderNum));
     return keep;
   }
-  // Muta it.labels en memoria (optimista) al nuevo conjunto interno.
+  // Mutates it.labels in memory (optimistic) to the new internal set.
   function setLocalLabels(it, statusName, orderNum) {
     var keep = (it.labels || []).filter(function (l) { return !isInternalLabel(l); });
     if (statusName) { var s = statusByName(statusName); keep.push({ name: statusLabelName(statusName), color: s ? s.color : "ededed" }); }
     if (orderNum != null) keep.push({ name: orderLabelName(orderNum), color: "ededed" });
     it.labels = keep;
   }
-  // PUT de etiquetas en UNA llamada. Si alguna etiqueta interna no existe aún en
-  // el repo (422), crea las que puedan faltar y reintenta una vez.
+  // PUT labels in ONE call. If some internal label doesn't yet exist in
+  // the repo (422), creates the ones that might be missing and retries once.
   function putIssueLabels(repo, it, labelNames) {
     function put() {
       return ghFetch(GH_API + "/repos/" + repo + "/issues/" + it.number + "/labels", {
@@ -1967,7 +1967,7 @@
       return Promise.all(creates).then(put);
     });
   }
-  // Cambia solo el estado (mover de columna): descarta el orden manual previo.
+  // Changes only the status (move column): discards the previous manual order.
   function applyStatus(repo, it, newName) {
     if (!statusByName(newName)) return Promise.resolve();
     var labels = labelsWith(it, newName, null);
@@ -1978,14 +1978,14 @@
     for (var i = 0; i < KAN.issues.length; i++) if (KAN.issues[i].number === num) return KAN.issues[i];
     return null;
   }
-  // Aplica una secuencia de números como el orden de una columna: asigna
-  // order:1..N y el estado de la columna, escribiendo solo las que cambian.
+  // Applies a sequence of numbers as a column's order: assigns
+  // order:1..N and the column's status, writing only the ones that change.
   function applyColumnOrder(repo, statusName, seq) {
     var writes = [];
     seq.forEach(function (num, idx) {
       var it = findKanIssue(num); if (!it) return;
       var want = idx + 1;
-      if (statusOf(it) === statusName && orderOf(it) === want) return;   // sin cambios
+      if (statusOf(it) === statusName && orderOf(it) === want) return;   // no changes
       var labels = labelsWith(it, statusName, want);
       setLocalLabels(it, statusName, want);
       writes.push(putIssueLabels(repo, it, labels).then(function () {
@@ -1995,7 +1995,7 @@
     return Promise.all(writes);
   }
 
-  // =================== COMPOSER: ANALIZAR Y REDACTAR ===================
+  // =================== COMPOSER: ANALYZE AND WRITE ===================
   var IGNORE_DIRS = /(^|\/)(node_modules|\.git|dist|build|vendor|\.next|coverage)(\/|$)/;
   var BINARY_EXT = /\.(png|jpe?g|gif|svg|ico|webp|bmp|tiff?|pdf|zip|gz|tar|rar|7z|exe|dll|so|dylib|bin|woff2?|ttf|eot|otf|mp[34]|mov|avi|mkv|wav|ogg|class|jar|wasm|lock|map|min\.js|min\.css)$/i;
   function setStatus(text) { $("analyzeStatus").textContent = text; }
@@ -2007,22 +2007,22 @@
     return new TextDecoder("utf-8").decode(bytes);
   }
 
-  // Caché por repo (sesión) de la parte pesada: rama, README y árbol de ficheros.
-  // La selección de ficheros depende de la nota, así que esa parte no se cachea.
+  // Per-repo cache (session) of the heavy part: branch, README and file tree.
+  // File selection depends on the note, so that part isn't cached.
   var repoBaseCache = {};
   function getRepoBase(owner, name, setStat) {
     var key = owner + "/" + name;
     if (repoBaseCache[key]) return Promise.resolve(repoBaseCache[key]);
     var base = { branch: "main", readme: "", files: [] };
-    setStat("Detectando rama por defecto…");
+    setStat("Detecting default branch…");
     return ghFetch(GH_API + "/repos/" + owner + "/" + name).then(function (info) {
       base.branch = info.default_branch || "main";
-      setStat("Leyendo README…");
+      setStat("Reading README…");
       return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/readme?ref=" + base.branch)
         .then(function (rd) { try { base.readme = b64ToUtf8(rd.content).slice(0, 5000); } catch (e) {} })
         .catch(function () {});
     }).then(function () {
-      setStat("Obteniendo árbol de ficheros…");
+      setStat("Fetching file tree…");
       return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/git/trees/" + base.branch + "?recursive=1");
     }).then(function (tree) {
       base.files = (tree.tree || []).filter(function (t) { return t.type === "blob" && !IGNORE_DIRS.test(t.path) && !BINARY_EXT.test(t.path); }).map(function (t) { return t.path; });
@@ -2031,28 +2031,28 @@
     });
   }
 
-  // Revisa el código base y devuelve {branch, readme, codeBlob}. Usa la caché de
-  // rama/README/árbol; el LLM elige hasta 5 rutas relevantes a `query` y se descargan.
+  // Reviews the codebase and returns {branch, readme, codeBlob}. Uses the
+  // branch/README/tree cache; the LLM picks up to 5 paths relevant to `query` and they're downloaded.
   function reviewCodebase(owner, name, query, setStat) {
     var ctx = { branch: "main", readme: "", tree: [], codeBlob: "" };
     return getRepoBase(owner, name, setStat).then(function (base) {
       ctx.branch = base.branch; ctx.readme = base.readme; ctx.tree = base.files;
       var files = base.files;
-      setStat("Eligiendo rutas relevantes (" + files.length + " ficheros)…");
+      setStat("Choosing relevant paths (" + files.length + " files)…");
       return llmComplete([
-        { role: "system", content: "Eres un asistente que localiza el código relevante para una nota/incidencia. Respondes SOLO con un array JSON de rutas (strings), sin texto adicional, sin fences." },
-        { role: "user", content: "Contexto:\n" + query + "\n\nFicheros (rama " + ctx.branch + "):\n" + files.slice(0, 800).join("\n") + "\n\nDevuelve un array JSON con HASTA 5 rutas EXACTAS de esa lista más relevantes. Solo el array JSON." }
+        { role: "system", content: "You are an assistant that locates the code relevant to a note/issue. You respond ONLY with a JSON array of paths (strings), no extra text, no fences." },
+        { role: "user", content: "Context:\n" + query + "\n\nFiles (branch " + ctx.branch + "):\n" + files.slice(0, 800).join("\n") + "\n\nReturn a JSON array with UP TO 5 EXACT paths from that list that are most relevant. Only the JSON array." }
       ]);
     }).then(function (content) {
       var paths = [];
       try { var parsed = parseLooseJSON(content); if (Array.isArray(parsed)) paths = parsed; else if (parsed && Array.isArray(parsed.paths)) paths = parsed.paths; } catch (e) { paths = []; }
       paths = paths.filter(function (p) { return ctx.tree.indexOf(p) !== -1; }).slice(0, 5);
       if (paths.length === 0) return [];
-      setStat("Revisando " + paths.length + " fichero(s) del código base…");
+      setStat("Reviewing " + paths.length + " codebase file(s)…");
       return Promise.all(paths.map(function (p) {
         return ghFetch(GH_API + "/repos/" + owner + "/" + name + "/contents/" + encodeURIComponent(p).replace(/%2F/g, "/") + "?ref=" + ctx.branch)
-          .then(function (c) { var text = ""; try { text = b64ToUtf8(c.content).slice(0, 5000); } catch (e) { text = "(no se pudo decodificar)"; } return { path: p, content: text }; })
-          .catch(function () { return { path: p, content: "(no disponible)" }; });
+          .then(function (c) { var text = ""; try { text = b64ToUtf8(c.content).slice(0, 5000); } catch (e) { text = "(couldn't decode)"; } return { path: p, content: text }; })
+          .catch(function () { return { path: p, content: "(unavailable)" }; });
       }));
     }).then(function (codeFiles) {
       ctx.codeBlob = (codeFiles || []).map(function (f) { return "=== " + f.path + " ===\n" + f.content; }).join("\n\n");
@@ -2063,66 +2063,66 @@
   $("btnAnalyze").addEventListener("click", function () {
     var btn = this, msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
     var repo = getSelectedRepo(), note = $("note").value.trim();
-    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
-    if (!note) { showMsg(msg, "error", "Escribe una nota describiendo el issue."); return; }
+    if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Select a repository in Settings."); return; }
+    if (!note) { showMsg(msg, "error", "Write a note describing the issue."); return; }
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configura Base URL, API key y Model del LLM."); return; }
+    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM Base URL, API key and Model."); return; }
 
-    rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analizando…';
+    rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analyzing…';
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
     var tone = currentTone;
 
     function draft(ctx) {
-      setStatus("Redactando el issue…");
+      setStatus("Writing the issue…");
       return llmComplete([
         { role: "system", content: issueSystemPrompt(tone) },
         { role: "user", content: issueUserPrompt(tone, note, ctx) }
       ]);
     }
-    // MODO SIMPLE: no revisa el código (rápido y simple). Resto: revisa el código base.
+    // SIMPLE MODE: doesn't review the code (fast and simple). Others: review the codebase.
     var work = toneReviewsCode(tone)
-      ? reviewCodebase(owner, name, "Nota del usuario:\n" + note, setStatus).then(draft)
+      ? reviewCodebase(owner, name, "User's note:\n" + note, setStatus).then(draft)
       : draft(null);
 
     work.then(function (content) {
       var obj = parseLooseJSON(content);
       var title = (obj && obj.title) ? String(obj.title) : "", body = (obj && obj.body) ? String(obj.body) : "";
-      if (!title && !body) throw new Error("El LLM no devolvió title/body.");
+      if (!title && !body) throw new Error("The LLM didn't return title/body.");
       $("issueTitle").value = title; $("issueBody").value = body; setStatus("");
-      showMsg(msg, "success", "Issue redactado. Revísalo abajo y publícalo.");
+      showMsg(msg, "success", "Issue written. Review it below and publish it.");
       $("issueTitle").scrollIntoView({ behavior: "smooth", block: "center" });
     }).catch(function (err) { setStatus(""); showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Generar con IA"; });
+      .then(function () { btn.disabled = false; btn.textContent = "Generate with AI"; });
   });
 
-  // =================== COMPOSER: PUBLICAR ===================
+  // =================== COMPOSER: PUBLISH ===================
   $("btnPublish").addEventListener("click", function () {
     var btn = this, msg = $("publishMsg"); hideMsg(msg);
     var repo = getSelectedRepo(), title = $("issueTitle").value.trim(), body = $("issueBody").value;
-    if (!ghTokenMem) { showMsg(msg, "error", "Introduce tu token en Configuración."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Selecciona un repositorio en Configuración."); return; }
-    if (!title) { showMsg(msg, "error", "El título no puede estar vacío."); return; }
+    if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Select a repository in Settings."); return; }
+    if (!title) { showMsg(msg, "error", "The title can't be empty."); return; }
     rememberRepo(); addRecent(repo); showBusy();
     var parts = repo.split("/");
     ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
     }).then(function (issue) {
-      issuesState.repo = null; KAN.repo = null;   // nuevo issue → recargar lista/tablero al abrirlos
-      showMsg(msg, "success", "Issue #" + issue.number + " creado: " + '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + esc(issue.html_url) + "</a>");
+      issuesState.repo = null; KAN.repo = null;   // new issue → reload list/board when opening them
+      showMsg(msg, "success", "Issue #" + issue.number + " created: " + '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + esc(issue.html_url) + "</a>");
     }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
       .then(function () { hideBusy(); });
   });
 
-  // ===== Bloqueo de pinch-zoom (in y out) en iOS Safari =====
+  // ===== Pinch-zoom block (in and out) on iOS Safari =====
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
     document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
   });
   document.addEventListener("touchmove", function (e) {
-    if (KAN.dragging) { e.preventDefault(); return; }   // no scrollear mientras se arrastra una tarjeta
+    if (KAN.dragging) { e.preventDefault(); return; }   // don't scroll while dragging a card
     if (e.touches && e.touches.length > 1) e.preventDefault();
   }, { passive: false });
-  // Evita el doble-tap-zoom.
+  // Prevents double-tap zoom.
   var lastTouch = 0;
   document.addEventListener("touchend", function (e) {
     var now = Date.now();
@@ -2130,9 +2130,9 @@
     lastTouch = now;
   }, { passive: false });
 
-  // --apph = alto del viewport visible; --vvtop = desplazamiento superior del viewport
-  // visible (offsetTop). El editor los usa para ceñirse exactamente al área visible
-  // (encogiendo con el teclado y sin dejar hueco por el scroll que provoca iOS al enfocar).
+  // --apph = height of the visible viewport; --vvtop = top offset of the visible
+  // viewport (offsetTop). The editor uses them to fit exactly to the visible area
+  // (shrinking with the keyboard and without leaving a gap from the scroll iOS causes on focus).
   function syncViewport() {
     var vv = window.visualViewport, s = document.documentElement.style;
     s.setProperty("--apph", (vv ? vv.height : window.innerHeight) + "px");
@@ -2149,11 +2149,11 @@
   loadSettings();
   buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; commentTone = v; persist(LS_KEYS.tone, v); paintToneHint(); });
   paintToneHint();
-  setLang(currentLang);   // marca el idioma activo en el control
+  setLang(currentLang);   // marks the active language in the control
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
-  renderRecents();   // pinta la tabla de recientes guardados
-  // Restaura la última pestaña usada (localStorage); si no hay, abre Kanban (con repo) o Configuración.
-  // "composer" ya no es una pestaña: se abre con el botón + y no se recuerda.
+  renderRecents();   // paints the saved recents table
+  // Restores the last used tab (localStorage); if none, opens Kanban (with repo) or Settings.
+  // "composer" is no longer a tab: it's opened with the + button and isn't remembered.
   (function restoreTab() {
     var saved = ""; try { saved = localStorage.getItem(LS_KEYS.tab) || ""; } catch (e) {}
     var valid = { kanban: 1, issues: 1, config: 1 };
