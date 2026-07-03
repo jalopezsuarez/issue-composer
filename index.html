@@ -976,7 +976,7 @@
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
-        '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td>" +
+        '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Eliminar de recientes">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
     el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
@@ -1015,7 +1015,7 @@
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
-        '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td>" +
+        '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Quitar de favoritos">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
     el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
@@ -1153,6 +1153,7 @@
         loadedRepos = allRepos.filter(function (r) { if (!r || !r.full_name || seen[r.full_name]) return false; seen[r.full_name] = true; return true; })
           .sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); });
         $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();
+        renderRecents(); renderFavs();   // ya con loadedRepos: pinta el candado de los privados
         var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
         showMsg(msg, "success", "Cargados " + loadedRepos.length + " repositorios." + (matched ? " Restaurado: <strong>" + esc(stored) + "</strong>." : ""));
       }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
