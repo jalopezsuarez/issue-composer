@@ -508,12 +508,15 @@
         </div>
         <div class="pad" id="ioExport">
           <textarea id="ioExportText" rows="8" readonly spellcheck="false" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
-          <button type="button" class="btn" id="btnCopyExport" style="margin-top:8px">Copiar al portapapeles</button>
+          <div class="actions" style="margin-top:8px">
+            <button type="button" id="btnDoExport">Exportar</button>
+            <button type="button" class="secondary" id="btnCopyExport">Copiar</button>
+          </div>
           <div class="group-hint" id="ioExportMsg" style="padding:6px 0 0"></div>
         </div>
         <div class="pad" id="ioImport" style="display:none">
           <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Pega aquí el JSON de ajustes generado en otro lugar…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
-          <button type="button" class="btn" id="btnImport" style="margin-top:8px">Importar ajustes</button>
+          <button type="button" id="btnImport" style="margin-top:8px">Importar</button>
           <div class="group-hint" id="ioImportMsg" style="padding:6px 0 0"></div>
         </div>
       </div>
@@ -811,6 +814,10 @@
   (function wireIo() {
     var bs = $("ioControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setIoMode(this.getAttribute("data-io")); });
+    $("btnDoExport").addEventListener("click", function () {
+      refreshExport();
+      $("ioExportMsg").textContent = "JSON de ajustes regenerado.";
+    });
     $("btnCopyExport").addEventListener("click", function () {
       var txt = $("ioExportText").value, msg = $("ioExportMsg");
       function ok() { msg.textContent = "Copiado al portapapeles."; }
