@@ -242,8 +242,10 @@
   .rtable tbody tr:active { background: var(--bg); }
   .rtable tbody tr.sel td { font-weight: 700; }
   .rtable tbody tr.sel td.repo svg { color: var(--black); }
-  .rtable td.del { width: 40px; text-align: right; padding: 6px 10px 6px 0; }
-  .rdel { background: none; border: none; color: var(--muted); padding: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+  /* Técnica de doble zona: los primeros ~75% de la fila seleccionan el repo;
+     la celda .del ocupa el 25% derecho y es toda ella zona de eliminar (✕). */
+  .rtable td.del { width: 25%; text-align: right; padding: 0; }
+  .rdel { width: 100%; background: none; border: none; color: var(--muted); padding: 11px 16px 11px 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: flex-end; }
   .rdel:active { background: var(--bg); color: var(--danger); }
   .rdel svg { width: 16px; height: 16px; }
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
@@ -451,7 +453,7 @@
       <div class="group">
         <div class="pad">
           <div class="group-title" style="padding:0 0 4px">Repositorios</div>
-          <div class="group-hint" style="padding:0 0 8px">Toca uno para seleccionarlo. Elimínalo con la ✕ de su fila.</div>
+          <div class="group-hint" style="padding:0 0 8px">Listas propias de esta app (no son estrellas de GitHub). Toca una fila para seleccionar el repo; la ✕ lo elimina. Añade favoritos con el corazón del repo activo.</div>
           <div class="segmented" id="repoTabControl">
             <button type="button" data-rtab="recent">Recientes</button>
             <button type="button" data-rtab="fav">Favoritos</button>
@@ -459,13 +461,6 @@
         </div>
         <div id="recentPanel"><div id="recentList"></div></div>
         <div id="favPanel" style="display:none">
-          <div class="pad" style="padding-top:0">
-            <div style="display:flex; gap:8px; align-items:center">
-              <input type="text" id="favInput" placeholder="owner/repo" autocomplete="off" spellcheck="false" style="flex:1" />
-              <button type="button" id="favAdd" style="flex:none">Añadir</button>
-            </div>
-            <div class="group-hint" id="favMsg" style="padding:6px 0 0"></div>
-          </div>
           <div id="favList"></div>
         </div>
       </div>
@@ -1003,15 +998,6 @@
   (function wireRepoTabs() {
     var bs = $("repoTabControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setRepoTab(this.getAttribute("data-rtab")); });
-    function doAddFav() {
-      var val = $("favInput").value.trim(), msg = $("favMsg");
-      if (!val || val.indexOf("/") === -1) { msg.textContent = "Escribe un repositorio como owner/repo."; return; }
-      if (isFav(val)) { msg.textContent = "Ese repositorio ya está en favoritos."; return; }
-      if (getFavs().length >= 10) { msg.textContent = "Máximo 10 favoritos; quita alguno primero."; return; }
-      addFav(val); $("favInput").value = ""; msg.textContent = "Añadido a favoritos.";
-    }
-    $("favAdd").addEventListener("click", doAddFav);
-    $("favInput").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doAddFav(); } });
     setRepoTab("recent");
   })();
 
