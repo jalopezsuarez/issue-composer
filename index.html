@@ -241,6 +241,7 @@
   .rtable tbody tr { cursor: pointer; }
   .rtable tbody tr:active { background: var(--bg); }
   .rtable tbody tr.sel td { font-weight: 700; }
+  .rtable tbody tr.fav-drag { opacity: .6; background: var(--bg); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
   .rtable tbody tr.sel td.repo svg { color: var(--black); }
   /* Técnica de doble zona: los primeros ~75% de la fila seleccionan el repo;
      la celda .del ocupa el 25% derecho y es toda ella zona de eliminar (✕). */
@@ -459,7 +460,7 @@
       <div class="group">
         <div class="pad">
           <div class="group-title" style="padding:0 0 4px">Repositorios</div>
-          <div class="group-hint" style="padding:0 0 8px">Listas propias de esta app (no son estrellas de GitHub). Toca una fila para seleccionar el repo; la ✕ lo elimina. Añade favoritos con el corazón del repo activo.</div>
+          <div class="group-hint" style="padding:0 0 8px">Listas propias de esta app (no son estrellas de GitHub). Toca una fila para seleccionar el repo; la ✕ lo elimina. Los favoritos se añaden con el corazón del repo activo y se reordenan arrastrándolos.</div>
           <div class="segmented" id="repoTabControl">
             <button type="button" data-rtab="recent">Recientes</button>
             <button type="button" data-rtab="fav">Favoritos</button>
@@ -948,9 +949,12 @@
   }
   // ----- Repositorios recientes (uso propio en Issue Composer), máx 10 -----
   function getRecents() { return readRepoList(LS_KEYS.recent); }
+  // Los recientes NO se reordenan: si el repo ya está, se mantiene en su sitio;
+  // solo se inserta arriba cuando es nuevo. Nunca cambian de posición al reusarse.
   function addRecent(full) {
     if (!full || full.indexOf("/") === -1) return;
-    var arr = getRecents().filter(function (x) { return x !== full; });
+    var arr = getRecents();
+    if (arr.indexOf(full) !== -1) return;   // ya está: no cambia de posición
     arr.unshift(full);
     persist(LS_KEYS.recent, JSON.stringify(arr.slice(0, 10)));
     renderRecents();
@@ -1003,10 +1007,66 @@
     if (isFav(full)) removeFav(full); else addFav(full);
     updateActiveRepoBanners();
   }
+  // Guarda el orden actual de las filas de favoritos (tras arrastrar).
+  function persistFavOrder() {
+    var tbody = document.querySelector("#favList tbody"); if (!tbody) return;
+    var order = [].slice.call(tbody.children).map(function (tr) { return tr.getAttribute("data-full"); }).filter(Boolean);
+    persist(LS_KEYS.favs, JSON.stringify(order.slice(0, 10)));
+  }
+  // Reordenar favoritos arrastrando la fila (táctil: pulsación larga; ratón: al mover).
+  // Sin arrastre, un toque selecciona el repo; la zona .del (✕) queda excluida.
+  function attachFavDrag(row, full) {
+    var pressTimer = null, dragging = false, pointerId = null, isTouch = false, startY = 0, downAt = 0, moved = 0;
+    row.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      if (e.target.closest(".del")) return;   // zona de borrar: no arrastra ni selecciona
+      isTouch = e.pointerType !== "mouse";
+      startY = e.clientY; downAt = Date.now(); pointerId = e.pointerId; dragging = false; moved = 0;
+      clearTimeout(pressTimer);
+      if (isTouch) pressTimer = setTimeout(beginDrag, 180);
+      row.addEventListener("pointermove", onMove);
+      row.addEventListener("pointerup", onUp);
+      row.addEventListener("pointercancel", onUp);
+    });
+    function onMove(e) {
+      moved = Math.abs(e.clientY - startY);
+      if (!dragging) {
+        if (!isTouch) { if (moved > 6) beginDrag(); }
+        else if (moved > 16) clearTimeout(pressTimer);   // movimiento amplio antes del long-press = scroll
+        if (!dragging) return;
+      }
+      e.preventDefault();
+      var tbody = row.parentNode, sibs = [].slice.call(tbody.children), before = null;
+      for (var i = 0; i < sibs.length; i++) {
+        if (sibs[i] === row) continue;
+        var rc = sibs[i].getBoundingClientRect();
+        if (e.clientY < rc.top + rc.height / 2) { before = sibs[i]; break; }
+      }
+      if (before) { if (before !== row) tbody.insertBefore(row, before); }
+      else tbody.appendChild(row);
+    }
+    function onUp(e) {
+      clearTimeout(pressTimer);
+      row.removeEventListener("pointermove", onMove);
+      row.removeEventListener("pointerup", onUp);
+      row.removeEventListener("pointercancel", onUp);
+      if (dragging) { endDrag(); persistFavOrder(); renderFavs(); }
+      else if (moved < 10 && Date.now() - downAt < 500) selectRepo(full);
+    }
+    function beginDrag() {
+      if (dragging) return; dragging = true;
+      try { row.setPointerCapture(pointerId); } catch (_) {}
+      row.classList.add("fav-drag"); row.style.touchAction = "none";
+    }
+    function endDrag() {
+      dragging = false; row.classList.remove("fav-drag"); row.style.touchAction = "";
+      try { row.releasePointerCapture(pointerId); } catch (_) {}
+    }
+  }
   function renderFavs() {
     var el = $("favList"); if (!el) return;
     var list = getFavs();
-    if (!list.length) { el.innerHTML = '<div class="rt-empty">Sin favoritos. Añade uno arriba o con el corazón del repo activo.</div>'; return; }
+    if (!list.length) { el.innerHTML = '<div class="rt-empty">Sin favoritos. Añádelos con el corazón del repo activo.</div>'; return; }
     var cur = getSelectedRepo();
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
@@ -1016,7 +1076,7 @@
     }).join("");
     el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
-    for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
+    for (var i = 0; i < trs.length; i++) attachFavDrag(trs[i], trs[i].getAttribute("data-full"));
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeFav(this.getAttribute("data-full")); });
   }
