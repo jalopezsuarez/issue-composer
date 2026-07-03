@@ -409,8 +409,8 @@
           <label>Modo de redacción</label>
           <div class="segmented" id="toneControl">
             <button type="button" data-tone="simple">Simple</button>
-            <button type="button" data-tone="estructurado">Estructurado</button>
-            <button type="button" data-tone="tecnico">Técnico</button>
+            <button type="button" data-tone="funcionalidad">Funcionalidad</button>
+            <button type="button" data-tone="incidencia">Incidencia</button>
           </div>
           <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
         </div>
@@ -580,8 +580,14 @@
   // Úsalo en equipo de confianza y con permisos mínimos (scope repo).
   var ghTokenMem = "";
   var ghUserLogin = null;   // login del usuario del token (para editar/borrar comentarios propios)
-  var currentTone = "estructurado";   // simple | estructurado | tecnico
-  var commentTone = "estructurado";
+  var currentTone = "funcionalidad";   // simple | funcionalidad | incidencia
+  var commentTone = "funcionalidad";
+  // Normaliza el modo guardado (migra claves antiguas estructurado/tecnico).
+  function normalizeTone(t) {
+    if (t === "estructurado") return "funcionalidad";
+    if (t === "tecnico") return "incidencia";
+    return ({ simple: 1, funcionalidad: 1, incidencia: 1 }[t]) ? t : null;
+  }
   var currentLang = "es";   // idioma de generación (es por defecto)
 
   // ----- Helpers DOM -----
@@ -680,7 +686,7 @@
       if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
-      if (tone && { simple: 1, estructurado: 1, tecnico: 1 }[tone]) { currentTone = tone; commentTone = tone; }
+      var nt = normalizeTone(tone); if (nt) { currentTone = nt; commentTone = nt; }
       if (lang === "en" || lang === "es") currentLang = lang;
     } catch (e) {}
   }
@@ -700,22 +706,27 @@
     paint();
   }
   var TONE_HINT = {
-    simple: "Simple: cambios mínimos, conserva tus palabras (no analiza el código, es instantáneo).",
-    estructurado: "Estructurado: revisa el código y organiza en secciones + criterios de aceptación.",
-    tecnico: "Técnico: análisis de ingeniería con causa raíz, impacto, casos límite, propuesta de solución y pruebas."
+    simple: "Simple: corrige y ordena tu texto con cambios mínimos (no analiza el código, instantáneo).",
+    funcionalidad: "Funcionalidad: desarrolla una nueva funcionalidad / historia de usuario (PBI); revisa el código para ver si ya existe o está por implementar.",
+    incidencia: "Incidencia: informe de bug con reproducción, causa raíz y propuesta de solución; revisa el código para validar el problema."
   };
   function paintToneHint() { var el = $("toneHint"); if (el) el.textContent = TONE_HINT[currentTone] || ""; }
   // ¿Este modo revisa el código base?
   function toneReviewsCode(tone) { return tone !== "simple"; }
 
-  // ---- Prompts por CONTEXTO (issue / comentario) y MODO (simple/estructurado/tecnico) ----
-  // Reglas comunes a todos los modos que sí analizan el código (estructurado/técnico).
+  // ---- Prompts por CONTEXTO (issue / comentario) y MODO (simple/funcionalidad/incidencia) ----
+  // Reglas comunes a los modos que analizan el código (funcionalidad/incidencia).
   var GROUNDING = " Usa Markdown limpio (sin bloques de código que envuelvan todo). " +
     "Fundaméntate ESTRICTAMENTE en el código y el README aportados: cita rutas y símbolos reales; " +
     "no inventes archivos, funciones ni comportamientos, y si algo no consta en el material, dilo como suposición explícita. " +
     "Omite las secciones que no apliquen en lugar de rellenarlas con texto vacío.";
+  // Instrucción de análisis previo del código: valorar si lo que expone el usuario
+  // ya está implementado, parcialmente o pendiente, antes de redactar.
+  var CODE_ASSESS = " ANTES de redactar, analiza el código y el README aportados para valorar si lo que describe el usuario " +
+    "tiene sentido y en qué estado está (ya implementado, parcialmente implementado o por implementar); " +
+    "refléjalo en la sección **Estado en el código** citando rutas y símbolos reales que lo justifiquen.";
   function issueSystemPrompt(tone) {
-    var base = "Eres un ingeniero que redacta issues de GitHub claros y accionables. " +
+    var base = "Redactas issues de GitHub claros y accionables. " +
       "Respondes SOLO con un objeto JSON válido {\"title\",\"body\"} (sin fences ni texto fuera del JSON). " +
       "'title': conciso, específico y en imperativo, < 70 caracteres y sin punto final. ";
     if (tone === "simple") {
@@ -723,17 +734,24 @@
         "y aplica una estructura básica (mayúsculas, párrafos y saltos de línea; usa listas solo si el usuario ya las insinúa). " +
         "Haz los cambios MÍNIMOS pero NECESARIOS para que se entienda y esté bien escrito, conservando sus palabras, orden, tono e intención. " +
         "PROHIBIDO añadir secciones, pasos, criterios ni información que el usuario no haya aportado. El 'title' resume su nota en una frase.";
-    } else if (tone === "tecnico") {
-      base += "MODO TÉCNICO (análisis de ingeniería en profundidad, va más allá de describir el problema: lo diagnostica y propone cómo resolverlo). " +
-        "'body' en Markdown con estas secciones (omite las que no apliquen): **Contexto**, **Descripción**, " +
-        "**Pasos de reproducción** (numerados), **Comportamiento esperado vs actual**, **Archivos implicados** (rutas reales del código revisado), " +
-        "**Causa raíz probable** (razonada y con referencia a rutas/símbolos concretos), **Impacto**, **Casos límite**, " +
-        "**Propuesta de solución** (archivos a tocar y pasos concretos), **Plan de pruebas** y " +
-        "**Criterios de aceptación** como checklist '- [ ]' verificables." + GROUNDING;
-    } else { // estructurado
-      base += "MODO ESTRUCTURADO (informe claro y bien organizado del problema, SIN entrar en diagnóstico de causa raíz ni diseño de la solución; " +
-        "para eso está el modo Técnico). 'body' en Markdown con estas secciones (omite las que no apliquen): **Contexto**, **Descripción**, " +
-        "**Pasos de reproducción** (numerados), **Comportamiento esperado vs actual**, **Archivos implicados** (rutas reales del código revisado) y " +
+    } else if (tone === "funcionalidad") {
+      base += "MODO FUNCIONALIDAD (desarrollas una NUEVA funcionalidad como Historia de Usuario / Product Backlog Item, no un bug). " +
+        "El 'title' describe la funcionalidad en imperativo (p. ej. 'Añadir…', 'Permitir…')." + CODE_ASSESS +
+        " 'body' en Markdown con estas secciones (omite las que no apliquen): " +
+        "**Historia de usuario** (formato 'Como <rol>, quiero <objetivo>, para <beneficio>'), " +
+        "**Descripción y contexto**, **Estado en el código** (ya implementada / parcial / pendiente, con rutas y símbolos reales), " +
+        "**Alcance** (qué entra y qué queda fuera), **Áreas/archivos implicados** (rutas reales del código revisado), " +
+        "**Criterios de aceptación** como checklist '- [ ]' verificables y orientados a valor, y " +
+        "**Notas técnicas y dependencias** (si aplica). " +
+        "Si ya está implementada, dilo claramente y propón solo lo que falte o mejoras concretas." + GROUNDING;
+    } else { // incidencia
+      base += "MODO INCIDENCIA (informe de un BUG/defecto: descríbelo, diagnostícalo y propón cómo resolverlo). " +
+        "El 'title' resume el fallo en imperativo (p. ej. 'Corregir…')." + CODE_ASSESS +
+        " 'body' en Markdown con estas secciones (omite las que no apliquen): " +
+        "**Descripción**, **Pasos de reproducción** (numerados), **Comportamiento esperado vs actual**, " +
+        "**Estado en el código** (¿el fallo es coherente con el código?, ¿parece ya corregido o sigue presente?, con rutas/símbolos reales), " +
+        "**Archivos implicados** (rutas reales), **Causa raíz probable** (razonada, con referencia a rutas/símbolos), " +
+        "**Impacto**, **Casos límite**, **Propuesta de solución** (archivos a tocar y pasos concretos) y " +
         "**Criterios de aceptación** como checklist '- [ ]' verificables." + GROUNDING;
     }
     return base + " " + langInstruction();
@@ -751,12 +769,15 @@
       base += "MODO SIMPLE: reescribe el texto propuesto para dejarlo correcto y legible. Corrige ortografía, gramática y puntuación, " +
         "y dale una estructura básica (mayúsculas, párrafos y saltos de línea). Haz los cambios MÍNIMOS pero NECESARIOS, " +
         "conservando las palabras, el tono y la intención del usuario. No añadas secciones ni información nueva.";
-    } else if (tone === "tecnico") {
-      base += "MODO TÉCNICO (diagnóstico de ingeniería, no solo un resumen): organiza en **Resumen**, **Detalle/propuesta**, " +
-        "**Referencias al código** (rutas y símbolos reales revisados), **Causa raíz**, **Impacto**, **Casos límite** y **Próximos pasos**." + GROUNDING;
-    } else {
-      base += "MODO ESTRUCTURADO (respuesta clara y organizada, SIN entrar en causa raíz ni diseño de solución; para eso está el Técnico): " +
-        "organiza en **Resumen**, **Detalle/propuesta**, **Referencias al código** (rutas reales revisadas) y **Próximos pasos**." + GROUNDING;
+    } else if (tone === "funcionalidad") {
+      base += "MODO FUNCIONALIDAD (aportas o refinas una funcionalidad / historia de usuario en el hilo, no un bug)." + CODE_ASSESS +
+        " Organiza en **Resumen**, **Propuesta funcional** (historia de usuario si aplica), " +
+        "**Estado en el código** (ya implementada / parcial / pendiente, con rutas y símbolos reales), " +
+        "**Criterios de aceptación** ('- [ ]') y **Próximos pasos**." + GROUNDING;
+    } else { // incidencia
+      base += "MODO INCIDENCIA (diagnóstico de un bug, no solo un resumen)." + CODE_ASSESS +
+        " Organiza en **Resumen**, **Detalle**, **Estado en el código** (coherencia del fallo con el código; ¿resuelto o presente?), " +
+        "**Referencias al código** (rutas y símbolos reales revisados), **Causa raíz**, **Impacto** y **Próximos pasos**." + GROUNDING;
     }
     return base + " " + langInstruction();
   }
@@ -1261,8 +1282,8 @@
             '<textarea id="commentNote" rows="3" placeholder="Idea / borrador de lo que quieres comentar…"></textarea></div>' +
           '<div class="field" style="border-bottom:none"><label>Modo</label><div class="segmented" id="commentToneControl">' +
             '<button type="button" data-tone="simple">Simple</button>' +
-            '<button type="button" data-tone="estructurado">Estructurado</button>' +
-            '<button type="button" data-tone="tecnico">Técnico</button></div></div>' +
+            '<button type="button" data-tone="funcionalidad">Funcionalidad</button>' +
+            '<button type="button" data-tone="incidencia">Incidencia</button></div></div>' +
           '<div class="field actions"><button id="btnGenComment" class="block">Generar con IA</button></div>' +
           '<div id="commentGenStatus" class="status"></div>' +
           '<div class="field"><label for="commentGenerated">Texto generado (editable, es lo que se publica)</label>' +
