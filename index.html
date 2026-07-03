@@ -81,7 +81,7 @@
      Common base: almost no background (minimal) while keeping the blur, faint white border,
      light weight. Back (left, in detail/create); in list/kanban reload
      (left) and add (right, mirrored layout). */
-  .fab-back, .fab-reload, .fab-add, .fab-save {
+  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px)); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
@@ -94,9 +94,13 @@
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
   .fab-back, .fab-reload { left: 12px; }
-  .fab-add, .fab-save { right: 12px; }
-  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active { background: rgba(255,255,255,.5); }
-  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden] { display: none; }
+  .fab-add, .fab-save, .fab-fav { right: 12px; }
+  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active { background: rgba(255,255,255,.5); }
+  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden] { display: none; }
+  /* Favorite fab (settings, right): heart filled if the active repo is a favorite. */
+  .fab-fav svg { width: 22px; height: 22px; }
+  .fab-fav.on svg { fill: #000; stroke: none; }
+  .fab-fav.off svg { fill: none; stroke: #000; stroke-width: 1.5px; stroke-linejoin: round; }
   .fab-save:disabled { opacity: .5; cursor: not-allowed; }
   /* Active repo: floating, transparent label next to reload (left). */
   .view-repo-tag {
@@ -251,11 +255,6 @@
   .rtable th, .rtable td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border-soft); font-size: .86rem; }
   .rtable th { font-size: .7rem; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 700; }
   .rtable td.num { color: var(--muted); width: 34px; }
-  /* Corazón para marcar/desmarcar favorito desde la lista de recientes. */
-  .favtoggle { background: none; border: none; padding: 4px; margin: -4px; cursor: pointer; display: inline-flex; -webkit-tap-highlight-color: transparent; }
-  .favtoggle svg { width: 16px; height: 16px; }
-  .favtoggle.on svg { fill: #1f2328; stroke: none; }
-  .favtoggle.off svg { fill: none; stroke: #8b949e; stroke-width: 1.5px; stroke-linejoin: round; }
   .rtable td.repo { display: flex; align-items: center; gap: 7px; word-break: break-all; }
   .rtable td.repo svg { width: 14px; height: 14px; color: var(--muted); flex: none; }
   .rtable tbody tr { cursor: pointer; }
@@ -278,14 +277,6 @@
   .repo-banner.priv { background: #1f883d; border-bottom-color: #176c31; color: #fff; }
   .repo-banner.priv b { color: #fff; }
   .repo-banner.priv svg { color: #fff; }
-  /* Favorite heart in the active repo banner */
-  .fav-heart { margin-left: auto; flex: none; background: none; border: none; padding: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-  .fav-heart svg { width: 20px; height: 20px; }
-  .fav-heart.on svg { fill: #1f2328; stroke: none; }
-  .fav-heart.off svg { fill: none; stroke: #1f2328; stroke-width: 1.5px; stroke-linejoin: round; }
-  .repo-banner.priv .fav-heart.on svg { fill: #fff; stroke: none; }
-  .repo-banner.priv .fav-heart.off svg { fill: none; stroke: #fff; }
-  .fav-heart:active { opacity: .6; }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
 
   /* Sort bar in issues */
@@ -408,6 +399,8 @@
   <!-- Active repo, floating and transparent, to the right of reload (kanban/list) -->
   <div id="viewRepoTag" class="view-repo-tag" hidden></div>
   <button id="viewAdd" class="fab-add" hidden aria-label="Add issue"></button>
+  <!-- Favorite toggle for the active repo (settings, top right) -->
+  <button id="favFab" class="fab-fav off" hidden aria-label="Favorite"></button>
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
 
   <main class="content" id="content">
@@ -947,18 +940,14 @@
       if (ok) {
         var priv = isPrivateRepo(repo);
         el.className = "repo-banner" + (priv ? " priv" : "");   // private -> green with a lock
-        var fav = isFav(repo);
-        el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span><b>" + esc(repo) + "</b></span>" +
-          '<button type="button" class="fav-heart ' + (fav ? "on" : "off") + '" id="bannerFav" aria-label="' +
-          (fav ? "Remove from favorites" : "Add to favorites") + '" title="' + (fav ? "Remove from favorites" : "Add to favorites") + '">' + svg("heart", 20) + "</button>";
-        var b = $("bannerFav");
-        if (b) b.addEventListener("click", function () { toggleFav(repo); });
+        el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span><b>" + esc(repo) + "</b></span>";
       } else {
         el.className = "repo-banner";
         el.innerHTML = svg("repo", 16) + "<span>No repo — pick one in <b>Settings</b></span>";
       }
     }
     syncRepoTag();
+    syncFavFab();
   }
   // Floating label of the active repo, next to the top-left fab (reload in
   // kanban/list, back in create/detail). In settings there's no fab, so it sits
@@ -974,6 +963,24 @@
     tag.classList.toggle("at-left", inConfig);   // sin fab a la izquierda en ajustes
     if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
+  // Favorite fab (settings, top right): heart filled if the active repo is a
+  // favorite; tapping it marks/unmarks the active repo.
+  function syncFavFab() {
+    var fab = $("favFab"); if (!fab) return;
+    var repo = getSelectedRepo(), ok = repo && repo.indexOf("/") !== -1;
+    var show = ok && $("view-config").classList.contains("active");
+    fab.hidden = !show;
+    if (show) {
+      var fav = isFav(repo);
+      fab.classList.toggle("on", fav); fab.classList.toggle("off", !fav);
+      fab.setAttribute("aria-label", fav ? "Remove from favorites" : "Add to favorites");
+    }
+  }
+  $("favFab").innerHTML = svg("heart", 22);
+  $("favFab").addEventListener("click", function () {
+    var repo = getSelectedRepo();
+    if (repo && repo.indexOf("/") !== -1) { toggleFav(repo); syncFavFab(); }
+  });
 
   // Reads a repo list from localStorage, sanitized and trimmed to 10 (and if it was
   // oversized it rewrites it, to auto-clean old data).
@@ -1015,18 +1022,15 @@
     var list = getRecents();
     if (!list.length) { el.innerHTML = '<div class="rt-empty">You haven\'t used any repository yet.</div>'; return; }
     var cur = getSelectedRepo();
-    var rows = list.map(function (full) {
-      var fav = isFav(full);
+    var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
-        '<td class="num"><button class="favtoggle ' + (fav ? "on" : "off") + '" type="button" data-full="' + esc(full) + '" aria-label="' + (fav ? "Remove from favorites" : "Add to favorites") + '">' + svg("heart", 16) + "</button></td>" +
+        '<td class="num">' + (i + 1) + "</td>" +
         '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Remove from recent">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
-    el.innerHTML = '<table class="rtable"><thead><tr><th class="num"></th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
+    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
-    var favs = el.querySelectorAll(".favtoggle");
-    for (var k = 0; k < favs.length; k++) favs[k].addEventListener("click", function (e) { e.stopPropagation(); toggleFav(this.getAttribute("data-full")); renderRecents(); });
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeRecent(this.getAttribute("data-full")); });
   }
