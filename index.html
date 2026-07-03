@@ -980,13 +980,14 @@
   // ----- Repositorios recientes (uso propio en Issue Composer), máx 10 -----
   function getRecents() { return readRepoList(LS_KEYS.recent); }
   // Los recientes NO se reordenan: si el repo ya está, se mantiene en su sitio;
-  // solo se inserta arriba cuando es nuevo. Nunca cambian de posición al reusarse.
+  // los nuevos se añaden AL FINAL. Al superar 10 se descarta el más antiguo.
   function addRecent(full) {
     if (!full || full.indexOf("/") === -1) return;
     var arr = getRecents();
     if (arr.indexOf(full) !== -1) return;   // ya está: no cambia de posición
-    arr.unshift(full);
-    persist(LS_KEYS.recent, JSON.stringify(arr.slice(0, 10)));
+    arr.push(full);                          // nuevos abajo
+    if (arr.length > 10) arr = arr.slice(arr.length - 10);
+    persist(LS_KEYS.recent, JSON.stringify(arr));
     renderRecents();
   }
   function selectRepo(full) {
@@ -1024,8 +1025,9 @@
   function addFav(full) {
     if (!full || full.indexOf("/") === -1) return false;
     var arr = getFavs().filter(function (x) { return x !== full; });
-    arr.unshift(full);
-    persist(LS_KEYS.favs, JSON.stringify(arr.slice(0, 10)));
+    arr.push(full);                          // nuevos abajo
+    if (arr.length > 10) arr = arr.slice(arr.length - 10);
+    persist(LS_KEYS.favs, JSON.stringify(arr));
     renderFavs();
     return true;
   }
