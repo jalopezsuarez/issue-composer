@@ -134,9 +134,6 @@
   }
   .view { display: none; }
   .view.active { display: block; }
-  /* Ajustes: sube el contenido para que el banner de repo quede a la altura de los
-     fabs (recargar/atrás) en vez de bajo el hueco del topbar. */
-  #view-config { margin-top: calc(8px - var(--topbar)); }
 
   /* ===== Editor a pantalla completa: solo un textarea sin bordes que ocupa toda
      la pantalla visible (--apph, con fallback 100dvh) y se ajusta al teclado.
@@ -265,8 +262,11 @@
   .rdel svg { width: 16px; height: 16px; }
   .rt-empty { color: var(--muted); font-size: .85rem; padding: 12px 16px; }
 
-  /* Banner de repo activo (solo en Configuración). +4px de alto (10px arriba/abajo). */
+  /* Banner de repo activo (solo en Configuración). +4px de alto (10px arriba/abajo).
+     Fijo (sticky) arriba: siempre visible al hacer scroll de ajustes. */
   .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; border-bottom: 1px solid #e6c93a; padding: 10px 10px 10px 16px; font-size: .84rem; color: #1f2328; }
+  /* Banner de ajustes SIEMPRE fijo arriba, a la altura de los fabs. */
+  #repoBannerSettings { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; z-index: 30; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
   .repo-banner b { font-weight: 700; color: #1f2328; }
   /* Repos privados: verde de "open" con candado, texto e iconos en blanco. */
   .repo-banner.priv { background: #1f883d; border-bottom-color: #176c31; color: #fff; }
