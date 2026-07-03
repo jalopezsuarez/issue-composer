@@ -243,11 +243,15 @@
   .rtable tbody tr.sel td { font-weight: 700; }
   .rtable tbody tr { -webkit-user-select: none; user-select: none; }
   .rtable tbody tr.fav-drag { opacity: .7; background: var(--bg); box-shadow: 0 6px 18px rgba(0,0,0,.18); }
-  /* Asa de arrastre de favoritos: touch-action:none para capturar el gesto sin hacer scroll. */
-  .grip { display: inline-flex; align-items: center; justify-content: center; padding: 8px; margin: -8px -4px; color: var(--muted); cursor: grab; touch-action: none; -webkit-touch-callout: none; }
+  /* Favoritos: 3 zonas invisibles a 100% de alto por fila -> 25% asa | 50% seleccionar | 25% eliminar.
+     El asa (.grip) lleva touch-action:none para capturar el arrastre sin hacer scroll. */
+  .grip { display: flex; box-sizing: border-box; align-items: center; justify-content: flex-start; color: var(--muted); cursor: grab; touch-action: none; -webkit-touch-callout: none; }
   .grip:active { cursor: grabbing; }
   .grip svg { width: 16px; height: 16px; }
-  .rtable td.grip-cell { width: 34px; padding-right: 0; }
+  #favList .rtable { table-layout: fixed; }
+  #favList .rtable td.grip-cell, #favList .rtable td.del { padding: 0; position: relative; }
+  #favList .grip { position: absolute; inset: 0; padding: 0 14px; }         /* asa a 100% de alto */
+  #favList .rdel { position: absolute; inset: 0; width: auto; padding: 0 16px; }  /* zona eliminar a 100% de alto */
   .rtable tbody tr.sel td.repo svg { color: var(--black); }
   /* Técnica de doble zona: los primeros ~75% de la fila seleccionan el repo;
      la celda .del ocupa el 25% derecho y es toda ella zona de eliminar (✕). */
@@ -1068,7 +1072,8 @@
         '<td class="repo">' + svg("repo", 14) + "<span>" + esc(full) + "</span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Quitar de favoritos">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
-    el.innerHTML = '<table class="rtable"><thead><tr><th class="grip-cell"></th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
+    el.innerHTML = '<table class="rtable"><colgroup><col style="width:25%"><col style="width:50%"><col style="width:25%"></colgroup>' +
+      '<thead><tr><th class="grip-cell"></th><th>Repositorio</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
     for (var i = 0; i < trs.length; i++) {
       var tr = trs[i];
