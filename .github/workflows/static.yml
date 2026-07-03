@@ -1,5 +1,5 @@
 # Simple workflow for deploying static content to GitHub Pages
-# (redeploy tras un fallo transitorio de GitHub Pages: "Deployment failed, try again later")
+# (reintento de deploy de Pages tras fallo transitorio "Deployment failed, try again later")
 name: Deploy static content to Pages
 
 on:
