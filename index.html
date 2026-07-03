@@ -15,8 +15,8 @@
 <meta name="theme-color" content="#ffffff" />
 <!-- Fuerza apariencia clara: el teclado de iOS sale claro/blanco (no oscuro). -->
 <meta name="color-scheme" content="light" />
-<!-- Favicon SVG: fondo blanco con un círculo negro (80% del ancho). -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='40' fill='black'/></svg>" />
+<!-- Favicon SVG: fondo blanco con un círculo negro (punto central al doble de tamaño: r=56). -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='56' fill='black'/></svg>" />
 <title>GH Issue Composer</title>
 <style>
   :root {
@@ -495,6 +495,29 @@
         </div>
       </div>
 
+      <!-- 5. Configuración: exportar / importar todos los ajustes -->
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Configuración</div>
+        <div class="group-hint" style="padding:0">Exporta o importa todos los ajustes (tokens, LLM, GitHub, idioma).</div></div>
+        <div class="field">
+          <label>Acción</label>
+          <div class="segmented" id="ioControl">
+            <button type="button" data-io="export">Exportar</button>
+            <button type="button" data-io="import">Importar</button>
+          </div>
+        </div>
+        <div class="pad" id="ioExport">
+          <textarea id="ioExportText" rows="8" readonly spellcheck="false" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
+          <button type="button" class="btn" id="btnCopyExport" style="margin-top:8px">Copiar al portapapeles</button>
+          <div class="group-hint" id="ioExportMsg" style="padding:6px 0 0"></div>
+        </div>
+        <div class="pad" id="ioImport" style="display:none">
+          <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Pega aquí el JSON de ajustes generado en otro lugar…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
+          <button type="button" class="btn" id="btnImport" style="margin-top:8px">Importar ajustes</button>
+          <div class="group-hint" id="ioImportMsg" style="padding:6px 0 0"></div>
+        </div>
+      </div>
+
     </section>
 
   </main>
@@ -757,6 +780,66 @@
   function langInstruction() {
     return currentLang === "en" ? "Write the output in English." : "Escribe el resultado en español.";
   }
+
+  // ----- Exportar / Importar ajustes -----
+  // El JSON incluye el 100% de los parámetros de la pantalla de ajustes:
+  // token de GitHub, LLM (base URL, API key, modelo), repo activo, tono, pestaña,
+  // repos recientes e idioma de generación.
+  function buildSettingsExport() {
+    var out = {};
+    for (var k in LS_KEYS) {
+      if (!LS_KEYS.hasOwnProperty(k)) continue;
+      var v;
+      try { v = localStorage.getItem(LS_KEYS[k]); } catch (e) { v = null; }
+      if (v === null) continue;
+      if (k === "recent") { try { out[k] = JSON.parse(v); } catch (e) { out[k] = []; } }
+      else out[k] = v;
+    }
+    return out;
+  }
+  function refreshExport() {
+    try { $("ioExportText").value = JSON.stringify(buildSettingsExport(), null, 2); } catch (e) {}
+  }
+  function setIoMode(mode) {
+    mode = (mode === "import") ? "import" : "export";
+    var bs = $("ioControl").querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-io") === mode);
+    $("ioExport").style.display = (mode === "export") ? "" : "none";
+    $("ioImport").style.display = (mode === "import") ? "" : "none";
+    if (mode === "export") refreshExport();
+  }
+  (function wireIo() {
+    var bs = $("ioControl").querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setIoMode(this.getAttribute("data-io")); });
+    $("btnCopyExport").addEventListener("click", function () {
+      var txt = $("ioExportText").value, msg = $("ioExportMsg");
+      function ok() { msg.textContent = "Copiado al portapapeles."; }
+      function fail() { msg.textContent = "No se pudo copiar; selecciona y copia manualmente."; }
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(ok, fail); }
+        else { $("ioExportText").select(); document.execCommand("copy"); ok(); }
+      } catch (e) { fail(); }
+    });
+    $("btnImport").addEventListener("click", function () {
+      var msg = $("ioImportMsg"), raw = $("ioImportText").value.trim();
+      if (!raw) { msg.textContent = "Pega un JSON de ajustes."; return; }
+      var data;
+      try { data = JSON.parse(raw); } catch (e) { msg.textContent = "JSON no válido."; return; }
+      if (!data || typeof data !== "object") { msg.textContent = "JSON no válido."; return; }
+      var n = 0;
+      for (var k in LS_KEYS) {
+        if (!LS_KEYS.hasOwnProperty(k) || !data.hasOwnProperty(k)) continue;
+        var v = data[k];
+        if (k === "recent") { try { v = JSON.stringify(Array.isArray(v) ? v : []); } catch (e) { v = "[]"; } }
+        else if (typeof v !== "string") v = String(v);
+        persist(LS_KEYS[k], v);
+        n++;
+      }
+      msg.textContent = "Importados " + n + " ajustes. Recargando…";
+      setTimeout(function () { location.reload(); }, 600);
+    });
+    setIoMode("export");
+  })();
 
   // ----- Selección de repo -----
   function getSelectedRepo() {
