@@ -134,6 +134,9 @@
   }
   .view { display: none; }
   .view.active { display: block; }
+  /* Ajustes: sube el contenido para que el banner de repo quede a la altura de los
+     fabs (recargar/atrás) en vez de bajo el hueco del topbar. */
+  #view-config { margin-top: calc(8px - var(--topbar)); }
 
   /* ===== Editor a pantalla completa: solo un textarea sin bordes que ocupa toda
      la pantalla visible (--apph, con fallback 100dvh) y se ajusta al teclado.
@@ -951,11 +954,14 @@
     }
     syncRepoTag();
   }
-  // Etiqueta flotante del repo activo (junto a recargar, en kanban/listado).
+  // Etiqueta flotante del repo activo, junto al fab superior izquierdo
+  // (recargar en kanban/listado, atrás en crear/detalle). No en ajustes ni editor.
   function syncRepoTag() {
     var tag = $("viewRepoTag"); if (!tag) return;
     var repo = getSelectedRepo(), ok = repo && repo.indexOf("/") !== -1;
-    var show = ok && !$("viewReload").hidden;   // se muestra cuando está visible recargar
+    var inRepoView = $("view-kanban").classList.contains("active") ||
+      $("view-issues").classList.contains("active") || $("view-composer").classList.contains("active");
+    var show = ok && inRepoView;
     tag.hidden = !show;
     if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
