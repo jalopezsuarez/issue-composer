@@ -261,7 +261,7 @@
   .fav-heart { margin-left: auto; flex: none; background: none; border: none; padding: 4px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
   .fav-heart svg { width: 20px; height: 20px; }
   .fav-heart.on svg { fill: #1f2328; stroke: none; }
-  .fav-heart.off svg { fill: none; stroke: #1f2328; stroke-width: 1.4px; }
+  .fav-heart.off svg { fill: none; stroke: #1f2328; stroke-width: 1.5px; stroke-linejoin: round; }
   .repo-banner.priv .fav-heart.on svg { fill: #fff; stroke: none; }
   .repo-banner.priv .fav-heart.off svg { fill: none; stroke: #fff; }
   .fav-heart:active { opacity: .6; }
@@ -570,7 +570,7 @@
   var PATHS = {
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
-    heart: "M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 0 0 8 13.393a20.561 20.561 0 0 0 3.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 0 1-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5Z",
+    heart: "M8 1.314C12.438-3.248 23.534 4.735 8 15 -7.534 4.735 3.562-3.248 8 1.314z",
     lock: "M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     up: "M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z",
@@ -903,11 +903,18 @@
   $("repoSelect").addEventListener("change", function () { if (this.value) { $("repoManual").value = ""; addRecent(this.value); } rememberRepo(); });
   $("repoManual").addEventListener("input", rememberRepo);
 
-  // ¿El repo (owner/name) es privado según la lista cargada? (public por defecto).
+  // Caché interna de privacidad por repo: cada vez que se activa un repo se
+  // determina si es privado/público (desde la lista cargada) y se guarda, para
+  // que el banner acierte el color aun sin reconectar (p. ej. al recargar).
+  var PRIV_KEY = "ic_repo_priv";
+  function getPrivCache() { try { var c = JSON.parse(localStorage.getItem(PRIV_KEY) || "{}"); return (c && typeof c === "object") ? c : {}; } catch (e) { return {}; } }
+  function rememberPrivacy(full, isPriv) { var c = getPrivCache(); if (c[full] === !!isPriv) return; c[full] = !!isPriv; persist(PRIV_KEY, JSON.stringify(c)); }
+  // ¿El repo (owner/name) es privado? Prioriza la lista cargada (y actualiza la
+  // caché); si no está cargada, usa el último estado conocido guardado.
   function isPrivateRepo(full) {
     var reps = loadedRepos || [];
-    for (var i = 0; i < reps.length; i++) if (reps[i].full_name === full) return !!reps[i].private;
-    return false;
+    for (var i = 0; i < reps.length; i++) if (reps[i].full_name === full) { rememberPrivacy(full, reps[i].private); return !!reps[i].private; }
+    return !!getPrivCache()[full];
   }
   function updateActiveRepoBanners() {
     var el = $("repoBannerSettings"); if (!el) return;
