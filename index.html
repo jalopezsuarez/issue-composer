@@ -15,8 +15,8 @@
 <meta name="theme-color" content="#ffffff" />
 <!-- Fuerza apariencia clara: el teclado de iOS sale claro/blanco (no oscuro). -->
 <meta name="color-scheme" content="light" />
-<!-- Favicon SVG: fondo blanco con un círculo negro (punto central al doble de tamaño: r=56). -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='56' fill='black'/></svg>" />
+<!-- Favicon SVG: fondo blanco con un círculo negro central (r=54). -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='54' fill='black'/></svg>" />
 <title>GH Issue Composer</title>
 <style>
   :root {
@@ -508,10 +508,7 @@
         </div>
         <div class="pad" id="ioExport">
           <textarea id="ioExportText" rows="8" readonly spellcheck="false" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
-          <div class="actions" style="margin-top:8px">
-            <button type="button" id="btnDoExport">Exportar</button>
-            <button type="button" class="secondary" id="btnCopyExport">Copiar</button>
-          </div>
+          <button type="button" id="btnDoExport" class="block" style="margin-top:8px">Exportar</button>
           <div class="group-hint" id="ioExportMsg" style="padding:6px 0 0"></div>
         </div>
         <div class="pad" id="ioImport" style="display:none">
@@ -814,25 +811,28 @@
   (function wireIo() {
     var bs = $("ioControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setIoMode(this.getAttribute("data-io")); });
+    // El botón Exportar regenera el JSON y lo copia al portapapeles en un solo paso.
     $("btnDoExport").addEventListener("click", function () {
       refreshExport();
-      $("ioExportMsg").textContent = "JSON de ajustes regenerado.";
-    });
-    $("btnCopyExport").addEventListener("click", function () {
       var txt = $("ioExportText").value, msg = $("ioExportMsg");
-      function ok() { msg.textContent = "Copiado al portapapeles."; }
-      function fail() { msg.textContent = "No se pudo copiar; selecciona y copia manualmente."; }
+      function done(ok) {
+        var m = ok
+          ? "Ajustes exportados y copiados al portapapeles."
+          : "Ajustes exportados. No se pudo copiar automáticamente; cópialos manualmente del cuadro.";
+        msg.textContent = m;
+        alert(m);
+      }
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(ok, fail); }
-        else { $("ioExportText").select(); document.execCommand("copy"); ok(); }
-      } catch (e) { fail(); }
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(function () { done(true); }, function () { done(false); }); }
+        else { $("ioExportText").select(); document.execCommand("copy"); done(true); }
+      } catch (e) { done(false); }
     });
     $("btnImport").addEventListener("click", function () {
       var msg = $("ioImportMsg"), raw = $("ioImportText").value.trim();
-      if (!raw) { msg.textContent = "Pega un JSON de ajustes."; return; }
+      if (!raw) { msg.textContent = "Pega un JSON de ajustes."; alert("Pega un JSON de ajustes antes de importar."); return; }
       var data;
-      try { data = JSON.parse(raw); } catch (e) { msg.textContent = "JSON no válido."; return; }
-      if (!data || typeof data !== "object") { msg.textContent = "JSON no válido."; return; }
+      try { data = JSON.parse(raw); } catch (e) { msg.textContent = "JSON no válido."; alert("El JSON pegado no es válido."); return; }
+      if (!data || typeof data !== "object") { msg.textContent = "JSON no válido."; alert("El JSON pegado no es válido."); return; }
       var n = 0;
       for (var k in LS_KEYS) {
         if (!LS_KEYS.hasOwnProperty(k) || !data.hasOwnProperty(k)) continue;
@@ -843,7 +843,8 @@
         n++;
       }
       msg.textContent = "Importados " + n + " ajustes. Recargando…";
-      setTimeout(function () { location.reload(); }, 600);
+      alert("Se han importado " + n + " ajustes correctamente. La app se recargará para aplicarlos.");
+      setTimeout(function () { location.reload(); }, 300);
     });
     setIoMode("export");
   })();
