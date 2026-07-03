@@ -1502,7 +1502,7 @@
       colEl.style.background = "#" + col.color + "40";   // fondo de columna: tinte muy claro del estado
       colEl.innerHTML = '<div class="kcol-head">' +
           '<span class="kchip" style="background:#' + col.color + ';color:#' + col.dot + '"><span class="kdot" style="background:#' + col.dot + '"></span>' + esc(col.name) + "</span>" +
-          '<span class="kcount">' + list.length + "</span>" +
+          '<span class="kcount" style="color:#' + col.dot + 'b3">' + list.length + "</span>" +
         '</div><div class="kcol-body"></div>';
       var body = colEl.querySelector(".kcol-body");
       list.forEach(function (it) { body.appendChild(makeCard(it)); });
