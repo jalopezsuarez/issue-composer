@@ -1510,9 +1510,9 @@
     var card = document.createElement("div");
     card.className = "kcard" + (it.state === "closed" ? " closed" : "");
     card.setAttribute("data-num", it.number);
-    // Borde de la tarjeta con el tono oscuro (dot) del estado de su columna.
+    // Borde de la tarjeta con el tono intermedio (color pastel) del estado de su columna.
     var st = statusByName(statusOf(it));
-    if (st && st.dot) card.style.borderColor = "#" + st.dot;
+    if (st && st.color) card.style.borderColor = "#" + st.color;
     // Resumen del detalle: 2 líneas en gris (texto plano del cuerpo del issue).
     var excerpt = (it.body || "").replace(/```[\s\S]*?```/g, " ").replace(/[#>*_`\-]/g, " ").replace(/\s+/g, " ").trim();
     var bodyHtml = excerpt ? '<div class="kbody">' + esc(excerpt) + "</div>" : '<div class="kbody" style="font-style:italic">(sin descripción)</div>';
