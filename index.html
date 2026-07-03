@@ -1130,7 +1130,7 @@
       '<div class="meta"><div class="row-title">' + esc(it.title) + "</div>" +
         '<div class="row-sub">' +
           '<span class="rsub-badges">' + stateTag(it.state) + statusTag(it) + "</span>" +
-          '<span class="rsub-meta">#' + it.number + " · " + esc(it.user ? it.user.login : "?") +
+          '<span class="rsub-meta"><span class="knum">#' + it.number + "</span>" + esc(it.user ? it.user.login : "?") +
             " · " + svg("comment", 13) + " " + (it.comments || 0) +
             " · act. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
         labelsHtml(userLabels(it)) + "</div>" +
