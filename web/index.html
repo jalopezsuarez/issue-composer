@@ -109,41 +109,66 @@
   .hero-meta span { display: inline-flex; align-items: center; gap: 7px; }
   .hero-meta svg { width: 16px; height: 16px; color: var(--accent); }
 
-  /* ===== Phone mockup ===== */
+  /* ===== Phone mockups: two devices showing the same app in light and dark ===== */
   .phone-stage { display: flex; justify-content: center; }
+  .phone-duo { position: relative; width: 400px; max-width: 92vw; aspect-ratio: 400 / 600; }
   .phone {
-    width: 300px; max-width: 82vw; aspect-ratio: 300 / 620; position: relative;
-    background: var(--ink); border-radius: 44px; padding: 12px;
-    box-shadow: var(--shadow); flex: none;
-    transform: rotate(-2deg); transition: transform .4s ease;
+    position: absolute; width: 61%; aspect-ratio: 296 / 620;
+    background: linear-gradient(150deg, #3b4048, #0b0d10);
+    border-radius: 13.5% / 6.4%; padding: 2.6%;
+    box-shadow: 0 26px 64px rgba(1, 4, 9, .40), inset 0 0 0 1.6px rgba(255,255,255,.09);
+    transition: transform .5s cubic-bezier(.2,.7,.2,1);
   }
-  .phone:hover { transform: rotate(0deg); }
-  .phone .notch { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 120px; height: 26px; background: var(--ink); border-radius: 0 0 16px 16px; z-index: 3; }
-  .screen { width: 100%; height: 100%; background: #fff; border-radius: 33px; overflow: hidden; position: relative; color: #0d1117; }
-  /* Mini app UI (light, like the real app default) */
-  .m-top { display: flex; align-items: center; gap: 8px; padding: 20px 16px 12px; font-weight: 800; font-size: .82rem; }
-  .m-top .m-ico { width: 15px; height: 15px; color: #57606a; }
-  .m-search { margin: 0 14px 6px; background: #f6f8fa; border-radius: 999px; padding: 9px 14px; color: #8b949e; font-size: .72rem; }
-  .m-list { padding: 4px 0; }
-  .m-row { display: flex; gap: 9px; padding: 11px 14px; border-bottom: 1px solid #eaeef2; }
-  .m-row:last-child { border-bottom: none; }
-  .m-issico { width: 16px; height: 16px; color: #57606a; margin-top: 1px; flex: none; }
-  .m-body { flex: 1; min-width: 0; }
-  .m-title { font-weight: 700; font-size: .78rem; line-height: 1.25; }
-  .m-badges { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
-  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: .6rem; font-weight: 600; color: #fff; }
-  .chip svg { width: 9px; height: 9px; }
-  .chip.open { background: #1f883d; }
-  .chip.closed { background: #8250df; }
-  .chip.st { background: #f2e9c8; color: #7a5b12; }
-  .chip.st.blue { background: #dce8fb; color: #1f4b99; }
-  .chip.st.purple { background: #ece2fb; color: #5a3ba8; }
-  .m-meta { color: #8b949e; font-size: .64rem; margin-top: 6px; }
-  .m-num { background: #eef0f2; color: #0d1117; border-radius: 999px; padding: 0 6px; font-weight: 700; margin-right: 4px; }
-  .m-fab { position: absolute; right: 14px; bottom: 16px; display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(255,255,255,.7); backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0,0,0,.14); }
-  .m-fab .b { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #57606a; }
-  .m-fab .b.on { background: rgba(0,0,0,.06); color: #0d1117; }
-  .m-fab svg { width: 16px; height: 16px; }
+  .phone.back  { top: 0; right: 0; transform: rotate(6deg); z-index: 1; }
+  .phone.front { bottom: 0; left: 0; transform: rotate(-4deg); z-index: 2; }
+  .phone-duo:hover .phone.front { transform: rotate(-2deg) translateY(-6px); }
+  .phone-duo:hover .phone.back  { transform: rotate(4deg) translateY(-6px); }
+  .phone i.pb { position: absolute; background: #23272d; border-radius: 2px; }
+  .phone i.pb.r { right: -2px; top: 27%; width: 2.5px; height: 15%; }
+  .phone i.pb.l { left: -2px; top: 21%; width: 2.5px; height: 8%; box-shadow: 0 20px 0 #23272d, 0 37px 0 #23272d; }
+  .screen {
+    --s-bg: #fff; --s-text: #0d1117; --s-muted: #8b949e; --s-line: #eef1f4; --s-fill: #f4f6f8; --s-num: #eef0f2;
+    position: relative; width: 100%; height: 100%; border-radius: 10.5% / 5.1%;
+    overflow: hidden; background: var(--s-bg); color: var(--s-text); font-size: 11px; line-height: 1.35;
+  }
+  .screen.dark { --s-bg: #0d1117; --s-text: #e6edf3; --s-muted: #8b949e; --s-line: #20262e; --s-fill: #20262e; --s-num: #20262e; }
+  .island { position: absolute; top: 4.6%; left: 50%; transform: translateX(-50%); width: 33%; height: 16px; background: #000; border-radius: 40px; z-index: 6; }
+  .sbar { display: flex; justify-content: space-between; align-items: center; padding: 5.6% 13% 1.5%; font-size: .62rem; font-weight: 700; }
+  .sbar .r { display: inline-flex; gap: 4px; align-items: center; }
+  .sbar svg { width: 15px; height: 11px; }
+  .mtop { display: flex; align-items: center; gap: 6px; padding: 5px 12px 9px; font-weight: 800; font-size: .72rem; }
+  .mtop .rl { width: 21px; height: 21px; border-radius: 50%; display: grid; place-items: center; color: var(--s-muted); background: color-mix(in srgb, var(--s-text) 6%, transparent); }
+  .mtop .rl svg { width: 12px; height: 12px; }
+  .mtop .repo { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  .mtop .repo svg { width: 12px; height: 12px; color: var(--s-muted); flex: none; }
+  .mtop .repo span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mtop .sp { flex: 1; }
+  .mtop .rr { display: flex; gap: 8px; color: var(--s-muted); }
+  .mtop .rr svg { width: 15px; height: 15px; }
+  .mrow { display: flex; gap: 7px; padding: 9px 12px; border-bottom: 1px solid var(--s-line); }
+  .mrow:last-of-type { border-bottom: none; }
+  .mrow .ii { width: 13px; height: 13px; color: var(--s-muted); margin-top: 1px; flex: none; }
+  .mrow .bd { flex: 1; min-width: 0; }
+  .mt { font-weight: 700; font-size: .68rem; line-height: 1.25; }
+  .bg { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+  .c { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; font-size: .53rem; font-weight: 650; }
+  .c svg { width: 8px; height: 8px; }
+  .c.open { background: #1f883d; color: #fff; }
+  .c.closed { background: #8250df; color: #fff; }
+  .c.pending { background: #f4e8bb; color: #8a6d1a; }
+  .c.progress { background: #cfe0f6; color: #1f4b99; }
+  .c.done { background: #d3ebd9; color: #1a7f37; }
+  .dark .c.pending { background: #473f24; color: #e3b341; }
+  .dark .c.progress { background: #1c3a5e; color: #6cb6ff; }
+  .dark .c.done { background: #1b3a2a; color: #56d364; }
+  .mm { color: var(--s-muted); font-size: .56rem; margin-top: 5px; }
+  .nn { background: var(--s-num); color: var(--s-text); border-radius: 999px; padding: 0 5px; font-weight: 700; margin-right: 3px; }
+  .mfab { position: absolute; right: 10px; bottom: 12px; display: flex; gap: 3px; padding: 4px; border-radius: 999px; background: color-mix(in srgb, var(--s-bg) 55%, transparent); backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); box-shadow: 0 2px 12px rgba(0,0,0,.2); z-index: 5; }
+  .mfab .b { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; color: var(--s-muted); }
+  .mfab .b.on { color: var(--s-text); background: color-mix(in srgb, var(--s-text) 10%, transparent); }
+  .mfab svg { width: 13px; height: 13px; }
+  .home { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 30%; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--s-text) 45%, transparent); z-index: 6; }
+  @media (max-width: 400px) { .phone-duo { width: 96vw; } .screen { font-size: 10px; } }
 
   /* ===== Sections ===== */
   section { padding: 76px 0; }
@@ -248,43 +273,33 @@
           </div>
         </div>
 
-        <!-- Phone mockup -->
+        <!-- Phone mockups: same app, light and dark -->
         <div class="phone-stage">
-          <div class="phone">
-            <div class="notch"></div>
-            <div class="screen">
-              <div class="m-top"><svg class="m-ico" viewBox="0 0 16 16" fill="currentColor"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Z"/></svg> acme/webapp</div>
-              <div class="m-search">Search issues…</div>
-              <div class="m-list">
-                <div class="m-row">
-                  <svg class="m-issico" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>
-                  <div class="m-body">
-                    <div class="m-title">Login button unresponsive on mobile</div>
-                    <div class="m-badges"><span class="chip open"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>open</span><span class="chip st">pending</span></div>
-                    <div class="m-meta"><span class="m-num">#42</span> maria · 💬 3</div>
-                  </div>
-                </div>
-                <div class="m-row">
-                  <svg class="m-issico" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>
-                  <div class="m-body">
-                    <div class="m-title">Add dark mode to Settings</div>
-                    <div class="m-badges"><span class="chip open"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>open</span><span class="chip st blue">progress</span></div>
-                    <div class="m-meta"><span class="m-num">#38</span> jon · 💬 1</div>
-                  </div>
-                </div>
-                <div class="m-row">
-                  <svg class="m-issico" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>
-                  <div class="m-body">
-                    <div class="m-title">Migrate build to Vite</div>
-                    <div class="m-badges"><span class="chip closed"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>closed</span><span class="chip st purple">done</span></div>
-                    <div class="m-meta"><span class="m-num">#31</span> ana · 💬 6</div>
-                  </div>
-                </div>
+          <div class="phone-duo">
+            <!-- Back device: dark theme -->
+            <div class="phone back"><i class="pb l"></i><i class="pb r"></i>
+              <div class="screen dark">
+                <div class="island"></div>
+                <div class="sbar"><span>9:41</span><span class="r">5G <svg viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="4.5" width="12" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2.3" y="5.8" width="7.5" height="4.4" rx="1"/><rect x="14" y="6.4" width="1.3" height="3.2" rx=".6"/></svg></span></div>
+                <div class="mtop"><span class="rl"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 14.95 7.16a.75.75 0 1 1-1.49.178A5.501 5.501 0 0 0 8 2.5ZM1.05 8.84a.75.75 0 0 1 .834.656 5.501 5.501 0 0 0 9.259 3.16l-1.204-1.204A.25.25 0 0 1 10.104 11h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1.05 8.84Z"/></svg></span><span class="repo"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8Z"/></svg><span>nexa/service</span></span><span class="sp"></span><span class="rr"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z"/></svg><svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/></svg></span></div>
+                <div class="mrow"><svg class="ii" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg><div class="bd"><div class="mt">Refactor auth flow</div><div class="bg"><span class="c open"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>open</span><span class="c progress">progress</span></div><div class="mm"><span class="nn">#12</span> lucia · 💬 4</div></div></div>
+                <div class="mrow"><svg class="ii" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg><div class="bd"><div class="mt">Docker production setup</div><div class="bg"><span class="c open"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>open</span><span class="c pending">pending</span></div><div class="mm"><span class="nn">#9</span> marc · 💬 1</div></div></div>
+                <div class="mrow"><svg class="ii" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg><div class="bd"><div class="mt">API rate limiting</div><div class="bg"><span class="c closed"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>closed</span><span class="c done">done</span></div><div class="mm"><span class="nn">#4</span> ana · 💬 8</div></div></div>
+                <div class="mfab"><span class="b"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h3.5A1.75 1.75 0 0 1 7 2.75v10.5A1.75 1.75 0 0 1 5.25 15h-3.5A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1Zm9 0h3.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 10h-3.5A1.75 1.75 0 0 1 9 8.25v-5.5C9 1.784 9.784 1 10.75 1Z"/></svg></span><span class="b on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm3.75-1.5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5ZM3 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg></span><span class="b"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8.2 8.2 0 0 1 1.8.2l.5 1.6a6.5 6.5 0 0 1 1.2.7l1.6-.5c.5.4 1 .9 1.3 1.5l-1 1.3c.2.4.3.8.4 1.3l1.5.6a8.2 8.2 0 0 1 0 1.6l-1.5.6c-.1.5-.2.9-.4 1.3l1 1.3c-.3.6-.8 1.1-1.3 1.5l-1.6-.5c-.4.3-.8.5-1.2.7l-.5 1.6a8.2 8.2 0 0 1-1.6 0l-.5-1.6a6.5 6.5 0 0 1-1.2-.7l-1.6.5c-.5-.4-1-.9-1.3-1.5l1-1.3a6.5 6.5 0 0 1-.4-1.3l-1.5-.6a8.2 8.2 0 0 1 0-1.6l1.5-.6c.1-.5.2-.9.4-1.3l-1-1.3c.3-.6.8-1.1 1.3-1.5l1.6.5c.4-.3.8-.5 1.2-.7l.5-1.6A8.2 8.2 0 0 1 8 0Zm0 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg></span></div>
+                <div class="home"></div>
               </div>
-              <div class="m-fab">
-                <div class="b on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h3.5A1.75 1.75 0 0 1 7 2.75v10.5A1.75 1.75 0 0 1 5.25 15h-3.5A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1Zm9 0h3.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 10h-3.5A1.75 1.75 0 0 1 9 8.25v-5.5C9 1.784 9.784 1 10.75 1Z"/></svg></div>
-                <div class="b"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm3.75-1.5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5ZM3 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg></div>
-                <div class="b"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8.2 8.2 0 0 1 1.8.2l.5 1.6a6.5 6.5 0 0 1 1.2.7l1.6-.5c.5.4 1 .9 1.3 1.5l-1 1.3c.2.4.3.8.4 1.3l1.5.6a8.2 8.2 0 0 1 0 1.6l-1.5.6c-.1.5-.2.9-.4 1.3l1 1.3c-.3.6-.8 1.1-1.3 1.5l-1.6-.5c-.4.3-.8.5-1.2.7l-.5 1.6a8.2 8.2 0 0 1-1.6 0l-.5-1.6a6.5 6.5 0 0 1-1.2-.7l-1.6.5c-.5-.4-1-.9-1.3-1.5l1-1.3a6.5 6.5 0 0 1-.4-1.3l-1.5-.6a8.2 8.2 0 0 1 0-1.6l1.5-.6c.1-.5.2-.9.4-1.3l-1-1.3c.3-.6.8-1.1 1.3-1.5l1.6.5c.4-.3.8-.5 1.2-.7l.5-1.6A8.2 8.2 0 0 1 8 0Zm0 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg></div>
+            </div>
+            <!-- Front device: light theme -->
+            <div class="phone front"><i class="pb l"></i><i class="pb r"></i>
+              <div class="screen">
+                <div class="island"></div>
+                <div class="sbar"><span>9:41</span><span class="r">5G <svg viewBox="0 0 16 12" fill="currentColor"><rect x="1" y="4.5" width="12" height="7" rx="1.8" fill="none" stroke="currentColor" stroke-width="1"/><rect x="2.3" y="5.8" width="7.5" height="4.4" rx="1"/><rect x="14" y="6.4" width="1.3" height="3.2" rx=".6"/></svg></span></div>
+                <div class="mtop"><span class="rl"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.001 7.001 0 0 1 14.95 7.16a.75.75 0 1 1-1.49.178A5.501 5.501 0 0 0 8 2.5ZM1.05 8.84a.75.75 0 0 1 .834.656 5.501 5.501 0 0 0 9.259 3.16l-1.204-1.204A.25.25 0 0 1 10.104 11h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.001 7.001 0 0 1 1.05 8.84Z"/></svg></span><span class="repo"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8Z"/></svg><span>acme/webapp</span></span><span class="sp"></span><span class="rr"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z"/></svg><svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/></svg></span></div>
+                <div class="mrow"><svg class="ii" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg><div class="bd"><div class="mt">Login button unresponsive on mobile</div><div class="bg"><span class="c open"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>open</span><span class="c pending">pending</span></div><div class="mm"><span class="nn">#42</span> maria · 💬 3</div></div></div>
+                <div class="mrow"><svg class="ii" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg><div class="bd"><div class="mt">Add dark mode to Settings</div><div class="bg"><span class="c open"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>open</span><span class="c progress">progress</span></div><div class="mm"><span class="nn">#38</span> jon · 💬 1</div></div></div>
+                <div class="mrow"><svg class="ii" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg><div class="bd"><div class="mt">Migrate build to Vite</div><div class="bg"><span class="c closed"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>closed</span><span class="c done">done</span></div><div class="mm"><span class="nn">#31</span> ana · 💬 6</div></div></div>
+                <div class="mfab"><span class="b"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h3.5A1.75 1.75 0 0 1 7 2.75v10.5A1.75 1.75 0 0 1 5.25 15h-3.5A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1Zm9 0h3.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 10h-3.5A1.75 1.75 0 0 1 9 8.25v-5.5C9 1.784 9.784 1 10.75 1Z"/></svg></span><span class="b on"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm3.75-1.5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5ZM3 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg></span><span class="b"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8.2 8.2 0 0 1 1.8.2l.5 1.6a6.5 6.5 0 0 1 1.2.7l1.6-.5c.5.4 1 .9 1.3 1.5l-1 1.3c.2.4.3.8.4 1.3l1.5.6a8.2 8.2 0 0 1 0 1.6l-1.5.6c-.1.5-.2.9-.4 1.3l1 1.3c-.3.6-.8 1.1-1.3 1.5l-1.6-.5c-.4.3-.8.5-1.2.7l-.5 1.6a8.2 8.2 0 0 1-1.6 0l-.5-1.6a6.5 6.5 0 0 1-1.2-.7l-1.6.5c-.5-.4-1-.9-1.3-1.5l1-1.3a6.5 6.5 0 0 1-.4-1.3l-1.5-.6a8.2 8.2 0 0 1 0-1.6l1.5-.6c.1-.5.2-.9.4-1.3l-1-1.3c.3-.6.8-1.1 1.3-1.5l1.6.5c.4-.3.8-.5 1.2-.7l.5-1.6A8.2 8.2 0 0 1 8 0Zm0 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg></span></div>
+                <div class="home"></div>
               </div>
             </div>
           </div>
