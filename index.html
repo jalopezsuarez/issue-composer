@@ -189,8 +189,9 @@
   .navcap-btn:active { background: rgba(0,0,0,.12); }
 
   /* ===== Full-width iOS-style groups (no cards) ===== */
-  .group { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 22px; }
-  .group:first-child { margin-top: 14px; }
+  /* Sections: no gap between them; a single separator line above each section title. */
+  .group { background: var(--surface); border-top: 1px solid var(--border); }
+  .group:first-child { border-top: none; }
   .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 7px; }
   .group-hint { font-size: .8rem; color: var(--muted); padding: 0 16px 10px; }
   .field { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); }
@@ -686,10 +687,8 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit");   // hides the navigation while editing
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
-    // View color (painted by #viewbg below the safe area). White in Kanban,
-    // Issues/detail and the editor; gray otherwise.
-    var white = (name === "issues" || name === "edit" || name === "kanban");
-    document.documentElement.style.setProperty("--cbg", white ? "var(--surface)" : "var(--bg)");
+    // View color (painted by #viewbg below the safe area): white in every view.
+    document.documentElement.style.setProperty("--cbg", "var(--surface)");
   }
   function showView(name) {
     markActiveView(name);
