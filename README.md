@@ -1,8 +1,9 @@
 # Issue Composer
 
-Single-page web app (a single `index.html`, **no dependencies or build**) to **write and publish GitHub issues with the help of an LLM**, manage them on a **Kanban board** and comment on them. Designed as an **iPhone-style mobile app** (iOS + GitHub aesthetic, monochrome, *glass* effect), meant to be used from the phone but functional in any modern browser.
+Single-page web app (a single `index.html`, **no dependencies or build**) to **write and publish GitHub issues with the help of an LLM**, manage them on a **Kanban board** and comment on them. Designed as an **iPhone-style mobile app** (iOS + GitHub aesthetic, monochrome, *glass* effect, light **and** dark), meant to be used from the phone but fully functional on the desktop.
 
 🔗 **Demo (GitHub Pages):** https://jalopezsuarez.github.io/issue-composer/
+📣 **Landing page:** https://jalopezsuarez.github.io/issue-composer/web/
 
 > All the logic lives in the browser. **There is no backend**: requests go directly to the GitHub API and to your LLM provider. Your credentials are stored only in your browser's `localStorage`.
 
@@ -12,10 +13,12 @@ Single-page web app (a single `index.html`, **no dependencies or build**) to **w
 
 - [Views](#views)
 - [Writing modes](#writing-modes)
+- [Search](#search)
 - [Getting started](#getting-started)
   - [1. GitHub token](#1-github-token)
   - [2. LLM provider](#2-llm-provider)
   - [3. Language](#3-language)
+  - [4. Theme](#4-theme)
 - [Gestures and interaction](#gestures-and-interaction)
 - [How it works under the hood](#how-it-works-under-the-hood)
   - [GitHub integration](#github-integration)
@@ -32,10 +35,10 @@ Single-page web app (a single `index.html`, **no dependencies or build**) to **w
 
 ## Views
 
-Navigation is a **floating capsule** (bottom right) with three destinations, plus a **+** button to create:
+Navigation is a **floating glass capsule** (bottom right) with three destinations — **Kanban**, **Issues** and **Settings** — plus a **+** button to create and a 🔍 button to search.
 
 ### 🗂️ Kanban
-Board by **status** with one column per fixed status. Each card shows the title, an excerpt of the body (2 lines), number, comments and last-updated date. It allows:
+Board by **status**, one column per fixed status. Each card shows the title, an excerpt of the body (2 lines), the number, comments and the last-updated date. It allows:
 - **Dragging between columns** to change the issue's status.
 - **Reordering within a column** by dragging vertically (persistent manual order).
 - Tapping a card to open its **detail**.
@@ -43,7 +46,7 @@ Board by **status** with one column per fixed status. Each card shows the title,
 Order within each column: first the ones with a manual order (`order:n` ascending), then the rest by date (most recent on top); closed ones at the bottom.
 
 ### 📋 Issues
-List with **infinite scroll** (25 per page), a switchable **Newest/Oldest** order, and navigation to the detail. Each row shows on two lines: `open/closed` capsule + status, and `#no · user · comments · date`.
+List with **infinite scroll** (25 per page) and navigation to the detail. Each row shows on two lines: the `open/closed` capsule + the status chip, and `#no · user · comments`. A **sort** toggle (Newest / Oldest) lives inside the search bar.
 
 ### ✏️ Create (+ button)
 AI issue composer:
@@ -55,19 +58,20 @@ AI issue composer:
 ### 🔍 Issue detail
 - Description rendered in **Markdown** (headings, lists, checklists, code, quotes, links…).
 - The user's **labels** (the internal `status:`/`order:` ones stay hidden).
-- **Status**: a row to change it instantly (stored as a label).
+- **Status**: a row of options to change it instantly (stored as a label).
 - **Close / Reopen** the issue.
 - Link to **GitHub**.
-- **Comments**: they're listed, can be **created with AI** (with their own mode selector) and your own can be **edited/deleted** (per permissions).
+- **Comments**: listed, can be **created with AI** (with their own mode selector) and your own can be **edited/deleted** (per permissions).
 - Tapping the **title** opens the editor to rename it.
 
 ### ⚙️ Settings
-- **Recent repositories** (the last 10 used) to select with a tap.
-- **Active repo** (yellow banner).
+- **Active repo banner**, pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy is detected on selection and cached).
+- **Repositories**: a **Recent / Favorites** segmented list. Tap a row to select it, the ✕ removes it, and private repos show a lock. Mark the active repo as a favorite with the **heart** button (top right).
 - **GitHub**: token + repository search/selection (or manual `owner/repo`).
 - **LLM provider**: Base URL, API key and Model.
 - **Generation language**: Spanish / English.
-- **Appearance**: Light / Dark theme (persisted and included in export/import).
+- **Appearance**: Light / Dark theme.
+- **Settings export / import**: a JSON with 100% of the settings (token, LLM, active repo, recents, favorites, mode, language and theme) that you can copy out and paste back in.
 
 ### 🖊️ Full-screen editor
 A reusable view (a single borderless, full-screen `textarea`) to edit **one element at a time**: the issue **title**, its **body** or a **comment**. **Back** button (cancel) at the top left and **save** (↑) at the top right. It adapts dynamically to the visible height and the keyboard.
@@ -85,6 +89,14 @@ Available when creating issues and when writing comments:
 | **Bug** | Yes | **Bug** report: *Description, Reproduction steps, Expected vs actual behavior, Status in the code, Files involved, Probable root cause, Impact, Edge cases, Proposed fix, Acceptance criteria*. |
 
 In the **Feature** and **Bug** modes, the AI first analyzes the code and the README to assess whether what you describe makes sense and what **state** it's in (already implemented, partial or pending), and reflects it in the *Status in the code* section citing **real** paths and symbols (it doesn't make things up). In comments it also takes into account the **issue description and the thread's previous comments** to respond consistently.
+
+---
+
+## Search
+
+Both the **Kanban** and the **Issues** list have a 🔍 button that toggles a search bar above the board/list. It queries the **GitHub Search API** server-side and filters what's shown; the ✕ clears it. The open/closed state of the bar is remembered per view. In the Issues list, the **sort** toggle (Newest / Oldest) sits inside the bar and disappears with it.
+
+Empty, loading and error states are **uniform** across both views (e.g. *"Enter your token in Settings."*, *"Select a repository in Settings."*, *"No issues in this repository."*).
 
 ---
 
@@ -119,7 +131,11 @@ It does `POST {baseURL}/chat/completions` with `Authorization: Bearer`, `max_tok
 
 ### 3. Language
 
-Choose **Spanish** or **English** for the language of the generated issues and comments.
+Choose **Spanish** or **English** for the language of the generated issues and comments (the interface itself is in English).
+
+### 4. Theme
+
+Choose **Light** or **Dark**. The choice is saved, applied before the first paint (no flash), and travels with the settings export/import.
 
 ---
 
@@ -128,7 +144,7 @@ Choose **Spanish** or **English** for the language of the generated issues and c
 - **Tap card / row** → opens the detail.
 - **Drag card** (Kanban): mouse, starts on move; touch, **long press** (~180 ms) to "pick up" the card. Auto-scroll near the edges.
 - **Horizontal drag** → changes column (status). **Vertical drag** → reorders within the column.
-- **+ button** → opens the issue composer.
+- **+ button** → opens the issue composer. **🔍 button** → toggles the search bar.
 - **Reload** (icon on the left in list/kanban) → reloads from the network.
 - **Back** (‹, top left) → goes back; **Save** (↑, top right) in the editor.
 - Zoom disabled (no pinch or double-tap) to behave like a native app.
@@ -147,7 +163,7 @@ Accept: application/vnd.github+json
 X-GitHub-Api-Version: 2022-11-28
 ```
 
-Endpoints used: `GET /user`, `GET /user/repos`, `GET /user/orgs`, `GET /orgs/{org}/repos`, `GET /repos/{repo}`, `GET/POST /repos/{repo}/issues`, `PATCH /repos/{repo}/issues/{n}`, `PUT /repos/{repo}/issues/{n}/labels`, `POST /repos/{repo}/labels`, `GET/POST/PATCH/DELETE .../issues/comments`, `GET .../readme`, `GET .../git/trees/{branch}?recursive=1`, `GET .../contents/{path}`.
+Endpoints used: `GET /user`, `GET /user/repos`, `GET /user/orgs`, `GET /orgs/{org}/repos`, `GET /repos/{repo}`, `GET/POST /repos/{repo}/issues`, `GET /search/issues` (search), `PATCH /repos/{repo}/issues/{n}`, `PUT /repos/{repo}/issues/{n}/labels`, `POST /repos/{repo}/labels`, `GET/POST/PATCH/DELETE .../issues/comments`, `GET .../readme`, `GET .../git/trees/{branch}?recursive=1`, `GET .../contents/{path}`.
 
 Reads use `cache: "no-store"` so changes are reflected on reload (GitHub responds with `Cache-Control: private, max-age=60`).
 
@@ -163,7 +179,7 @@ Reads use `cache: "no-store"` so changes are reflected on reload (GitHub respond
 
 `pending` · `progress` · `review` · `done` · `archive` · `resources`
 
-The **manual order** within a column is stored as an `order:<n>` label. Both label families are internal and are **not shown** as user chips. The status change is done in a single `PUT .../labels` call (creating the label if it doesn't exist).
+Each status has a color that adapts to the theme (soft pastels in light mode, a muted Notion-style dark palette in dark mode). The **manual order** within a column is stored as an `order:<n>` label. Both label families are internal and are **not shown** as user chips. The status change is done in a single `PUT .../labels` call (creating the label if it doesn't exist).
 
 ### Persistence (localStorage)
 
@@ -178,6 +194,9 @@ The **manual order** within a column is stored as an `order:<n>` label. Both lab
 | `ic_lang` | Generation language |
 | `ic_theme` | UI theme (light/dark) |
 | `ic_tab` | Last used tab |
+| `ic_repo_tab` | Recent/Favorites segment |
+
+Additional internal helpers not included in export/import: `ic_repo_priv` (per-repo public/private cache) and `ic_srch_kanban` / `ic_srch_issues` (search-bar open state per view).
 
 ---
 
@@ -191,10 +210,10 @@ The **manual order** within a column is stored as an `order:<n>` label. Both lab
 
 ## Deployment
 
-It's a **static** site (a single `index.html`). It's published on **GitHub Pages** with the [`.github/workflows/static.yml`](.github/workflows/static.yml) workflow, which uploads the repo root on every push to `main`.
+It's a **static** site (a single `index.html`). It's published on **GitHub Pages** with the [`.github/workflows/static.yml`](.github/workflows/static.yml) workflow, which uploads the repo root on every push to `main`. The marketing landing page under [`web/`](web/) is published alongside it.
 
 To deploy it to your own repo:
-1. Copy `index.html` (and optionally `.github/workflows/static.yml`).
+1. Copy `index.html` (and optionally `web/index.html` and `.github/workflows/static.yml`).
 2. In **Settings → Pages**, choose **GitHub Actions** as the source.
 3. Push to `main`.
 
@@ -205,18 +224,20 @@ You can also open `index.html` directly in the browser (no server) to use it loc
 ## UI and compatibility notes
 
 - **Vanilla**: HTML + CSS + JS embedded in a single file, no frameworks or build process.
-- **iOS/glass aesthetic**: `backdrop-filter` (blur), translucent floating buttons, system typography, monochrome SVG icons (octicons).
-- **Safe areas**: respects `env(safe-area-inset-*)`; the top strip of the *safe area* and the background behind the keyboard are transparent.
+- **iOS/glass aesthetic**: `backdrop-filter` (blur), translucent floating buttons, system typography, monochrome SVG icons (octicons). A **borderless** design where sections are separated only by their title, and lines appear only as row separators inside lists (issues, comments, recents/favorites, status selector).
+- **Light & dark**: a full dark theme, chosen in Settings and honored for the iOS status-bar tint.
+- **Responsive width**: on the desktop the **Kanban and Issues** views use the **full browser width**, while **Create, Detail, Settings and the editor** are capped at **720 px, centered**. On the phone it's a single full-width column.
+- **Safe areas**: respects `env(safe-area-inset-*)`; the top strip of the *safe area* and the background behind the keyboard follow the theme.
 - **Dynamic viewport**: the height adapts to the visible viewport (`visualViewport`) so the editor and its textarea fit with the keyboard open.
-- Designed for recent **Safari/Chrome** on mobile; works on desktop (max width 480 px, centered).
+- Designed for recent **Safari/Chrome** on mobile; works well on desktop too.
 
 ---
 
 ## Known limitations
 
-- **Safe-area transparency**: in a regular Safari tab the browser canvas is white, so the transparent area may appear white; it's best used as an **installed PWA** or depending on the system background.
 - **LLM CORS**: depends on your provider/proxy allowing the app's origin.
 - No real-time sync: use **Reload** to bring in changes made outside the app.
+- Search relies on the GitHub Search API, which is rate-limited and slightly delayed vs. the plain issues listing.
 
 ---
 
@@ -225,6 +246,10 @@ You can also open `index.html` directly in the browser (no server) to use it loc
 ```
 .
 ├── index.html                     # The whole app (HTML + CSS + JS)
+├── web/
+│   └── index.html                 # Marketing landing page (self-contained)
+├── favicon.png                    # App icons
+├── apple-touch-icon.png
 ├── README.md
 └── .github/
     └── workflows/
