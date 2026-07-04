@@ -698,12 +698,16 @@
   function cleanText(t) {
     return String(t == null ? "" : t).replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/i, "").trim();
   }
+  // Date format used everywhere (list, kanban card, detail, comments):
+  // "04 jul 11:38" for the current year, "04 jul 2025 11:38" for another year.
+  var MONTHS_SHORT = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
   function fmtShort(iso) {
     if (!iso) return "";
     var d = new Date(iso);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleDateString([], { day: "2-digit", month: "short" }) + " " +
-           d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    var year = (d.getFullYear() !== new Date().getFullYear()) ? (" " + d.getFullYear()) : "";
+    return p(d.getDate()) + " " + MONTHS_SHORT[d.getMonth()] + year + " " + p(d.getHours()) + ":" + p(d.getMinutes());
   }
 
   // ===== Paint static icons (tab bar, back, toolbar) =====
@@ -1452,7 +1456,8 @@
         '<div class="row-sub">' +
           '<span class="rsub-badges">' + stateTag(it.state) + statusTag(it) + "</span>" +
           '<span class="rsub-meta"><span class="knum">#' + it.number + "</span>" + esc(it.user ? it.user.login : "?") +
-            " · " + svg("comment", 13) + " " + (it.comments || 0) + "</span></div>" +
+            " · " + svg("comment", 13) + " " + (it.comments || 0) +
+            " · " + esc(fmtShort(it.updated_at)) + "</span></div>" +
         labelsHtml(userLabels(it)) + "</div>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
