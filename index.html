@@ -1570,7 +1570,8 @@
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Status</div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
               var on = statusOf(issue) === s.name;
-              return '<button type="button" class="strow' + (on ? " on" : "") + '" data-st="' + esc(s.name) + '" style="color:#' + s.dot + (on ? ";background:#" + s.color : "") + '">' +
+              var rc = statusRowColors(s);
+              return '<button type="button" class="strow' + (on ? " on" : "") + '" data-st="' + esc(s.name) + '" style="color:' + rc.text + (on ? ";background:" + rc.active : "") + '">' +
                 '<span class="stdot" style="background:#' + s.dot + '"></span>' +
                 '<span class="stname">' + esc(s.name) + "</span>" +
                 '<span class="stcheck">' + svg("check", 16) + "</span></button>";
@@ -1819,14 +1820,26 @@
   // FIXED statuses (not editable). In GitHub they're stored as a "status:<key>" label.
   var STATUS_PREFIX = "status:";
   // color: chip pastel; dot: colored dot (stronger) of the header.
+  // color/dot: light-theme pastel bg + dot. dbg/dtext/dcol: dark-theme (Notion-style)
+  // chip background, chip/count text and column background tints.
   var STATUSES = [
-    { name: "pending",   color: "f4e8bb", dot: "d4a72c" },  // yellow
-    { name: "progress",  color: "cfe0f6", dot: "3b82f6" },  // blue
-    { name: "review",    color: "e7d9f7", dot: "8250df" },  // purple
-    { name: "done",      color: "d3ebd9", dot: "2da44e" },  // green
-    { name: "archive",   color: "e8e8e8", dot: "8b949e" },  // gray
-    { name: "resources", color: "f6ddc5", dot: "e8853f" }   // orange
+    { name: "pending",   color: "f4e8bb", dot: "d4a72c", dbg: "473f24", dtext: "e3b341", dcol: "1c1810" },  // yellow
+    { name: "progress",  color: "cfe0f6", dot: "3b82f6", dbg: "1c3a5e", dtext: "6cb6ff", dcol: "101a2b" },  // blue
+    { name: "review",    color: "e7d9f7", dot: "8250df", dbg: "3a2d5c", dtext: "c297ff", dcol: "191330" },  // purple
+    { name: "done",      color: "d3ebd9", dot: "2da44e", dbg: "1b3a2a", dtext: "56d364", dcol: "0f1f16" },  // green
+    { name: "archive",   color: "e8e8e8", dot: "8b949e", dbg: "373e47", dtext: "adbac7", dcol: "161b22" },  // gray
+    { name: "resources", color: "f6ddc5", dot: "e8853f", dbg: "4a3620", dtext: "f0883e", dcol: "241a10" }   // orange
   ];
+  // Resolves a status's chip/column colors for the active theme.
+  function statusColors(s) {
+    if (currentTheme === "dark") return { bg: s.dbg, text: "#" + s.dtext, dot: s.dot, colBg: "#" + s.dcol, count: "#" + s.dtext };
+    return { bg: s.color, text: darken(s.dot), dot: s.dot, colBg: "#" + s.color + "40", count: "#" + s.dot + "b3" };
+  }
+  // Status-selector rows (detail): text + active-row background per theme.
+  function statusRowColors(s) {
+    if (currentTheme === "dark") return { text: "#" + s.dtext, active: "#" + s.dbg };
+    return { text: "#" + s.dot, active: "#" + s.color };
+  }
   function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name === name) return STATUSES[i]; return null; }
   function statusLabelName(name) { return STATUS_PREFIX + name; }                 // "status:done"
   function statusKeyOf(label) { var n = String(label == null ? "" : (label.name || label)).toLowerCase(); if (n.indexOf(STATUS_PREFIX) !== 0) return null; var k = n.slice(STATUS_PREFIX.length).trim(); return statusByName(k) ? k : null; }
@@ -1849,8 +1862,9 @@
     return "#" + ch(0) + ch(2) + ch(4);
   }
   function chipInner(dotHex, text) { return '<span class="kdot" style="background:#' + dotHex + '"></span>' + esc(text); }
-  function chip(marker, bgHex, dotHex, text) {
-    return '<span class="kchip ' + marker + '" style="background:#' + bgHex + ';color:' + darken(dotHex) + '">' + chipInner(dotHex, text) + "</span>";
+  function chip(marker, s) {
+    var c = statusColors(s);
+    return '<span class="kchip ' + marker + '" style="background:#' + c.bg + ';color:' + c.text + '">' + chipInner(c.dot, s.name) + "</span>";
   }
   // GitHub-style open/closed capsule: solid background (green/purple), text and icon
   // in white (open-issue / closed-issue icon).
@@ -1862,7 +1876,7 @@
   function statusTag(it) {
     var s = statusByName(statusOf(it));
     if (!s) return "";
-    return chip("sttag", s.color, s.dot, s.name);
+    return chip("sttag", s);
   }
 
   // ----- Manual order within a column: "order:<n>" label -----
@@ -1894,14 +1908,14 @@
       for (var i = 0; i < bs.length; i++) {
         var on = bs[i].getAttribute("data-st") === cur, rs = statusByName(bs[i].getAttribute("data-st"));
         bs[i].classList.toggle("on", on);
-        bs[i].style.background = (on && rs) ? "#" + rs.color : "";   // active row: status pastel
+        bs[i].style.background = (on && rs) ? statusRowColors(rs).active : "";   // active row: status tint
         bs[i].disabled = false;
       }
     }
     var meta = document.querySelector(".detail-meta");
     var tag = meta && meta.querySelector(".sttag");
     var s = statusByName(cur);
-    if (tag && s) { tag.style.background = "#" + s.color; tag.style.color = darken(s.dot); tag.innerHTML = chipInner(s.dot, s.name); }
+    if (tag && s) { var tc = statusColors(s); tag.style.background = "#" + tc.bg; tag.style.color = tc.text; tag.innerHTML = chipInner(tc.dot, s.name); }
   }
 
   // Updates an issue in the caches (list + kanban) so that, on return,
@@ -1971,12 +1985,13 @@
         if (ob !== null && oa === null) return 1;
         return new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime();
       });
+      var cc = statusColors(col);
       var colEl = document.createElement("div");
       colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
-      colEl.style.background = "#" + col.color + "40";   // column background: very light tint of the status
+      colEl.style.background = cc.colBg;   // column background: subtle tint of the status
       colEl.innerHTML = '<div class="kcol-head">' +
-          '<span class="kchip" style="background:#' + col.color + ';color:' + darken(col.dot) + '"><span class="kdot" style="background:#' + col.dot + '"></span>' + esc(col.name) + "</span>" +
-          '<span class="kcount" style="color:#' + col.dot + 'b3">' + list.length + "</span>" +
+          '<span class="kchip" style="background:#' + cc.bg + ';color:' + cc.text + '"><span class="kdot" style="background:#' + cc.dot + '"></span>' + esc(col.name) + "</span>" +
+          '<span class="kcount" style="color:' + cc.count + '">' + list.length + "</span>" +
         '</div><div class="kcol-body"></div>';
       var body = colEl.querySelector(".kcol-body");
       list.forEach(function (it) { body.appendChild(makeCard(it)); });
