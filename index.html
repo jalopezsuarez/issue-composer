@@ -194,8 +194,7 @@
   .group:first-child { border-top: none; }
   .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; padding: 0 16px 7px; }
   .group-hint { font-size: .8rem; color: var(--muted); padding: 0 16px 10px; }
-  .field { padding: 12px 16px; border-bottom: 1px solid var(--border-soft); }
-  .field:last-child { border-bottom: none; }
+  .field { padding: 12px 16px; }
   label { display: block; font-weight: 600; font-size: .82rem; margin: 0 0 6px; color: var(--text); }
   input, select, textarea {
     width: 100%; padding: 11px 12px;
@@ -1526,7 +1525,7 @@
           '<div class="pad"><div class="group-title" style="padding:0">New comment with AI</div></div>' +
           '<div class="field"><label for="commentNote">Proposed text</label>' +
             '<textarea id="commentNote" rows="3" placeholder="Idea / draft of what you want to comment…"></textarea></div>' +
-          '<div class="field" style="border-bottom:none"><label>Mode</label><div class="segmented" id="commentToneControl">' +
+          '<div class="field"><label>Mode</label><div class="segmented" id="commentToneControl">' +
             '<button type="button" data-tone="simple">Simple</button>' +
             '<button type="button" data-tone="feature">Feature</button>' +
             '<button type="button" data-tone="bug">Bug</button></div></div>' +
