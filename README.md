@@ -13,6 +13,7 @@ Single-page web app (a single `index.html`, **no dependencies or build**) to **w
 
 - [Views](#views)
 - [Writing modes](#writing-modes)
+- [AI assistant](#-ai-assistant)
 - [Search](#search)
 - [Getting started](#getting-started)
   - [1. GitHub token](#1-github-token)
@@ -35,7 +36,7 @@ Single-page web app (a single `index.html`, **no dependencies or build**) to **w
 
 ## Views
 
-Navigation is a **floating glass capsule** (bottom right) with three destinations — **Kanban**, **Issues** and **Settings** — plus a **+** button to create and a 🔍 button to search.
+Navigation is a **floating glass capsule** (bottom right) with four destinations — **Kanban**, **Issues**, **AI assistant** and **Settings** — plus a **+** button to create and a 🔍 button to search.
 
 ### 🗂️ Kanban
 Board by **status**, one column per fixed status. Each card shows the title, an excerpt of the body (2 lines), the number, comments and the last-updated date. It allows:
@@ -63,6 +64,14 @@ AI issue composer:
 - Link to **GitHub**.
 - **Comments**: listed, can be **created with AI** (with their own mode selector) and your own can be **edited/deleted** (per permissions).
 - Tapping the **title** opens the editor to rename it.
+
+### ✨ AI assistant
+A **ChatGPT-style** conversational view (max 720px) scoped to the **active repository's issues and code**. Using the configured LLM with **tool-calling**, it can:
+- read and search issues, read the source files and the README;
+- create issues, add and edit comments;
+- change an issue's status and edit its title/description.
+
+Each tool call is shown as a small chip while it runs. Conversations are **not persisted** (they reset when you leave). It refuses topics unrelated to this repo.
 
 ### ⚙️ Settings
 - **Active repo banner**, pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy is detected on selection and cached).

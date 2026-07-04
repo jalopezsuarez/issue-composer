@@ -417,6 +417,44 @@
   .kcard.closed { background: var(--surface); }   /* closed: surface background */
   .kcard.closed .ktitle { color: var(--muted); }   /* finished tasks: title in gray */
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
+
+  /* ===== AI assistant (ChatGPT-style) ===== */
+  #view-assistant {
+    position: fixed; top: var(--vvtop, 0); left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 720px; height: var(--apph, 100dvh);
+    z-index: 30; overflow: hidden; background: var(--surface);
+  }
+  #view-assistant.active { display: flex; flex-direction: column; }
+  .chat-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    padding: calc(env(safe-area-inset-top) + var(--topbar)) 14px 10px; }
+  .chat-intro { text-align: center; color: var(--muted); max-width: 460px; margin: 8vh auto 0; padding: 0 8px; }
+  .chat-intro .chat-logo { width: 54px; height: 54px; border-radius: 16px; background: var(--bg); display: grid; place-items: center; margin: 0 auto 16px; }
+  .chat-intro .chat-logo svg { width: 28px; height: 28px; color: var(--text); }
+  .chat-intro h2 { font-size: 1.35rem; letter-spacing: -.02em; color: var(--text); margin-bottom: 8px; }
+  .chat-intro p { font-size: .92rem; line-height: 1.5; }
+  #chatMessages { display: flex; flex-direction: column; gap: 14px; padding: 6px 0 4px; }
+  .msg-user { align-self: flex-end; max-width: 85%; background: var(--bg); color: var(--text); padding: 10px 14px; border-radius: 18px; font-size: .95rem; white-space: pre-wrap; word-break: break-word; }
+  .msg-ai { align-self: stretch; display: flex; gap: 10px; }
+  .msg-ai .avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; margin-top: 2px; }
+  .msg-ai .avatar svg { width: 16px; height: 16px; color: var(--text); }
+  .msg-ai .bubble { flex: 1; min-width: 0; }
+  .msg-ai .bubble .md { font-size: .95rem; }
+  .msg-tool { align-self: stretch; display: flex; flex-wrap: wrap; gap: 6px; padding-left: 38px; }
+  .tool-chip { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 3px 10px; font-weight: 500; }
+  .tool-chip svg { width: 12px; height: 12px; }
+  .tool-chip.err { color: var(--danger); }
+  .chat-typing { align-self: flex-start; display: inline-flex; gap: 4px; padding-left: 38px; }
+  .chat-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; animation: chatdot 1s infinite; }
+  .chat-typing i:nth-child(2) { animation-delay: .15s; } .chat-typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes chatdot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: .9; transform: translateY(-3px); } }
+  .chat-composer { flex: none; padding: 8px 12px calc(env(safe-area-inset-bottom) + var(--botbar)); background: var(--surface); }
+  .chat-inputwrap { display: flex; align-items: flex-end; gap: 8px; background: var(--bg); border-radius: 24px; padding: 6px 6px 6px 16px; }
+  .chat-inputwrap textarea { flex: 1; min-width: 0; border: none; background: transparent; resize: none; padding: 8px 0; font-size: .98rem; line-height: 1.4; max-height: 140px; color: var(--text); font-family: inherit; }
+  .chat-inputwrap textarea:focus { outline: none; box-shadow: none; }
+  .chat-send { flex: none; width: 38px; height: 38px; border-radius: 50%; padding: 0; background: var(--black); color: var(--on-black); display: grid; place-items: center; cursor: pointer; }
+  .chat-send:disabled { opacity: .4; cursor: default; }
+  .chat-send svg { width: 17px; height: 17px; }
+  .chat-foot { text-align: center; font-size: .7rem; color: var(--muted); margin-top: 7px; padding: 0 8px; }
 </style>
 </head>
 <body>
@@ -616,6 +654,7 @@
   <nav class="navcap" id="navcap" aria-label="Navigation">
     <button class="navcap-btn" data-view="kanban" aria-label="Kanban"><span class="ico" data-icon="project"></span></button>
     <button class="navcap-btn" data-view="issues" aria-label="Issues"><span class="ico" data-icon="list"></span></button>
+    <button class="navcap-btn" data-view="assistant" aria-label="AI assistant"><span class="ico" data-icon="sparkle"></span></button>
     <button class="navcap-btn" data-view="config" aria-label="Settings"><span class="ico" data-icon="gear"></span></button>
   </nav>
 
@@ -624,6 +663,25 @@
   <!-- Full-screen editor: just the textarea (borderless). Back/Save are fabs. -->
   <section class="view" id="view-edit">
     <textarea id="editBody" placeholder="Write here…"></textarea>
+  </section>
+
+  <!-- ====== AI ASSISTANT (ChatGPT-style conversational view) ====== -->
+  <section class="view" id="view-assistant">
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-intro" id="chatIntro">
+        <div class="chat-logo"><span class="ico" data-icon="sparkle"></span></div>
+        <h2>Issue assistant</h2>
+        <p>Ask about this repository's issues and code. I can read and search issues, dig into the source, create issues, add or edit comments, change statuses and edit descriptions.</p>
+      </div>
+      <div id="chatMessages"></div>
+    </div>
+    <div class="chat-composer">
+      <div class="chat-inputwrap">
+        <textarea id="chatInput" rows="1" placeholder="Message the assistant…" autocomplete="off"></textarea>
+        <button id="chatSend" class="chat-send" aria-label="Send"></button>
+      </div>
+      <div class="chat-foot" id="chatFoot">Talks only about this repository's issues and code.</div>
+    </div>
   </section>
 
   <!-- Centered modal spinner: blocks the screen while a change is in progress -->
@@ -651,6 +709,8 @@
     external: "M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.06-1.06l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z",
     clock: "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z",
     pencil: "M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.062.106l-.618 2.164 2.164-.618a.253.253 0 0 0 .106-.062l6.286-6.286Z",
+    sparkle: "M9.5.75a.75.75 0 0 0-1.46 0l-.9 3.32a3 3 0 0 1-2.07 2.07l-3.32.9a.75.75 0 0 0 0 1.46l3.32.9a3 3 0 0 1 2.07 2.07l.9 3.32a.75.75 0 0 0 1.46 0l.9-3.32a3 3 0 0 1 2.07-2.07l3.32-.9a.75.75 0 0 0 0-1.46l-3.32-.9a3 3 0 0 1-2.07-2.07Zm4.25 8.5a.6.6 0 0 0-1.16 0l-.2.74a1.5 1.5 0 0 1-1.05 1.05l-.74.2a.6.6 0 0 0 0 1.16l.74.2a1.5 1.5 0 0 1 1.05 1.05l.2.74a.6.6 0 0 0 1.16 0l.2-.74a1.5 1.5 0 0 1 1.05-1.05l.74-.2a.6.6 0 0 0 0-1.16l-.74-.2a1.5 1.5 0 0 1-1.05-1.05Z",
+    send: "M1.5 1.6 14.7 7.3a.75.75 0 0 1 0 1.38L1.5 14.4a.75.75 0 0 1-1.03-.86L1.9 8.5 8 8l-6.1-.5L.47 2.46A.75.75 0 0 1 1.5 1.6Z",
     check: "M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L1.72 8.78a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z",
     repo: "M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z",
     project: "M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25ZM11.75 3a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Zm-8.25.75a.75.75 0 0 1 1.5 0v5.5a.75.75 0 0 1-1.5 0Zm4.25-.75a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 7.75 3Z",
@@ -722,7 +782,7 @@
   })();
 
   // ====================== VIEW NAVIGATION ======================
-  var VIEWS = ["kanban", "issues", "composer", "config", "edit"];
+  var VIEWS = ["kanban", "issues", "composer", "config", "edit", "assistant"];
   // Marks a view (and its capsule button) as active, without reloading its content.
   function markActiveView(name) {
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
@@ -747,6 +807,7 @@
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
     else if (name === "composer") { $("navBack").hidden = false; }   // "push" view: go back with the back button
+    else if (name === "assistant") { $("navBack").hidden = true; onAssistantShown(); }
     else { $("navBack").hidden = true; }
     if (name !== "composer") persist(LS_KEYS.tab, name);  // composer is transient, not remembered
     $("content").scrollTop = 0;
@@ -1040,11 +1101,12 @@
     var tag = $("viewRepoTag"); if (!tag) return;
     var repo = getSelectedRepo(), ok = repo && repo.indexOf("/") !== -1;
     var inConfig = $("view-config").classList.contains("active");
-    var inRepoView = inConfig || $("view-kanban").classList.contains("active") ||
+    var inAssistant = $("view-assistant").classList.contains("active");
+    var inRepoView = inConfig || inAssistant || $("view-kanban").classList.contains("active") ||
       $("view-issues").classList.contains("active") || $("view-composer").classList.contains("active");
     var show = ok && inRepoView;
     tag.hidden = !show;
-    tag.classList.toggle("at-left", inConfig);   // sin fab a la izquierda en ajustes
+    tag.classList.toggle("at-left", inConfig || inAssistant);   // no left fab in settings/assistant
     if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
   // Favorite fab (settings, top right): a filled heart that adds the active repo
@@ -2329,6 +2391,217 @@
       .then(function () { hideBusy(); });
   });
 
+  // =================== AI ASSISTANT (conversational, tool-using) ===================
+  var chatMessages = [];       // OpenAI-protocol message list (system + turns + tool results)
+  var chatBusy = false, chatStarted = false, chatTypingEl = null;
+
+  function llmCfg() { return { baseUrl: $("llmBaseUrl").value.trim(), apiKey: $("llmApiKey").value.trim(), model: $("llmModel").value.trim() }; }
+  // Chat call with tool support; returns the whole assistant message object.
+  function llmChatRaw(messages, tools) {
+    var c = llmCfg();
+    if (!c.baseUrl || !c.apiKey || !c.model) return Promise.reject(new Error("Configure the LLM in Settings."));
+    var body = { model: c.model, messages: messages, temperature: 0.2, max_tokens: 1500 };
+    if (tools && tools.length) { body.tools = tools; body.tool_choice = "auto"; }
+    return fetch(c.baseUrl.replace(/\/+$/, "") + "/chat/completions", {
+      method: "POST", headers: { "Authorization": "Bearer " + c.apiKey, "Content-Type": "application/json" }, body: JSON.stringify(body)
+    }).then(function (res) {
+      return res.text().then(function (txt) {
+        var data = null; try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+        if (!res.ok) { var m = (data && data.error && data.error.message) ? data.error.message : (txt || res.statusText); throw new Error("LLM " + res.status + ": " + m); }
+        if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) throw new Error("LLM response without choices[0].message");
+        return data.choices[0].message;
+      });
+    }).catch(function (err) {
+      if (err && /Failed to fetch/i.test(err.message)) throw new Error("Couldn't reach the LLM (\"Failed to fetch\"). Enable CORS for this origin.");
+      throw err;
+    });
+  }
+
+  // ----- Tool schemas (OpenAI function-calling) -----
+  function toolFn(name, description, props, required) {
+    return { type: "function", function: { name: name, description: description, parameters: { type: "object", properties: props || {}, required: required || [] } } };
+  }
+  var STATUS_NAMES = STATUSES.map(function (s) { return s.name; });
+  var ASSISTANT_TOOLS = [
+    toolFn("list_issues", "List issues of the active repository.", { state: { type: "string", enum: ["open", "closed", "all"], description: "Filter by state (default open)." } }),
+    toolFn("search_issues", "Search issues in the active repository by text/qualifiers.", { query: { type: "string" } }, ["query"]),
+    toolFn("get_issue", "Get one issue with its body, status and comments.", { number: { type: "integer" } }, ["number"]),
+    toolFn("create_issue", "Create a new issue in the active repository.", { title: { type: "string" }, body: { type: "string", description: "Markdown body." } }, ["title"]),
+    toolFn("update_issue", "Update an issue's title, body (description) and/or open/closed state.", { number: { type: "integer" }, title: { type: "string" }, body: { type: "string" }, state: { type: "string", enum: ["open", "closed"] } }, ["number"]),
+    toolFn("set_issue_status", "Set the Kanban status label of an issue.", { number: { type: "integer" }, status: { type: "string", enum: STATUS_NAMES } }, ["number", "status"]),
+    toolFn("add_comment", "Add a comment to an issue.", { number: { type: "integer" }, body: { type: "string" } }, ["number", "body"]),
+    toolFn("update_comment", "Edit an existing comment by its id.", { comment_id: { type: "integer" }, body: { type: "string" } }, ["comment_id", "body"]),
+    toolFn("list_files", "List the source file paths of the repository.", {}),
+    toolFn("read_file", "Read the contents of a source file (truncated).", { path: { type: "string" } }, ["path"])
+  ];
+
+  // ----- Tool executors: all scoped to the active repo -----
+  function activeRepoParts() {
+    var repo = getSelectedRepo();
+    if (!repo || repo.indexOf("/") === -1) throw new Error("No active repository. Ask the user to pick one in Settings.");
+    var p = repo.split("/"); return { repo: repo, owner: p[0], name: p[1] };
+  }
+  function issueBrief(it) { return { number: it.number, title: it.title, state: it.state, status: statusOf(it), comments: it.comments || 0 }; }
+  function invalidateIssueCaches() { issuesState.repo = null; KAN.repo = null; }
+  var ASSISTANT_IMPL = {
+    list_issues: function (a) {
+      var r = activeRepoParts(), state = (a && a.state) || "open";
+      return ghFetch(GH_API + "/repos/" + r.repo + "/issues?state=" + encodeURIComponent(state) + "&per_page=50")
+        .then(function (arr) { return (Array.isArray(arr) ? arr : []).filter(function (it) { return !it.pull_request; }).map(issueBrief); });
+    },
+    search_issues: function (a) {
+      var r = activeRepoParts(), q = encodeURIComponent("repo:" + r.repo + " type:issue " + (a.query || ""));
+      return ghFetch(GH_API + "/search/issues?q=" + q + "&per_page=30").then(function (d) { return ((d && d.items) || []).map(issueBrief); });
+    },
+    get_issue: function (a) {
+      var r = activeRepoParts();
+      return Promise.all([
+        ghFetch(GH_API + "/repos/" + r.repo + "/issues/" + a.number),
+        ghFetch(GH_API + "/repos/" + r.repo + "/issues/" + a.number + "/comments?per_page=100").catch(function () { return []; })
+      ]).then(function (res) {
+        var it = res[0], comments = Array.isArray(res[1]) ? res[1] : [];
+        return { number: it.number, title: it.title, state: it.state, status: statusOf(it), body: it.body || "",
+          labels: userLabels(it).map(function (l) { return l.name; }),
+          comments: comments.map(function (c) { return { id: c.id, user: c.user ? c.user.login : "?", body: c.body || "" }; }) };
+      });
+    },
+    create_issue: function (a) {
+      var r = activeRepoParts();
+      if (!a.title) throw new Error("title is required");
+      return ghFetch(GH_API + "/repos/" + r.repo + "/issues", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: a.title, body: a.body || "" }) })
+        .then(function (it) { invalidateIssueCaches(); return { number: it.number, url: it.html_url }; });
+    },
+    update_issue: function (a) {
+      var r = activeRepoParts(), patch = {};
+      if (a.title != null) patch.title = a.title;
+      if (a.body != null) patch.body = a.body;
+      if (a.state === "open" || a.state === "closed") patch.state = a.state;
+      if (!Object.keys(patch).length) throw new Error("Nothing to update (provide title, body or state).");
+      return ghFetch(GH_API + "/repos/" + r.repo + "/issues/" + a.number, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) })
+        .then(function (it) { invalidateIssueCaches(); return { number: it.number, state: it.state, ok: true }; });
+    },
+    set_issue_status: function (a) {
+      var r = activeRepoParts();
+      if (!statusByName(a.status)) throw new Error("Unknown status. Valid: " + STATUS_NAMES.join(", "));
+      return ghFetch(GH_API + "/repos/" + r.repo + "/issues/" + a.number).then(function (it) {
+        return putIssueLabels(r.repo, { number: a.number, labels: it.labels || [] }, labelsWith(it, a.status, null));
+      }).then(function () { invalidateIssueCaches(); return { number: a.number, status: a.status, ok: true }; });
+    },
+    add_comment: function (a) {
+      var r = activeRepoParts();
+      return ghFetch(GH_API + "/repos/" + r.repo + "/issues/" + a.number + "/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: a.body || "" }) })
+        .then(function (c) { invalidateIssueCaches(); return { id: c.id, ok: true }; });
+    },
+    update_comment: function (a) {
+      var r = activeRepoParts();
+      return ghFetch(GH_API + "/repos/" + r.repo + "/issues/comments/" + a.comment_id, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: a.body || "" }) })
+        .then(function (c) { return { id: c.id, ok: true }; });
+    },
+    list_files: function () {
+      var r = activeRepoParts();
+      return getRepoBase(r.owner, r.name, function () {}).then(function (base) { return { branch: base.branch, files: base.files.slice(0, 400) }; });
+    },
+    read_file: function (a) {
+      var r = activeRepoParts();
+      return getRepoBase(r.owner, r.name, function () {}).then(function (base) {
+        return ghFetch(GH_API + "/repos/" + r.repo + "/contents/" + encodeURIComponent(a.path).replace(/%2F/g, "/") + "?ref=" + base.branch)
+          .then(function (c) { var t = ""; try { t = b64ToUtf8(c.content).slice(0, 6000); } catch (e) { t = "(couldn't decode)"; } return { path: a.path, content: t }; });
+      });
+    }
+  };
+  function execTool(tc) {
+    var name = tc.function && tc.function.name, args = {};
+    try { args = tc.function && tc.function.arguments ? JSON.parse(tc.function.arguments) : {}; } catch (e) { args = {}; }
+    var impl = ASSISTANT_IMPL[name], p;
+    try { p = impl ? Promise.resolve(impl(args)) : Promise.reject(new Error("Unknown tool: " + name)); }
+    catch (e) { p = Promise.reject(e); }
+    return p.then(function (r) { return { ok: true, text: JSON.stringify(r) }; })
+      .catch(function (err) { return { ok: false, text: JSON.stringify({ error: err.message }) }; });
+  }
+
+  function assistantSystemPrompt() {
+    var repo = getSelectedRepo();
+    return "You are the assistant of \"Issue Composer\" for the GitHub repository " + (repo || "(none selected)") + ". " +
+      "You ONLY help with this repository's issues and its source code; politely refuse anything unrelated. " +
+      "Use the provided tools to read/search issues, read source files, and — when the user asks — create issues, add or edit comments, change an issue's status, and edit issue titles/descriptions. " +
+      "Statuses available: " + STATUS_NAMES.join(", ") + ". " +
+      "Before modifying anything, make sure it matches the user's intent; then do it and briefly confirm what you did (mention issue numbers). " +
+      "Keep answers concise and in Markdown. Today is " + fmtShort(new Date().toISOString()) + ". " +
+      "Reply in " + (currentLang === "es" ? "Spanish" : "English") + ".";
+  }
+
+  // ----- Rendering -----
+  function chatScrollBottom() { var s = $("chatScroll"); if (s) s.scrollTop = s.scrollHeight; }
+  function addUserBubble(text) { var el = document.createElement("div"); el.className = "msg-user"; el.textContent = text; $("chatMessages").appendChild(el); chatScrollBottom(); }
+  function addAiBubble(md) { var el = document.createElement("div"); el.className = "msg-ai"; el.innerHTML = '<div class="avatar">' + svg("sparkle", 16) + '</div><div class="bubble">' + renderMd(md || "") + "</div>"; $("chatMessages").appendChild(el); chatScrollBottom(); }
+  var TOOL_LABEL = { list_issues: "Listing issues", search_issues: "Searching issues", get_issue: "Reading issue", create_issue: "Creating issue", update_issue: "Updating issue", set_issue_status: "Changing status", add_comment: "Adding comment", update_comment: "Editing comment", list_files: "Listing files", read_file: "Reading file" };
+  function addToolChips(calls) {
+    var row = document.createElement("div"); row.className = "msg-tool";
+    calls.forEach(function (tc) {
+      var name = tc.function && tc.function.name, chip = document.createElement("span");
+      chip.className = "tool-chip"; chip.innerHTML = svg("sparkle", 12) + "<span>" + esc(TOOL_LABEL[name] || name) + "</span>";
+      row.appendChild(chip);
+    });
+    $("chatMessages").appendChild(row); chatScrollBottom(); return row;
+  }
+  function setChatTyping(on) {
+    if (on) { if (chatTypingEl) return; chatTypingEl = document.createElement("div"); chatTypingEl.className = "chat-typing"; chatTypingEl.innerHTML = "<i></i><i></i><i></i>"; $("chatMessages").appendChild(chatTypingEl); chatScrollBottom(); }
+    else if (chatTypingEl) { chatTypingEl.remove(); chatTypingEl = null; }
+  }
+  function setChatBusy(on) { chatBusy = on; $("chatSend").disabled = on || !$("chatInput").value.trim(); setChatTyping(on); }
+
+  // ----- Conversation loop -----
+  function ensureChatStarted() {
+    if (!chatStarted) { chatStarted = true; chatMessages = [{ role: "system", content: assistantSystemPrompt() }]; }
+    else { chatMessages[0] = { role: "system", content: assistantSystemPrompt() }; }
+  }
+  function sendChat() {
+    var input = $("chatInput"), text = input.value.trim();
+    if (!text || chatBusy) return;
+    var cfg = llmCfg();
+    if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) { $("chatIntro").style.display = "none"; addAiBubble("Configure the LLM (Base URL, API key, Model) in **Settings** first."); return; }
+    ensureChatStarted();
+    $("chatIntro").style.display = "none";
+    addUserBubble(text);
+    chatMessages.push({ role: "user", content: text });
+    input.value = ""; autoGrowChat();
+    setChatBusy(true);
+    runAssistantLoop(8);
+  }
+  function runAssistantLoop(steps) {
+    if (steps <= 0) { setChatBusy(false); addAiBubble("_(Stopped after too many steps.)_"); return; }
+    llmChatRaw(chatMessages, ASSISTANT_TOOLS).then(function (m) {
+      var msg = { role: "assistant", content: m.content || "" };
+      if (m.tool_calls && m.tool_calls.length) msg.tool_calls = m.tool_calls;
+      chatMessages.push(msg);
+      if (msg.tool_calls) {
+        setChatTyping(false);
+        var row = addToolChips(msg.tool_calls);
+        setChatTyping(true);
+        return Promise.all(msg.tool_calls.map(function (tc, i) {
+          return execTool(tc).then(function (out) {
+            chatMessages.push({ role: "tool", tool_call_id: tc.id, content: out.text });
+            var chip = row.children[i]; if (chip && !out.ok) chip.className = "tool-chip err";
+          });
+        })).then(function () { runAssistantLoop(steps - 1); });
+      }
+      setChatBusy(false);
+      addAiBubble(msg.content || "(no response)");
+    }).catch(function (err) { setChatBusy(false); addAiBubble("⚠️ " + esc(err.message)); });
+  }
+
+  // ----- Input wiring -----
+  function autoGrowChat() { var t = $("chatInput"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 140) + "px"; }
+  $("chatInput").addEventListener("input", function () { autoGrowChat(); $("chatSend").disabled = chatBusy || !this.value.trim(); });
+  $("chatInput").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+  $("chatSend").innerHTML = svg("send", 17);
+  $("chatSend").disabled = true;
+  $("chatSend").addEventListener("click", sendChat);
+  function onAssistantShown() {
+    if (chatStarted) chatMessages[0] = { role: "system", content: assistantSystemPrompt() };
+    setTimeout(function () { try { $("chatInput").focus(); } catch (e) {} }, 60);
+  }
+
   // ===== Pinch-zoom block (in and out) on iOS Safari =====
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
     document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
@@ -2372,7 +2645,7 @@
   // "composer" is no longer a tab: it's opened with the + button and isn't remembered.
   (function restoreTab() {
     var saved = ""; try { saved = localStorage.getItem(LS_KEYS.tab) || ""; } catch (e) {}
-    var valid = { kanban: 1, issues: 1, config: 1 };
+    var valid = { kanban: 1, issues: 1, config: 1, assistant: 1 };
     showView(valid[saved] ? saved : (getSelectedRepo() ? "kanban" : "config"));
   })();
 })();
