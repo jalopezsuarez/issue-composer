@@ -20,6 +20,8 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='32' fill='black'/></svg>" />
 <link rel="icon" type="image/png" href="favicon.png" />
 <title>GH Issue Composer</title>
+<!-- Apply the saved theme before the first paint to avoid a light flash. -->
+<script>try{if(localStorage.getItem("ic_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <style>
   :root {
     /* GitHub-style palette: blacks, grays and whites (monochrome) */
@@ -30,6 +32,7 @@
     --border: #d0d7de;
     --border-soft: #eaeef2;
     --black: #1f2328;
+    --on-black: #ffffff;   /* text/icon color on top of a --black fill (primary button, etc.) */
     --danger: #cf222e;
     --danger-bg: #fff1f0;
     --ok: #1f2328;
@@ -38,6 +41,31 @@
     --topbar: 60px;
     --botbar: 68px;
   }
+  /* ===== Dark mode: overrides the palette (GitHub-dark style). Chosen by the
+     user in Settings; applied via data-theme="dark" on <html>. ===== */
+  :root[data-theme="dark"] {
+    --bg: #21262d;
+    --surface: #0d1117;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+    --border-soft: #262c34;
+    --black: #e6edf3;
+    --on-black: #0d1117;
+    --danger: #ff7b72;
+    --danger-bg: rgba(248,81,73,.15);
+    --ok: #e6edf3;
+    --ok-bg: #161b22;
+    color-scheme: dark;
+    background: #0d1117;   /* fills the safe-area strip and the area behind the keyboard */
+  }
+  /* Dark-only component tweaks for spots that hardcode light values. */
+  :root[data-theme="dark"] .navcap-btn.active { background: rgba(255,255,255,.10); }
+  :root[data-theme="dark"] .navcap-btn:active { background: rgba(255,255,255,.14); }
+  :root[data-theme="dark"] .kcol.kover { background: #30363d; }
+  :root[data-theme="dark"] .btnstate.close { background: rgba(248,81,73,.15); color: #ff7b72; }
+  :root[data-theme="dark"] .btnstate.reopen { background: rgba(63,185,80,.15); color: #3fb950; }
+  :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Typography enlarged from the default (19px instead of 16). */
   /* White base on html/body: the safe-area strip (and the background behind the keyboard);
@@ -89,7 +117,7 @@
     backdrop-filter: saturate(180%) blur(14px);
     -webkit-backdrop-filter: saturate(180%) blur(14px);
     box-shadow: 0 2px 8px rgba(0,0,0,.12);
-    color: #000; cursor: pointer;
+    color: var(--text); cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
   .fab-back, .fab-reload { left: 12px; }
@@ -126,7 +154,7 @@
   /* ===== Centered modal spinner (blocks during a change) ===== */
   .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
   .busy[hidden] { display: none; }
-  .busy-box { display: flex; align-items: center; gap: 10px; background: #fff; color: var(--text); border-radius: 12px; padding: 16px 20px; font-size: .9rem; font-weight: 600; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
+  .busy-box { display: flex; align-items: center; gap: 10px; background: var(--surface); color: var(--text); border-radius: 12px; padding: 16px 20px; font-size: .9rem; font-weight: 600; box-shadow: 0 12px 40px rgba(0,0,0,.25); }
   .busy-box .spinner { width: 18px; height: 18px; }
 
   /* ===== Scrollable content (maximized, only respects the safe area) ===== */
@@ -204,7 +232,7 @@
 
   button {
     appearance: none; border: none;
-    background: var(--black); color: #fff;
+    background: var(--black); color: var(--on-black);
     padding: 12px 16px; border-radius: 9px;
     font-size: .9rem; font-weight: 600; cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -224,7 +252,7 @@
     border: none; border-radius: 0;
     padding: 9px 6px; font-size: .85rem; font-weight: 600;
   }
-  .segmented button.active { background: var(--black); color: #fff; }
+  .segmented button.active { background: var(--black); color: var(--on-black); }
 
   .msg { padding: 10px 14px; border-radius: 8px; font-size: .86rem; margin: 12px 16px 14px; display: none; }
   .msg.show { display: block; }
@@ -332,7 +360,7 @@
   .md li { margin: 2px 0; }
   .md ul.task { list-style: none; padding-left: 4px; }
   .md ul.task li { display: flex; align-items: flex-start; gap: 8px; }
-  .md .chk { flex: none; width: 15px; height: 15px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; color: #fff; background: var(--bg); }
+  .md .chk { flex: none; width: 15px; height: 15px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; color: var(--on-black); background: var(--bg); }
   .md .chk.on { background: var(--black); }
   .md .chk svg { width: 11px; height: 11px; }
   .md code { background: var(--bg); border-radius: 5px; padding: 1px 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; }
@@ -354,7 +382,7 @@
   .strows { display: flex; flex-direction: column; border-radius: 10px; overflow: hidden; }
   /* Status rows styled like the kanban header: dark-toned dot and
      name in the status color (medium weight); the active row takes the status pastel. */
-  .strow { width: 100%; display: flex; align-items: center; gap: 9px; padding: 11px 14px; background: #fff; border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; font-weight: 500; font-size: .9rem; cursor: pointer; }
+  .strow { width: 100%; display: flex; align-items: center; gap: 9px; padding: 11px 14px; background: var(--surface); border: none; border-bottom: 1px solid var(--border-soft); border-radius: 0; font-weight: 500; font-size: .9rem; cursor: pointer; }
   .strow .stdot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .strow .stname { flex: 1; text-align: left; }
   .strow .stcheck { flex: none; display: none; color: inherit; }
@@ -375,17 +403,17 @@
   .kcol-body { padding: 0 10px 10px; min-height: 40px; }
   /* touch-action pan-x pan-y: allows horizontal board scroll and vertical page
      scroll when sliding over a card; the drag starts on long press. */
-  .kcard { background: #fff; border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
+  .kcard { background: var(--surface); border-radius: 10px; padding: 11px; margin-bottom: 8px; cursor: grab; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
   .kcard:active { cursor: grabbing; }
   .ktitle { font-weight: 600; font-size: .93rem; word-break: break-word; }
   .kbody { font-size: .88rem; color: var(--muted); margin-top: 5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
   .ksub { font-size: .74rem; color: var(--muted); margin-top: 6px; font-weight: 500; }
   .ksub svg { width: 12px; height: 12px; vertical-align: -2px; }
-  .knum { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eef0f2; color: var(--text); font-weight: 600; font-size: .7rem; margin-right: 5px; vertical-align: 1px; }
+  .knum { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--bg); color: var(--text); font-weight: 600; font-size: .7rem; margin-right: 5px; vertical-align: 1px; }
   .ksub .statechip { vertical-align: 1px; margin-right: 6px; }
   .kcol.kover { background: #e9ebee; }
   .kcard.kdrag-src { opacity: .3; }
-  .kcard.closed { background: #fff; }   /* closed: white background */
+  .kcard.closed { background: var(--surface); }   /* closed: surface background */
   .kcard.closed .ktitle { color: var(--muted); }   /* finished tasks: title in gray */
   .kclone { position: fixed; left: 0; top: 0; z-index: 999; pointer-events: none; box-shadow: 0 12px 30px rgba(0,0,0,.3); margin: 0; will-change: transform; }
 </style>
@@ -544,10 +572,23 @@
         </div>
       </div>
 
-      <!-- 5. Settings: export / import all settings -->
+      <!-- 5. Appearance (light / dark mode) -->
+      <div class="group">
+        <div class="pad"><div class="group-title" style="padding:0 0 4px">Appearance</div>
+        <div class="group-hint" style="padding:0">Light or dark mode.</div></div>
+        <div class="field">
+          <label>Theme</label>
+          <div class="segmented" id="themeControl">
+            <button type="button" data-theme-opt="light">Light</button>
+            <button type="button" data-theme-opt="dark">Dark</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Settings: export / import all settings -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Settings</div>
-        <div class="group-hint" style="padding:0">Export or import all settings (tokens, LLM, GitHub, language).</div></div>
+        <div class="group-hint" style="padding:0">Export or import all settings (tokens, LLM, GitHub, language, theme).</div></div>
         <div class="field">
           <label>Action</label>
           <div class="segmented" id="ioControl">
@@ -625,7 +666,8 @@
   var LS_KEYS = {
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
-    recent: "ic_recent", favs: "ic_favs", lang: "ic_lang", repoTab: "ic_repo_tab"
+    recent: "ic_recent", favs: "ic_favs", lang: "ic_lang", repoTab: "ic_repo_tab",
+    theme: "ic_theme"
   };
   // Keys whose value is a JSON array (recent/favorites): exported/imported as a list.
   var ARRAY_KEYS = { recent: 1, favs: 1 };
@@ -638,6 +680,7 @@
   var commentTone = "feature";
   var VALID_TONES = { simple: 1, feature: 1, bug: 1 };
   var currentLang = "en";   // generation language (English by default; Spanish selectable)
+  var currentTheme = "light";   // UI theme: light | dark
 
   // ----- DOM helpers -----
   function $(id) { return document.getElementById(id); }
@@ -730,13 +773,15 @@
     try {
       var t = localStorage.getItem(LS_KEYS.ghToken), k = localStorage.getItem(LS_KEYS.llmApiKey),
           b = localStorage.getItem(LS_KEYS.llmBaseUrl), m = localStorage.getItem(LS_KEYS.llmModel),
-          tone = localStorage.getItem(LS_KEYS.tone), lang = localStorage.getItem(LS_KEYS.lang);
+          tone = localStorage.getItem(LS_KEYS.tone), lang = localStorage.getItem(LS_KEYS.lang),
+          theme = localStorage.getItem(LS_KEYS.theme);
       if (t) { $("ghToken").value = t; ghTokenMem = t; }
       if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
       if (tone && VALID_TONES[tone]) { currentTone = tone; commentTone = tone; }
       if (lang === "en" || lang === "es") currentLang = lang;
+      if (theme === "dark" || theme === "light") currentTheme = theme;
     } catch (e) {}
   }
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
@@ -851,6 +896,23 @@
   function langInstruction() {
     return currentLang === "en" ? "Write the output in English." : "Write the output in Spanish.";
   }
+
+  // ----- Appearance (light / dark theme) -----
+  function applyTheme(t) {
+    currentTheme = (t === "dark") ? "dark" : "light";
+    if (currentTheme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+    else document.documentElement.removeAttribute("data-theme");
+    persist(LS_KEYS.theme, currentTheme);
+    var bs = $("themeControl").querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-theme-opt") === currentTheme);
+    // iOS status bar / URL bar tint follow the theme.
+    var tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute("content", currentTheme === "dark" ? "#0d1117" : "#ffffff");
+    var cs = document.querySelector('meta[name="color-scheme"]'); if (cs) cs.setAttribute("content", currentTheme === "dark" ? "dark" : "light");
+  }
+  (function wireTheme() {
+    var bs = $("themeControl").querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { applyTheme(this.getAttribute("data-theme-opt")); });
+  })();
 
   // ----- Export / Import settings -----
   // The JSON includes 100% of the settings-screen parameters:
@@ -2273,6 +2335,7 @@
   buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; commentTone = v; persist(LS_KEYS.tone, v); paintToneHint(); });
   paintToneHint();
   setLang(currentLang);   // marks the active language in the control
+  applyTheme(currentTheme);   // applies the saved theme and marks the active button
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   renderRecents();   // paints the saved recents table
   // Restores the last used tab (localStorage); if none, opens Kanban (with repo) or Settings.
