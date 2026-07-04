@@ -686,9 +686,9 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit");   // hides the navigation while editing
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
-    // View color (painted by #viewbg below the safe area). White in Issues/
-    // detail and in the editor (so the background behind the keyboard is white), gray otherwise.
-    var white = (name === "issues" || name === "edit");
+    // View color (painted by #viewbg below the safe area). White in Kanban,
+    // Issues/detail and the editor; gray otherwise.
+    var white = (name === "issues" || name === "edit" || name === "kanban");
     document.documentElement.style.setProperty("--cbg", white ? "var(--surface)" : "var(--bg)");
   }
   function showView(name) {
