@@ -279,8 +279,9 @@
 
   /* Sort bar in issues */
   .list-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .list-toolbar button { flex: 1; background: #fff; color: var(--text); border: 1px solid var(--border); padding: 9px 10px; font-size: .82rem; }
-  .list-toolbar button svg { width: 15px; height: 15px; }
+  .list-toolbar input { flex: 1; min-width: 0; padding: 9px 12px; font-size: .85rem; }
+  .list-toolbar button { flex: none; background: #fff; color: var(--text); border: 1px solid var(--border); padding: 9px 11px; font-size: .82rem; }
+  .list-toolbar button svg { width: 16px; height: 16px; }
 
   /* Full-width issues list */
   .list { list-style: none; margin: 0; padding: 0; background: var(--surface); }
@@ -414,7 +415,8 @@
     <section class="view" id="view-issues">
       <div id="issuesListWrap">
         <div class="list-toolbar">
-          <button id="btnSort" class="secondary"></button>
+          <input type="search" id="issueSearch" placeholder="Search issues…" autocomplete="off" spellcheck="false" />
+          <button id="btnSort" class="secondary" aria-label="Sort order"></button>
         </div>
         <div id="issuesMsg" class="msg"></div>
         <ul class="list" id="issuesList"></ul>
@@ -1221,12 +1223,24 @@
 
   // =================== ISSUES: LIST + INFINITE SCROLL ===================
   var PER_PAGE = 25;
-  var issuesState = { repo: null, dir: "desc", page: 0, loading: false, done: false, items: [] };
+  var issuesState = { repo: null, dir: "desc", query: "", page: 0, loading: false, done: false, items: [] };
 
-  function sortLabel() { return issuesState.dir === "asc" ? "Oldest" : "Newest"; }
-  function paintSortBtn() { $("btnSort").innerHTML = svg("sort", 15) + "<span>" + sortLabel() + "</span>"; }
+  function sortLabel() { return issuesState.dir === "asc" ? "Oldest first" : "Newest first"; }
+  function paintSortBtn() { var b = $("btnSort"); b.innerHTML = svg("sort", 16); b.setAttribute("aria-label", sortLabel()); b.setAttribute("title", sortLabel()); }
+  function issuesEmptyMsg() { return issuesState.query ? "No issues found." : "No issues in this repository."; }
   paintSortBtn();
   $("btnSort").addEventListener("click", function () { issuesState.dir = issuesState.dir === "asc" ? "desc" : "asc"; paintSortBtn(); resetAndLoadIssues(); });
+  // Search box: queries the GitHub Search API (server-side), debounced.
+  var issueSearchTimer = null;
+  $("issueSearch").addEventListener("input", function () {
+    var v = this.value.trim();
+    clearTimeout(issueSearchTimer);
+    issueSearchTimer = setTimeout(function () {
+      if (v === issuesState.query) return;
+      issuesState.query = v;
+      resetAndLoadIssues();
+    }, 350);
+  });
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
@@ -1319,7 +1333,7 @@
   // Re-paints the list from the in-memory cache (reflects changes without reloading from the network).
   function renderIssuesList() {
     var ul = $("issuesList"); ul.innerHTML = "";
-    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = '<div class="empty-state">No issues in this repository.</div>'; return; }
+    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = '<div class="empty-state">' + issuesEmptyMsg() + "</div>"; return; }
     issuesState.items.forEach(function (it) { ul.appendChild(renderIssueRow(it)); });
   }
   function resetAndLoadIssues() {
@@ -1330,7 +1344,7 @@
   function maybeAutoLoadIssues() {
     var repo = getSelectedRepo();
     if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) return;
-    if (issuesState.repo !== repo) { issuesState.repo = repo; resetAndLoadIssues(); }   // repo changed → network
+    if (issuesState.repo !== repo) { issuesState.repo = repo; issuesState.query = ""; $("issueSearch").value = ""; resetAndLoadIssues(); }   // repo changed → network (clear search)
     else if (!issuesState.items.length && !issuesState.loading) resetAndLoadIssues();    // no data → network
     else renderIssuesList();                                                             // already loaded → cache (with changes)
   }
@@ -1346,15 +1360,24 @@
     var page = issuesState.page + 1;
     var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Loading…';
 
-    var url = GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + PER_PAGE + "&sort=updated&direction=" + issuesState.dir + "&page=" + page;
-    ghFetch(url).then(function (items) {
+    // With a query we use the GitHub Search API (server-side, more efficient);
+    // otherwise the plain repo issues listing. Response shape differs (items vs array).
+    var url, searching = !!issuesState.query;
+    if (searching) {
+      var q = encodeURIComponent("repo:" + repo + " type:issue " + issuesState.query);
+      url = GH_API + "/search/issues?q=" + q + "&sort=updated&order=" + issuesState.dir + "&per_page=" + PER_PAGE + "&page=" + page;
+    } else {
+      url = GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + PER_PAGE + "&sort=updated&direction=" + issuesState.dir + "&page=" + page;
+    }
+    ghFetch(url).then(function (data) {
+      var items = searching ? (data && data.items) : data;
       items = Array.isArray(items) ? items : [];
       if (items.length < PER_PAGE) issuesState.done = true;
       issuesState.page = page;
       var issues = items.filter(function (it) { return !it.pull_request; });
       var ul = $("issuesList");
       issues.forEach(function (it) { issuesState.items.push(it); ul.appendChild(renderIssueRow(it)); });
-      if (!issuesState.items.length && issuesState.done) ul.innerHTML = '<div class="empty-state">No issues in this repository.</div>';
+      if (!issuesState.items.length && issuesState.done) ul.innerHTML = '<div class="empty-state">' + issuesEmptyMsg() + "</div>";
     }).catch(function (err) {
       showMsg($("issuesMsg"), "error", esc(err.message)); issuesState.done = true;
     }).then(function () {
