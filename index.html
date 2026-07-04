@@ -447,7 +447,7 @@
         <div class="group-hint" style="padding:0 0 10px">The AI reviews the repo's codebase before writing so it's more precise.</div></div>
         <div class="field">
           <label for="note">Note</label>
-          <textarea id="note" rows="5" placeholder="E.g.: The login button doesn't respond on mobile…"></textarea>
+          <textarea id="note" rows="5" placeholder="Describe what you want…"></textarea>
         </div>
         <div class="field">
           <label>Writing mode</label>
@@ -470,11 +470,11 @@
         <div class="pad"><div class="group-title" style="padding:0">Review and publish</div></div>
         <div class="field">
           <label for="issueTitle">Title</label>
-          <input type="text" id="issueTitle" placeholder="Issue title" />
+          <input type="text" id="issueTitle" placeholder="Title…" />
         </div>
         <div class="field">
           <label for="issueBody">Body (Markdown)</label>
-          <textarea id="issueBody" rows="12" placeholder="Issue body in Markdown…"></textarea>
+          <textarea id="issueBody" rows="12" placeholder="Body in Markdown…"></textarea>
         </div>
         <div class="field"><button id="btnPublish" class="block">Publish issue</button></div>
         <div id="publishMsg" class="msg"></div>
@@ -565,7 +565,7 @@
           <div class="group-hint" id="ioExportMsg" style="padding:6px 0 0"></div>
         </div>
         <div class="pad" id="ioImport" style="display:none">
-          <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Paste the settings JSON generated elsewhere here…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
+          <textarea id="ioImportText" rows="8" spellcheck="false" placeholder="Paste the JSON here…" style="width:100%;box-sizing:border-box;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem;resize:none"></textarea>
           <button type="button" id="btnImport" class="block" style="margin-top:8px">Import</button>
           <div class="group-hint" id="ioImportMsg" style="padding:6px 0 0"></div>
         </div>
@@ -585,7 +585,7 @@
        screen and the Save button stays stuck to the bottom/keyboard) ====== -->
   <!-- Full-screen editor: just the textarea (borderless). Back/Save are fabs. -->
   <section class="view" id="view-edit">
-    <textarea id="editBody" placeholder="Write here in Markdown…"></textarea>
+    <textarea id="editBody" placeholder="Write here…"></textarea>
   </section>
 
   <!-- Centered modal spinner: blocks the screen while a change is in progress -->
@@ -1522,7 +1522,7 @@
         '<div class="group" style="margin-top:14px">' +
           '<div class="pad"><div class="group-title" style="padding:0">New comment with AI</div></div>' +
           '<div class="field"><label for="commentNote">Proposed text</label>' +
-            '<textarea id="commentNote" rows="3" placeholder="Idea / draft of what you want to comment…"></textarea></div>' +
+            '<textarea id="commentNote" rows="3" placeholder="Write your comment…"></textarea></div>' +
           '<div class="field"><label>Mode</label><div class="segmented" id="commentToneControl">' +
             '<button type="button" data-tone="simple">Simple</button>' +
             '<button type="button" data-tone="feature">Feature</button>' +
@@ -1530,7 +1530,7 @@
           '<div class="field actions"><button id="btnGenComment" class="block">Generate with AI</button></div>' +
           '<div id="commentGenStatus" class="status"></div>' +
           '<div class="field"><label for="commentGenerated">Generated text (editable, this is what gets published)</label>' +
-            '<textarea id="commentGenerated" rows="5" placeholder="The generated comment appears here; edit it if you want…"></textarea></div>' +
+            '<textarea id="commentGenerated" rows="5" placeholder="The generated comment appears here…"></textarea></div>' +
           '<div class="field"><button id="btnPostComment" class="block">Publish comment</button></div>' +
           '<div id="commentMsg" class="msg"></div>' +
         "</div>";
@@ -1611,7 +1611,7 @@
     var patch = {}; patch[field] = value;
     openEditor({
       value: value,
-      placeholder: field === "title" ? "Issue title" : "Body (Markdown)…",
+      placeholder: field === "title" ? "Title…" : "Body in Markdown…",
       validate: function (v) { if (field === "title" && !v.trim()) return "The title can't be empty."; },
       save: function (v) {
         var b = {}; b[field] = (field === "title") ? v.trim() : v;
@@ -1628,7 +1628,7 @@
   }
   function editCommentBody(repo, cid, value) {
     openEditor({
-      value: value, placeholder: "Comment (Markdown)…",
+      value: value, placeholder: "Comment in Markdown…",
       save: function (v) {
         return ghFetch(GH_API + "/repos/" + repo + "/issues/comments/" + cid, {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: v })
