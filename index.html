@@ -87,7 +87,7 @@
   }
 
   .app {
-    max-width: 480px; margin: 0 auto; height: 100%;
+    max-width: var(--appmax, 480px); margin: 0 auto; height: 100%;
     display: flex; flex-direction: column;
     background: transparent; position: relative; overflow: hidden;
   }
@@ -96,7 +96,7 @@
      top safe area and the background behind the keyboard stay transparent (outside #viewbg). */
   #viewbg {
     position: fixed; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 480px;
+    width: 100%; max-width: var(--appmax, 480px);
     /* From the base of the safe area to the VISIBLE bottom edge (--apph): when the keyboard
        opens it shrinks and leaves the area behind the keyboard transparent. */
     top: env(safe-area-inset-top);
@@ -175,7 +175,7 @@
      Back and Save are floating fabs at the top. ===== */
   #view-edit {
     position: fixed; top: var(--vvtop, 0); left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 480px; height: var(--apph, 100dvh);
+    width: 100%; max-width: 720px; height: var(--apph, 100dvh);
     z-index: 40; overflow: hidden; background: var(--surface);
   }
   #view-edit.active { display: block; }
@@ -725,6 +725,10 @@
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
     // View color (painted by #viewbg below the safe area): white in every view.
     document.documentElement.style.setProperty("--cbg", "var(--surface)");
+    // Desktop width: kanban/issues span the full browser width; the reading/editing
+    // views (create, detail, settings, editor) are capped at a comfortable 720px.
+    var wide = (name === "kanban" || name === "issues");
+    document.documentElement.style.setProperty("--appmax", wide ? "100%" : "720px");
   }
   function showView(name) {
     markActiveView(name);
