@@ -375,7 +375,7 @@
   .kcol { flex: 0 0 90%; max-width: 360px; display: flex; flex-direction: column; background: var(--bg); border: none; border-radius: 12px; overflow: hidden; }
   /* Notion-style header: chip (dot + name) and the count in gray beside it. */
   .kcol-head { padding: 12px 12px 10px; display: flex; align-items: center; gap: 8px; }
-  .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 2px 12px; border-radius: 999px; font-weight: 500; font-size: .77rem; line-height: 1.25; flex: none; }
+  .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 2px 12px; border-radius: 999px; font-weight: 400; font-size: calc(.77rem - 1px); line-height: 1.25; flex: none; }
   .kchip .kdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   .kcount { color: var(--muted); font-weight: 500; font-size: .77rem; }
   .kcol-body { padding: 0 10px 10px; min-height: 40px; }
@@ -1772,9 +1772,18 @@
   }
   // Capsule with the same style as the kanban header (.kchip/.kdot):
   // pastel background, text and dot in the dark tone.
+  // Darkens a hex color (keeps the hue) — used for chip text so it reads darker
+  // than the dot while staying tinted per status. Returns "#rrggbb".
+  function darken(hex, f) {
+    f = f == null ? 0.6 : f;
+    hex = String(hex).replace("#", "");
+    if (hex.length !== 6) return "#" + hex;
+    function ch(i) { var n = Math.round(parseInt(hex.substr(i, 2), 16) * f); n = n < 0 ? 0 : n > 255 ? 255 : n; return (n < 16 ? "0" : "") + n.toString(16); }
+    return "#" + ch(0) + ch(2) + ch(4);
+  }
   function chipInner(dotHex, text) { return '<span class="kdot" style="background:#' + dotHex + '"></span>' + esc(text); }
   function chip(marker, bgHex, dotHex, text) {
-    return '<span class="kchip ' + marker + '" style="background:#' + bgHex + ';color:#' + dotHex + '">' + chipInner(dotHex, text) + "</span>";
+    return '<span class="kchip ' + marker + '" style="background:#' + bgHex + ';color:' + darken(dotHex) + '">' + chipInner(dotHex, text) + "</span>";
   }
   // GitHub-style open/closed capsule: solid background (green/purple), text and icon
   // in white (open-issue / closed-issue icon).
@@ -1825,7 +1834,7 @@
     var meta = document.querySelector(".detail-meta");
     var tag = meta && meta.querySelector(".sttag");
     var s = statusByName(cur);
-    if (tag && s) { tag.style.background = "#" + s.color; tag.style.color = "#" + s.dot; tag.innerHTML = chipInner(s.dot, s.name); }
+    if (tag && s) { tag.style.background = "#" + s.color; tag.style.color = darken(s.dot); tag.innerHTML = chipInner(s.dot, s.name); }
   }
 
   // Updates an issue in the caches (list + kanban) so that, on return,
@@ -1897,7 +1906,7 @@
       colEl.className = "kcol"; colEl.setAttribute("data-status", col.name);
       colEl.style.background = "#" + col.color + "40";   // column background: very light tint of the status
       colEl.innerHTML = '<div class="kcol-head">' +
-          '<span class="kchip" style="background:#' + col.color + ';color:#' + col.dot + '"><span class="kdot" style="background:#' + col.dot + '"></span>' + esc(col.name) + "</span>" +
+          '<span class="kchip" style="background:#' + col.color + ';color:' + darken(col.dot) + '"><span class="kdot" style="background:#' + col.dot + '"></span>' + esc(col.name) + "</span>" +
           '<span class="kcount" style="color:#' + col.dot + 'b3">' + list.length + "</span>" +
         '</div><div class="kcol-body"></div>';
       var body = colEl.querySelector(".kcol-body");
