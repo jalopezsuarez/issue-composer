@@ -67,6 +67,7 @@ AI issue composer:
 - **GitHub**: token + repository search/selection (or manual `owner/repo`).
 - **LLM provider**: Base URL, API key and Model.
 - **Generation language**: Spanish / English.
+- **Appearance**: Light / Dark theme (persisted and included in export/import).
 
 ### 🖊️ Full-screen editor
 A reusable view (a single borderless, full-screen `textarea`) to edit **one element at a time**: the issue **title**, its **body** or a **comment**. **Back** button (cancel) at the top left and **save** (↑) at the top right. It adapts dynamically to the visible height and the keyboard.
@@ -175,6 +176,7 @@ The **manual order** within a column is stored as an `order:<n>` label. Both lab
 | `ic_favs` | Favorite repositories (max. 10) |
 | `ic_tone` | Writing mode |
 | `ic_lang` | Generation language |
+| `ic_theme` | UI theme (light/dark) |
 | `ic_tab` | Last used tab |
 
 ---
