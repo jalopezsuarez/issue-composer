@@ -306,6 +306,7 @@
   .loader { text-align: center; color: var(--muted); padding: 18px; font-size: .85rem; }
   .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centered within the board flex */
   .empty-state { text-align: center; color: var(--muted); padding: 44px 16px; font-size: .9rem; }
+  .empty-state.err { color: var(--danger); }
 
   /* Issue detail + comments */
   .detail-head { background: var(--surface); padding: 16px; }
@@ -1236,7 +1237,13 @@
 
   function sortLabel() { return issuesState.dir === "asc" ? "Oldest first" : "Newest first"; }
   function paintSortBtn() { var b = $("btnSort"); b.innerHTML = svg(issuesState.dir === "asc" ? "up" : "down", 16); b.setAttribute("aria-label", sortLabel()); b.setAttribute("title", sortLabel()); }
-  function issuesEmptyMsg() { return issuesState.query ? "No issues found." : "No issues in this repository."; }
+  // Uniform empty/loading/error state for the kanban board and the issues list.
+  function emptyMsg(query) { return query ? "No issues found." : "No issues in this repository."; }
+  function issuesEmptyMsg() { return emptyMsg(issuesState.query); }
+  function stateBlock(text, kind) {
+    if (kind === "loading") return '<div class="empty-state"><span class="spinner"></span>Loading…</div>';
+    return '<div class="empty-state' + (kind === "error" ? " err" : "") + '">' + text + "</div>";
+  }
   paintSortBtn();
   $("btnSort").addEventListener("click", function () { issuesState.dir = issuesState.dir === "asc" ? "desc" : "asc"; paintSortBtn(); resetAndLoadIssues(); });
   // Search box: queries the GitHub Search API (server-side), debounced.
@@ -1387,7 +1394,7 @@
   // Re-paints the list from the in-memory cache (reflects changes without reloading from the network).
   function renderIssuesList() {
     var ul = $("issuesList"); ul.innerHTML = "";
-    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = '<div class="empty-state">' + issuesEmptyMsg() + "</div>"; return; }
+    if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = stateBlock(issuesEmptyMsg()); return; }
     issuesState.items.forEach(function (it) { ul.appendChild(renderIssueRow(it)); });
   }
   function resetAndLoadIssues() {
@@ -1398,7 +1405,8 @@
   }
   function maybeAutoLoadIssues() {
     var repo = getSelectedRepo();
-    if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) return;
+    if (!ghTokenMem) { $("issuesList").innerHTML = stateBlock("Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { $("issuesList").innerHTML = stateBlock("Select a repository in Settings."); return; }
     if (issuesState.repo !== repo) { issuesState.repo = repo; issuesState.query = ""; $("issueSearch").value = ""; resetAndLoadIssues(); }   // repo changed → network (clear search)
     else if (!issuesState.items.length && !issuesState.loading) resetAndLoadIssues();    // no data → network
     else renderIssuesList();                                                             // already loaded → cache (with changes)
@@ -1407,14 +1415,19 @@
   function loadMoreIssues() {
     if (issuesState.loading || issuesState.done) return;
     var repo = getSelectedRepo();
-    if (!ghTokenMem) { showMsg($("issuesMsg"), "error", "Enter your token in Settings."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg($("issuesMsg"), "error", "Select a repository in Settings."); return; }
+    var ul = $("issuesList");
+    if (!ghTokenMem) { ul.innerHTML = stateBlock("Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { ul.innerHTML = stateBlock("Select a repository in Settings."); return; }
     issuesState.repo = repo;
     if (issuesState.page === 0) addRecent(repo);   // using the repo counts as recent
     issuesState.loading = true;
     var myToken = issuesState.token;   // discard this response if a newer load/search starts
     var page = issuesState.page + 1;
-    var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Loading…';
+    var firstLoad = issuesState.page === 0;
+    // First page: centered loader in the list body (uniform with kanban).
+    // Later pages (infinite scroll): the small loader below the list.
+    if (firstLoad) { ul.innerHTML = stateBlock("", "loading"); }
+    else { var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Loading…'; }
 
     // With a query we use the GitHub Search API (server-side, more efficient);
     // otherwise the plain repo issues listing. Response shape differs (items vs array).
@@ -1432,12 +1445,14 @@
       if (items.length < PER_PAGE) issuesState.done = true;
       issuesState.page = page;
       var issues = items.filter(function (it) { return !it.pull_request; });
-      var ul = $("issuesList");
+      if (firstLoad) ul.innerHTML = "";   // clear the centered loader before painting rows
       issues.forEach(function (it) { issuesState.items.push(it); ul.appendChild(renderIssueRow(it)); });
-      if (!issuesState.items.length && issuesState.done) ul.innerHTML = '<div class="empty-state">' + issuesEmptyMsg() + "</div>";
+      if (!issuesState.items.length && issuesState.done) ul.innerHTML = stateBlock(issuesEmptyMsg());
     }).catch(function (err) {
       if (myToken !== issuesState.token) return;
-      showMsg($("issuesMsg"), "error", esc(err.message)); issuesState.done = true;
+      if (!issuesState.items.length) ul.innerHTML = stateBlock(esc(err.message), "error");
+      else showMsg($("issuesMsg"), "error", esc(err.message));
+      issuesState.done = true;
     }).then(function () {
       if (myToken !== issuesState.token) return;   // a newer request owns the UI now
       issuesState.loading = false;
@@ -1846,20 +1861,21 @@
 
   function maybeAutoLoadKanban() {
     var repo = getSelectedRepo();
-    if (!repo || repo.indexOf("/") === -1 || !ghTokenMem) { $("kanbanBoard").innerHTML = '<div class="empty-state">Select a repository in Settings.</div>'; return; }
+    if (!ghTokenMem) { $("kanbanBoard").innerHTML = stateBlock("Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { $("kanbanBoard").innerHTML = stateBlock("Select a repository in Settings."); return; }
     if (KAN.repo !== repo || KAN.issues.length === 0) loadKanban();   // repo changed/no data → network
     else renderKanban();                                             // already loaded → cache (with changes)
   }
 
   function loadKanban() {
     var repo = getSelectedRepo();
-    if (!ghTokenMem) { showMsg($("kanbanMsg"), "error", "Enter your token in Settings."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg($("kanbanMsg"), "error", "Select a repository in Settings."); return; }
+    if (!ghTokenMem) { $("kanbanBoard").innerHTML = stateBlock("Enter your token in Settings."); return; }
+    if (!repo || repo.indexOf("/") === -1) { $("kanbanBoard").innerHTML = stateBlock("Select a repository in Settings."); return; }
     hideMsg($("kanbanMsg"));
     KAN.repo = repo; KAN.loading = true; addRecent(repo);
     KAN.token = (KAN.token || 0) + 1;   // discard stale responses from previous searches
     var myToken = KAN.token;
-    $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Loading…</div>';
+    $("kanbanBoard").innerHTML = stateBlock("", "loading");
     // With a query, use the GitHub Search API (server-side) and filter the board.
     var searching = !!KAN.query, url;
     if (searching) {
@@ -1874,12 +1890,13 @@
         items = Array.isArray(items) ? items : [];
         KAN.issues = items.filter(function (it) { return !it.pull_request; });
         renderKanban();
-      }).catch(function (err) { if (myToken !== KAN.token) return; $("kanbanBoard").innerHTML = ""; showMsg($("kanbanMsg"), "error", esc(err.message)); })
+      }).catch(function (err) { if (myToken !== KAN.token) return; $("kanbanBoard").innerHTML = stateBlock(esc(err.message), "error"); })
       .then(function () { if (myToken === KAN.token) KAN.loading = false; });
   }
 
   function renderKanban() {
     var board = $("kanbanBoard"); board.innerHTML = "";
+    if (!KAN.issues.length) { board.innerHTML = stateBlock(emptyMsg(KAN.query)); return; }
     STATUSES.forEach(function (col) {
       var list = KAN.issues.filter(function (it) { return statusOf(it) === col.name; });
       // Order: closed at the bottom; then those with "order:<n>" (ascending) and,
