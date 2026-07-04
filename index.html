@@ -1372,6 +1372,7 @@
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
+    document.documentElement.style.setProperty("--appmax", "100%");   // list spans the full width
     $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false; $("viewSearch").hidden = false; applySearchState("issues");
     if (issuesState.items.length) renderIssuesList();   // re-paints from cache (reflects changes on return)
     updateActiveRepoBanners();
@@ -1545,6 +1546,7 @@
   function openIssue(repo, number, origin) {
     detailOrigin = origin || "issues";
     activateIssuesContainer();
+    document.documentElement.style.setProperty("--appmax", "720px");   // detail is a reading view → 720px
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
@@ -1679,6 +1681,7 @@
   function closeEditor() {
     editState = null;
     markActiveView("issues");
+    document.documentElement.style.setProperty("--appmax", "720px");   // back to the detail (reading view)
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
     $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
   }
