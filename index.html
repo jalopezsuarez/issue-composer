@@ -65,7 +65,7 @@
   :root[data-theme="dark"] .kcol.kover { background: #30363d; }
   :root[data-theme="dark"] .btnstate.close { background: rgba(248,81,73,.15); color: #ff7b72; }
   :root[data-theme="dark"] .btnstate.reopen { background: rgba(63,185,80,.15); color: #3fb950; }
-  :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
+  :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-close:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Typography enlarged from the default (19px instead of 16). */
   /* White base on html/body: the safe-area strip (and the background behind the keyboard);
@@ -109,7 +109,7 @@
      Common base: almost no background (minimal) while keeping the blur, faint white border,
      light weight. Back (left, in detail/create); in list/kanban reload
      (left) and add (right, mirrored layout). */
-  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav, .fab-search {
+  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav, .fab-search, .fab-close {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px)); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
@@ -123,9 +123,10 @@
   .fab-back, .fab-reload { left: 12px; }
   .fab-search { right: 12px; }                  /* search toggle: rightmost in kanban/list */
   .fab-add { right: 64px; }                     /* add: to the left of the search fab */
-  .fab-save, .fab-fav { right: 12px; }          /* editor/settings: no search fab, so rightmost */
-  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active { background: rgba(255,255,255,.5); }
-  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden] { display: none; }
+  .fab-save, .fab-fav, .fab-close { right: 12px; }   /* editor/settings/assistant: rightmost */
+  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active, .fab-close:active { background: rgba(255,255,255,.5); }
+  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden], .fab-close[hidden] { display: none; }
+  .fab-close svg { width: 20px; height: 20px; }
   .fab-search.on { background: rgba(255,255,255,.6); }
   .fab-search svg { width: 20px; height: 20px; }
   /* Favorite fab (settings, right): filled heart, marks the active repo. */
@@ -434,27 +435,22 @@
   .chat-intro p { font-size: .92rem; line-height: 1.5; }
   #chatMessages { display: flex; flex-direction: column; gap: 14px; padding: 6px 0 4px; }
   .msg-user { align-self: flex-end; max-width: 85%; background: var(--bg); color: var(--text); padding: 10px 14px; border-radius: 18px; font-size: .95rem; white-space: pre-wrap; word-break: break-word; }
-  .msg-ai { align-self: stretch; display: flex; gap: 10px; }
-  .msg-ai .avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--bg); display: grid; place-items: center; margin-top: 2px; }
-  .msg-ai .avatar svg { width: 16px; height: 16px; color: var(--text); }
-  .msg-ai .bubble { flex: 1; min-width: 0; }
-  .msg-ai .bubble .md { font-size: .95rem; }
-  .msg-tool { align-self: stretch; display: flex; flex-wrap: wrap; gap: 6px; padding-left: 38px; }
-  .tool-chip { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 3px 10px; font-weight: 500; }
-  .tool-chip svg { width: 12px; height: 12px; }
+  .msg-ai { align-self: stretch; min-width: 0; }
+  .msg-ai .md { font-size: .95rem; }
+  .msg-tool { align-self: stretch; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tool-chip { display: inline-flex; align-items: center; font-size: .74rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 3px 10px; font-weight: 500; }
   .tool-chip.err { color: var(--danger); }
-  .chat-typing { align-self: flex-start; display: inline-flex; gap: 4px; padding-left: 38px; }
+  .chat-typing { align-self: flex-start; display: inline-flex; gap: 4px; }
   .chat-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; animation: chatdot 1s infinite; }
   .chat-typing i:nth-child(2) { animation-delay: .15s; } .chat-typing i:nth-child(3) { animation-delay: .3s; }
   @keyframes chatdot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: .9; transform: translateY(-3px); } }
-  .chat-composer { flex: none; padding: 8px 12px calc(env(safe-area-inset-bottom) + var(--botbar)); background: var(--surface); }
+  .chat-composer { flex: none; padding: 8px 12px calc(env(safe-area-inset-bottom) + 10px); background: var(--surface); }
   .chat-inputwrap { display: flex; align-items: flex-end; gap: 8px; background: var(--bg); border-radius: 24px; padding: 6px 6px 6px 16px; }
   .chat-inputwrap textarea { flex: 1; min-width: 0; border: none; background: transparent; resize: none; padding: 8px 0; font-size: .98rem; line-height: 1.4; max-height: 140px; color: var(--text); font-family: inherit; }
   .chat-inputwrap textarea:focus { outline: none; box-shadow: none; }
   .chat-send { flex: none; width: 38px; height: 38px; border-radius: 50%; padding: 0; background: var(--black); color: var(--on-black); display: grid; place-items: center; cursor: pointer; }
   .chat-send:disabled { opacity: .4; cursor: default; }
   .chat-send svg { width: 17px; height: 17px; }
-  .chat-foot { text-align: center; font-size: .7rem; color: var(--muted); margin-top: 7px; padding: 0 8px; }
 </style>
 </head>
 <body>
@@ -473,6 +469,8 @@
   <!-- Favorite toggle for the active repo (settings, top right) -->
   <button id="favFab" class="fab-fav" hidden aria-label="Add to favorites"></button>
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
+  <!-- Close the AI assistant (top right); returns to the previous view -->
+  <button id="assistantClose" class="fab-close" hidden aria-label="Close assistant"></button>
 
   <main class="content" id="content">
 
@@ -680,7 +678,6 @@
         <textarea id="chatInput" rows="1" placeholder="Message the assistant…" autocomplete="off"></textarea>
         <button id="chatSend" class="chat-send" aria-label="Send"></button>
       </div>
-      <div class="chat-foot" id="chatFoot">Talks only about this repository's issues and code.</div>
     </div>
   </section>
 
@@ -788,8 +785,9 @@
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
     var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
-    $("navcap").hidden = (name === "edit");   // hides the navigation while editing
+    $("navcap").hidden = (name === "edit" || name === "assistant");   // hidden while editing / in the assistant
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
+    $("assistantClose").hidden = (name !== "assistant");   // close (top-right) only in the assistant
     // View color (painted by #viewbg below the safe area): white in every view.
     document.documentElement.style.setProperty("--cbg", "var(--surface)");
     // Desktop width: kanban/issues span the full browser width; the reading/editing
@@ -797,7 +795,13 @@
     var wide = (name === "kanban" || name === "issues");
     document.documentElement.style.setProperty("--appmax", wide ? "100%" : "720px");
   }
+  var assistantOrigin = "kanban";   // view to return to when the assistant is closed
+  function currentActiveView() {
+    for (var i = 0; i < VIEWS.length; i++) { if (VIEWS[i] !== "assistant" && VIEWS[i] !== "edit" && $("view-" + VIEWS[i]).classList.contains("active")) return VIEWS[i]; }
+    return "kanban";
+  }
   function showView(name) {
+    if (name === "assistant" && !$("view-assistant").classList.contains("active")) assistantOrigin = currentActiveView();
     markActiveView(name);
     var isList = (name === "issues" || name === "kanban");
     $("viewReload").hidden = !isList;   // reload (left)
@@ -2533,13 +2537,13 @@
   // ----- Rendering -----
   function chatScrollBottom() { var s = $("chatScroll"); if (s) s.scrollTop = s.scrollHeight; }
   function addUserBubble(text) { var el = document.createElement("div"); el.className = "msg-user"; el.textContent = text; $("chatMessages").appendChild(el); chatScrollBottom(); }
-  function addAiBubble(md) { var el = document.createElement("div"); el.className = "msg-ai"; el.innerHTML = '<div class="avatar">' + svg("sparkle", 16) + '</div><div class="bubble">' + renderMd(md || "") + "</div>"; $("chatMessages").appendChild(el); chatScrollBottom(); }
+  function addAiBubble(md) { var el = document.createElement("div"); el.className = "msg-ai"; el.innerHTML = renderMd(md || ""); $("chatMessages").appendChild(el); chatScrollBottom(); }
   var TOOL_LABEL = { list_issues: "Listing issues", search_issues: "Searching issues", get_issue: "Reading issue", create_issue: "Creating issue", update_issue: "Updating issue", set_issue_status: "Changing status", add_comment: "Adding comment", update_comment: "Editing comment", list_files: "Listing files", read_file: "Reading file" };
   function addToolChips(calls) {
     var row = document.createElement("div"); row.className = "msg-tool";
     calls.forEach(function (tc) {
       var name = tc.function && tc.function.name, chip = document.createElement("span");
-      chip.className = "tool-chip"; chip.innerHTML = svg("sparkle", 12) + "<span>" + esc(TOOL_LABEL[name] || name) + "</span>";
+      chip.className = "tool-chip"; chip.textContent = TOOL_LABEL[name] || name;
       row.appendChild(chip);
     });
     $("chatMessages").appendChild(row); chatScrollBottom(); return row;
@@ -2601,6 +2605,8 @@
     if (chatStarted) chatMessages[0] = { role: "system", content: assistantSystemPrompt() };
     setTimeout(function () { try { $("chatInput").focus(); } catch (e) {} }, 60);
   }
+  $("assistantClose").innerHTML = svg("x", 20);
+  $("assistantClose").addEventListener("click", function () { showView(assistantOrigin || "kanban"); });
 
   // ===== Pinch-zoom block (in and out) on iOS Safari =====
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
