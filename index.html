@@ -290,6 +290,8 @@
   .searchbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
   .searchbar[hidden] { display: none; }
   .searchbar input { flex: 1; min-width: 0; padding: 10px 16px; font-size: .85rem; border-radius: 999px; }
+  /* Focus minimalista: borde gris, sin negro ni halo. */
+  .searchbar input:focus { border-color: var(--border); box-shadow: none; }
   .sb-clear { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #fff; color: var(--text); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .sb-clear svg { width: 16px; height: 16px; }
 
