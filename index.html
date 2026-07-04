@@ -1378,8 +1378,7 @@
         '<div class="row-sub">' +
           '<span class="rsub-badges">' + stateTag(it.state) + statusTag(it) + "</span>" +
           '<span class="rsub-meta"><span class="knum">#' + it.number + "</span>" + esc(it.user ? it.user.login : "?") +
-            " · " + svg("comment", 13) + " " + (it.comments || 0) +
-            " · upd. " + esc(fmtShort(it.updated_at)) + "</span></div>" +
+            " · " + svg("comment", 13) + " " + (it.comments || 0) + "</span></div>" +
         labelsHtml(userLabels(it)) + "</div>" +
       '<span class="chev">' + svg("chevright", 16) + "</span>";
     li.addEventListener("click", function () { openIssue(issuesState.repo, it.number); });
