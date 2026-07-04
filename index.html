@@ -513,7 +513,7 @@
       <div class="group">
         <div class="pad">
           <div class="group-title" style="padding:0 0 4px">Repositories</div>
-          <div class="group-hint" style="padding:0 0 8px">Lists local to this app (not GitHub stars). Tap a row to select the repo; the ✕ removes it. Favorites are added with the heart on the active repo.</div>
+          <div class="group-hint" style="padding:0 0 8px">Lists local to this app (not GitHub stars). Tap a row to select the repo; the ✕ removes it. Favorites are added with the star on the active repo.</div>
           <div class="segmented" id="repoTabControl">
             <button type="button" data-rtab="recent">Recent</button>
             <button type="button" data-rtab="fav">Favorites</button>
@@ -637,7 +637,7 @@
   var PATHS = {
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
-    heart: "M8 1.314C12.438-3.248 23.534 4.735 8 15 -7.534 4.735 3.562-3.248 8 1.314z",
+    star: "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z",
     lock: "M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     up: "M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z",
@@ -1051,7 +1051,7 @@
     var repo = getSelectedRepo();
     fab.hidden = !(repo && repo.indexOf("/") !== -1 && $("view-config").classList.contains("active"));
   }
-  $("favFab").innerHTML = svg("heart", 22);
+  $("favFab").innerHTML = svg("star", 22);
   $("favFab").addEventListener("click", function () {
     var repo = getSelectedRepo();
     if (repo && repo.indexOf("/") !== -1 && !isFav(repo)) addFav(repo);
@@ -1131,7 +1131,7 @@
   function renderFavs() {
     var el = $("favList"); if (!el) return;
     var list = getFavs();
-    if (!list.length) { el.innerHTML = '<div class="rt-empty">No favorites. Add them with the heart on the active repo.</div>'; return; }
+    if (!list.length) { el.innerHTML = '<div class="rt-empty">No favorites. Add them with the star on the active repo.</div>'; return; }
     var cur = getSelectedRepo();
     var rows = list.map(function (full, i) {
       return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
