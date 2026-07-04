@@ -126,7 +126,7 @@
   .fab-save, .fab-fav, .fab-close { right: 12px; }   /* editor/settings/assistant: rightmost */
   .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active, .fab-close:active { background: rgba(255,255,255,.5); }
   .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden], .fab-close[hidden] { display: none; }
-  .fab-close svg { width: 20px; height: 20px; }
+  .fab-close svg { width: 25px; height: 25px; }
   .fab-search.on { background: rgba(255,255,255,.6); }
   .fab-search svg { width: 20px; height: 20px; }
   /* Favorite fab (settings, right): filled heart, marks the active repo. */
@@ -444,7 +444,9 @@
   .chat-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; animation: chatdot 1s infinite; }
   .chat-typing i:nth-child(2) { animation-delay: .15s; } .chat-typing i:nth-child(3) { animation-delay: .3s; }
   @keyframes chatdot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: .9; transform: translateY(-3px); } }
-  .chat-composer { flex: none; padding: 8px 12px calc(env(safe-area-inset-bottom) + 10px); background: var(--surface); }
+  /* --kbf is 1 with the keyboard closed (keep the safe-area inset) and 0 when it's
+     open, so the input hugs the keyboard instead of leaving a gap. */
+  .chat-composer { flex: none; padding: 6px 12px calc(env(safe-area-inset-bottom) * var(--kbf, 1) + 8px); background: var(--surface); }
   .chat-inputwrap { display: flex; align-items: flex-end; gap: 8px; background: var(--bg); border-radius: 24px; padding: 6px 6px 6px 16px; }
   .chat-inputwrap textarea { flex: 1; min-width: 0; border: none; background: transparent; resize: none; padding: 8px 0; font-size: .98rem; line-height: 1.4; max-height: 140px; color: var(--text); font-family: inherit; }
   .chat-inputwrap textarea:focus { outline: none; box-shadow: none; }
@@ -2605,7 +2607,7 @@
     if (chatStarted) chatMessages[0] = { role: "system", content: assistantSystemPrompt() };
     setTimeout(function () { try { $("chatInput").focus(); } catch (e) {} }, 60);
   }
-  $("assistantClose").innerHTML = svg("x", 20);
+  $("assistantClose").innerHTML = svg("x", 25);
   $("assistantClose").addEventListener("click", function () { showView(assistantOrigin || "kanban"); });
 
   // ===== Pinch-zoom block (in and out) on iOS Safari =====
@@ -2631,6 +2633,10 @@
     var vv = window.visualViewport, s = document.documentElement.style;
     s.setProperty("--apph", (vv ? vv.height : window.innerHeight) + "px");
     s.setProperty("--vvtop", (vv ? vv.offsetTop : 0) + "px");
+    // Keyboard open? (visible viewport much shorter than the window). If so, drop the
+    // bottom safe-area inset so the chat composer sits right on top of the keyboard.
+    var kbOpen = !!vv && (window.innerHeight - vv.height) > 120;
+    s.setProperty("--kbf", kbOpen ? "0" : "1");
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", syncViewport);
