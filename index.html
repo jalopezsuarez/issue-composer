@@ -81,7 +81,7 @@
      Common base: almost no background (minimal) while keeping the blur, faint white border,
      light weight. Back (left, in detail/create); in list/kanban reload
      (left) and add (right, mirrored layout). */
-  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav {
+  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav, .fab-search {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px)); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
@@ -94,9 +94,13 @@
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
   .fab-back, .fab-reload { left: 12px; }
-  .fab-add, .fab-save, .fab-fav { right: 12px; }
-  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active { background: rgba(255,255,255,.5); }
-  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden] { display: none; }
+  .fab-search { right: 12px; }                  /* search toggle: rightmost in kanban/list */
+  .fab-add { right: 64px; }                     /* add: to the left of the search fab */
+  .fab-save, .fab-fav { right: 12px; }          /* editor/settings: no search fab, so rightmost */
+  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active { background: rgba(255,255,255,.5); }
+  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden] { display: none; }
+  .fab-search.on { background: rgba(255,255,255,.6); }
+  .fab-search svg { width: 20px; height: 20px; }
   /* Favorite fab (settings, right): filled heart, marks the active repo. */
   .fab-fav svg { width: 22px; height: 22px; }
   .fab-save:disabled { opacity: .5; cursor: not-allowed; }
@@ -279,9 +283,15 @@
 
   /* Sort bar in issues */
   .list-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .list-toolbar input { flex: 1; min-width: 0; padding: 10px 16px; font-size: .85rem; border-radius: 999px; }
+  .list-toolbar[hidden] { display: none; }
   .list-toolbar button { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #fff; color: var(--text); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; }
   .list-toolbar button svg { width: 16px; height: 16px; }
+  /* Toggleable search bar (kanban + issues): pill input + round clear (✕). */
+  .searchbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .searchbar[hidden] { display: none; }
+  .searchbar input { flex: 1; min-width: 0; padding: 10px 16px; font-size: .85rem; border-radius: 999px; }
+  .sb-clear { flex: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #fff; color: var(--text); border: 1px solid var(--border); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .sb-clear svg { width: 16px; height: 16px; }
 
   /* Full-width issues list */
   .list { list-style: none; margin: 0; padding: 0; background: var(--surface); }
@@ -399,6 +409,8 @@
   <!-- Active repo, floating and transparent, to the right of reload (kanban/list) -->
   <div id="viewRepoTag" class="view-repo-tag" hidden></div>
   <button id="viewAdd" class="fab-add" hidden aria-label="Add issue"></button>
+  <!-- Search toggle (kanban/list): shows/hides the search bar -->
+  <button id="viewSearch" class="fab-search" hidden aria-label="Search"></button>
   <!-- Favorite toggle for the active repo (settings, top right) -->
   <button id="favFab" class="fab-fav" hidden aria-label="Add to favorites"></button>
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
@@ -407,6 +419,10 @@
 
     <!-- ====== KANBAN ====== -->
     <section class="view" id="view-kanban">
+      <div id="kanbanSearchBar" class="searchbar" hidden>
+        <input type="search" id="kanbanSearch" placeholder="Search issues…" autocomplete="off" spellcheck="false" />
+        <button type="button" class="sb-clear" id="kanbanSearchClear" aria-label="Clear search"></button>
+      </div>
       <div id="kanbanMsg" class="msg"></div>
       <div class="kanban" id="kanbanBoard"></div>
     </section>
@@ -414,8 +430,11 @@
     <!-- ====== ISSUES ====== -->
     <section class="view" id="view-issues">
       <div id="issuesListWrap">
-        <div class="list-toolbar">
+        <div id="issuesSearchBar" class="searchbar" hidden>
           <input type="search" id="issueSearch" placeholder="Search issues…" autocomplete="off" spellcheck="false" />
+          <button type="button" class="sb-clear" id="issueSearchClear" aria-label="Clear search"></button>
+        </div>
+        <div class="list-toolbar" style="justify-content:flex-end">
           <button id="btnSort" class="secondary" aria-label="Sort order"></button>
         </div>
         <div id="issuesMsg" class="msg"></div>
@@ -595,6 +614,7 @@
     chevright: "M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z",
     comment: "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
     sort: "M0 4.25a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 4.25Zm0 4a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8.25Zm0 4a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75ZM13.5 13.25V4.56l1.22 1.22a.75.75 0 1 0 1.06-1.06l-2.5-2.5a.75.75 0 0 0-1.06 0l-2.5 2.5a.75.75 0 0 0 1.06 1.06l1.22-1.22v8.69a.75.75 0 0 0 1.5 0Z",
+    search: "M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z",
     reload: "M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z",
     external: "M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.06-1.06l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z",
     check: "M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L1.72 8.78a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z",
@@ -680,6 +700,8 @@
     var isList = (name === "issues" || name === "kanban");
     $("viewReload").hidden = !isList;   // reload (left)
     $("viewAdd").hidden = !isList;       // add issue (right)
+    $("viewSearch").hidden = !isList;    // search toggle (rightmost)
+    if (isList) applySearchState(name);  // restore the remembered search-bar state
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
     else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
     else if (name === "composer") { $("navBack").hidden = false; }   // "push" view: go back with the back button
@@ -1241,10 +1263,56 @@
       resetAndLoadIssues();
     }, 350);
   });
+  var kanbanSearchTimer = null;
+  $("kanbanSearch").addEventListener("input", function () {
+    var v = this.value.trim();
+    clearTimeout(kanbanSearchTimer);
+    kanbanSearchTimer = setTimeout(function () {
+      if (v === KAN.query) return;
+      KAN.query = v;
+      loadKanban();
+    }, 350);
+  });
+
+  // ---- Toggleable search bar (kanban + issues), remembered per view ----
+  var SRCH_KEY = { kanban: "ic_srch_kanban", issues: "ic_srch_issues" };
+  function activeListView() {
+    if ($("view-kanban").classList.contains("active")) return "kanban";
+    if ($("view-issues").classList.contains("active") && $("issuesListWrap").style.display !== "none") return "issues";
+    return null;
+  }
+  function isSearchOpen(view) { try { return localStorage.getItem(SRCH_KEY[view]) === "1"; } catch (e) { return false; } }
+  function clearSearchQuery(view) {
+    var input = $(view === "kanban" ? "kanbanSearch" : "issueSearch");
+    input.value = "";
+    if (view === "kanban") { if (KAN.query) { KAN.query = ""; loadKanban(); } }
+    else { if (issuesState.query) { issuesState.query = ""; resetAndLoadIssues(); } }
+  }
+  // Reflects the stored open state on the bar and the fab (no query change).
+  function applySearchState(view) {
+    var open = isSearchOpen(view);
+    $(view === "kanban" ? "kanbanSearchBar" : "issuesSearchBar").hidden = !open;
+    $("viewSearch").classList.toggle("on", open);
+  }
+  function toggleSearch() {
+    var view = activeListView(); if (!view) return;
+    var open = !isSearchOpen(view);
+    try { localStorage.setItem(SRCH_KEY[view], open ? "1" : "0"); } catch (e) {}
+    $(view === "kanban" ? "kanbanSearchBar" : "issuesSearchBar").hidden = !open;
+    $("viewSearch").classList.toggle("on", open);
+    if (open) { try { $(view === "kanban" ? "kanbanSearch" : "issueSearch").focus(); } catch (e) {} }
+    else clearSearchQuery(view);   // hiding the bar clears the search
+  }
+  $("viewSearch").innerHTML = svg("search", 20);
+  $("viewSearch").addEventListener("click", toggleSearch);
+  $("kanbanSearchClear").innerHTML = svg("x", 16);
+  $("kanbanSearchClear").addEventListener("click", function () { clearSearchQuery("kanban"); try { $("kanbanSearch").focus(); } catch (e) {} });
+  $("issueSearchClear").innerHTML = svg("x", 16);
+  $("issueSearchClear").addEventListener("click", function () { clearSearchQuery("issues"); try { $("issueSearch").focus(); } catch (e) {} });
 
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
-    $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false;
+    $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false; $("viewSearch").hidden = false; applySearchState("issues");
     if (issuesState.items.length) renderIssuesList();   // re-paints from cache (reflects changes on return)
     updateActiveRepoBanners();
   }
@@ -1407,7 +1475,7 @@
     activateIssuesContainer();
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Loading…</div>';
 
@@ -1526,7 +1594,7 @@
   function openEditor(opts) {
     editState = opts;
     markActiveView("edit");
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
     var ta = $("editBody");
     ta.placeholder = opts.placeholder || "Write here…";
     ta.value = opts.value || "";
@@ -1539,7 +1607,7 @@
     editState = null;
     markActiveView("issues");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; syncRepoTag();
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
   }
   // Shortcuts to avoid repeating the PATCH plumbing on every call.
   function editIssueField(repo, number, field, value) {
@@ -1679,7 +1747,7 @@
   }
 
   // =================== KANBAN (board by status, drag to move) ===================
-  var KAN = { repo: null, loading: false, issues: [], dragging: false };
+  var KAN = { repo: null, loading: false, issues: [], dragging: false, query: "" };
   // FIXED statuses (not editable). In GitHub they're stored as a "status:<key>" label.
   var STATUS_PREFIX = "status:";
   // color: chip pastel; dot: colored dot (stronger) of the header.
@@ -1790,8 +1858,16 @@
     hideMsg($("kanbanMsg"));
     KAN.repo = repo; KAN.loading = true; addRecent(repo);
     $("kanbanBoard").innerHTML = '<div class="loader"><span class="spinner"></span>Loading…</div>';
-    ghFetch(GH_API + "/repos/" + repo + "/issues?state=all&per_page=100&sort=updated&direction=desc")
-      .then(function (items) {
+    // With a query, use the GitHub Search API (server-side) and filter the board.
+    var searching = !!KAN.query, url;
+    if (searching) {
+      url = GH_API + "/search/issues?q=" + encodeURIComponent("repo:" + repo + " type:issue " + KAN.query) + "&sort=updated&order=desc&per_page=100";
+    } else {
+      url = GH_API + "/repos/" + repo + "/issues?state=all&per_page=100&sort=updated&direction=desc";
+    }
+    ghFetch(url)
+      .then(function (data) {
+        var items = searching ? (data && data.items) : data;
         items = Array.isArray(items) ? items : [];
         KAN.issues = items.filter(function (it) { return !it.pull_request; });
         renderKanban();
