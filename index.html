@@ -444,12 +444,10 @@
   .chat-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; animation: chatdot 1s infinite; }
   .chat-typing i:nth-child(2) { animation-delay: .15s; } .chat-typing i:nth-child(3) { animation-delay: .3s; }
   @keyframes chatdot { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: .9; transform: translateY(-3px); } }
-  /* --kbf is 1 with the keyboard closed (keep the safe-area inset) and 0 when it's
-     open, so the input hugs the keyboard instead of leaving a gap. */
-  .chat-composer { flex: none; padding: 6px 12px calc(env(safe-area-inset-bottom) * var(--kbf, 1) + 8px); background: var(--surface); }
+  .chat-composer { flex: none; padding: 8px 12px calc(env(safe-area-inset-bottom) + 10px); background: var(--surface); }
   .chat-inputwrap { display: flex; align-items: flex-end; gap: 8px; background: var(--bg); border-radius: 24px; padding: 6px 6px 6px 16px; }
-  .chat-inputwrap .chat-ce { flex: 1; min-width: 0; padding: 8px 0; font-size: .98rem; line-height: 1.4; min-height: 22px; max-height: 140px; overflow-y: auto; color: var(--text); font-family: inherit; outline: none; white-space: pre-wrap; word-break: break-word; -webkit-user-modify: read-write-plaintext-only; }
-  .chat-inputwrap .chat-ce:empty:before { content: attr(data-ph); color: var(--muted); pointer-events: none; }
+  .chat-inputwrap textarea { flex: 1; min-width: 0; border: none; background: transparent; resize: none; padding: 8px 0; font-size: .98rem; line-height: 1.4; max-height: 140px; color: var(--text); font-family: inherit; }
+  .chat-inputwrap textarea:focus { outline: none; box-shadow: none; }
   .chat-send { flex: none; width: 38px; height: 38px; border-radius: 50%; padding: 0; background: var(--black); color: var(--on-black); display: grid; place-items: center; cursor: pointer; }
   .chat-send:disabled { opacity: .4; cursor: default; }
   .chat-send svg { width: 17px; height: 17px; }
@@ -677,8 +675,7 @@
     </div>
     <div class="chat-composer">
       <div class="chat-inputwrap">
-        <!-- contenteditable (not <textarea>) so iOS doesn't show the keyboard form-navigation bar -->
-        <div id="chatInput" class="chat-ce" contenteditable="true" role="textbox" aria-multiline="true" enterkeyhint="send" data-ph="Message the assistant…"></div>
+        <textarea id="chatInput" rows="1" placeholder="Message the assistant…" autocomplete="off"></textarea>
         <button id="chatSend" class="chat-send" aria-label="Send"></button>
       </div>
     </div>
@@ -2555,8 +2552,7 @@
     if (on) { if (chatTypingEl) return; chatTypingEl = document.createElement("div"); chatTypingEl.className = "chat-typing"; chatTypingEl.innerHTML = "<i></i><i></i><i></i>"; $("chatMessages").appendChild(chatTypingEl); chatScrollBottom(); }
     else if (chatTypingEl) { chatTypingEl.remove(); chatTypingEl = null; }
   }
-  function chatText() { return ($("chatInput").innerText || "").replace(/ /g, " ").trim(); }
-  function setChatBusy(on) { chatBusy = on; $("chatSend").disabled = on || !chatText(); setChatTyping(on); }
+  function setChatBusy(on) { chatBusy = on; $("chatSend").disabled = on || !$("chatInput").value.trim(); setChatTyping(on); }
 
   // ----- Conversation loop -----
   function ensureChatStarted() {
@@ -2564,7 +2560,7 @@
     else { chatMessages[0] = { role: "system", content: assistantSystemPrompt() }; }
   }
   function sendChat() {
-    var text = chatText();
+    var input = $("chatInput"), text = input.value.trim();
     if (!text || chatBusy) return;
     var cfg = llmCfg();
     if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) { $("chatIntro").style.display = "none"; addAiBubble("Configure the LLM (Base URL, API key, Model) in **Settings** first."); return; }
@@ -2572,7 +2568,7 @@
     $("chatIntro").style.display = "none";
     addUserBubble(text);
     chatMessages.push({ role: "user", content: text });
-    $("chatInput").textContent = "";
+    input.value = ""; autoGrowChat();
     setChatBusy(true);
     runAssistantLoop(8);
   }
@@ -2599,11 +2595,9 @@
   }
 
   // ----- Input wiring -----
-  $("chatInput").addEventListener("input", function () { if (!this.textContent.trim() && this.innerHTML !== "") this.innerHTML = ""; $("chatSend").disabled = chatBusy || !chatText(); });
+  function autoGrowChat() { var t = $("chatInput"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 140) + "px"; }
+  $("chatInput").addEventListener("input", function () { autoGrowChat(); $("chatSend").disabled = chatBusy || !this.value.trim(); });
   $("chatInput").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } });
-  // iOS sometimes reports the viewport size a beat after the keyboard animates in;
-  // re-sync on focus so the composer hugs the keyboard without leaving a gap.
-  $("chatInput").addEventListener("focus", function () { setTimeout(syncViewport, 250); setTimeout(syncViewport, 600); });
   $("chatSend").innerHTML = svg("send", 17);
   $("chatSend").disabled = true;
   $("chatSend").addEventListener("click", sendChat);
@@ -2637,10 +2631,6 @@
     var vv = window.visualViewport, s = document.documentElement.style;
     s.setProperty("--apph", (vv ? vv.height : window.innerHeight) + "px");
     s.setProperty("--vvtop", (vv ? vv.offsetTop : 0) + "px");
-    // Keyboard open? (visible viewport much shorter than the window). If so, drop the
-    // bottom safe-area inset so the chat composer sits right on top of the keyboard.
-    var kbOpen = !!vv && (window.innerHeight - vv.height) > 120;
-    s.setProperty("--kbf", kbOpen ? "0" : "1");
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", syncViewport);
