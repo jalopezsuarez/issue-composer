@@ -79,7 +79,7 @@ Each tool call is shown as a small chip while it runs. Conversations are **not p
 - **GitHub**: token + repository search/selection (or manual `owner/repo`).
 - **LLM provider**: Base URL, API key and Model.
 - **Generation language**: Spanish / English.
-- **Appearance**: Light / Dark theme.
+- **Appearance**: Light / Dark / Auto theme.
 - **Settings export / import**: a JSON with 100% of the settings (token, LLM, active repo, recents, favorites, mode, language and theme) that you can copy out and paste back in.
 
 ### 🖊️ Full-screen editor
@@ -144,7 +144,7 @@ Choose **Spanish** or **English** for the language of the generated issues and c
 
 ### 4. Theme
 
-Choose **Light** or **Dark**. The choice is saved, applied before the first paint (no flash), and travels with the settings export/import.
+Choose **Light**, **Dark** or **Auto** (follows the system preference and updates live when it changes). The choice is saved, applied before the first paint (no flash), and travels with the settings export/import.
 
 ---
 
@@ -201,7 +201,7 @@ Each status has a color that adapts to the theme (soft pastels in light mode, a 
 | `ic_favs` | Favorite repositories (max. 10) |
 | `ic_tone` | Writing mode |
 | `ic_lang` | Generation language |
-| `ic_theme` | UI theme (light/dark) |
+| `ic_theme` | UI theme (light/dark/auto) |
 | `ic_tab` | Last used tab |
 | `ic_repo_tab` | Recent/Favorites segment |
 
