@@ -21,7 +21,7 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <title>GH Issue Composer</title>
 <!-- Apply the saved theme before the first paint to avoid a light flash. -->
-<script>try{if(localStorage.getItem("ic_theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<script>try{var t=localStorage.getItem("ic_theme");if(t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <style>
   :root {
     /* GitHub-style palette: blacks, grays and whites (monochrome) */
@@ -618,6 +618,7 @@
           <div class="segmented" id="themeControl">
             <button type="button" data-theme-opt="light">Light</button>
             <button type="button" data-theme-opt="dark">Dark</button>
+            <button type="button" data-theme-opt="auto">Auto</button>
           </div>
         </div>
       </div>
@@ -857,7 +858,7 @@
       if (m) $("llmModel").value = m;
       if (tone && VALID_TONES[tone]) { currentTone = tone; commentTone = tone; }
       if (lang === "en" || lang === "es") currentLang = lang;
-      if (theme === "dark" || theme === "light") currentTheme = theme;
+      if (theme === "dark" || theme === "light" || theme === "auto") currentTheme = theme;
     } catch (e) {}
   }
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
@@ -973,17 +974,32 @@
     return currentLang === "en" ? "Write the output in English." : "Write the output in Spanish.";
   }
 
-  // ----- Appearance (light / dark theme) -----
-  function applyTheme(t) {
-    currentTheme = (t === "dark") ? "dark" : "light";
-    if (currentTheme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+  // ----- Appearance (light / dark / auto theme) -----
+  function systemPrefersDark() { return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches); }
+  // Resolved theme: "auto" follows the system preference.
+  function resolvedThemeIsDark() { return currentTheme === "dark" || (currentTheme === "auto" && systemPrefersDark()); }
+  function applyResolvedTheme() {
+    var dark = resolvedThemeIsDark();
+    if (dark) document.documentElement.setAttribute("data-theme", "dark");
     else document.documentElement.removeAttribute("data-theme");
+    // iOS status bar / URL bar tint follow the resolved theme.
+    var tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute("content", dark ? "#0d1117" : "#ffffff");
+    var cs = document.querySelector('meta[name="color-scheme"]'); if (cs) cs.setAttribute("content", dark ? "dark" : "light");
+  }
+  var themeMedia = null;
+  function applyTheme(t) {
+    currentTheme = (t === "dark" || t === "light" || t === "auto") ? t : "light";
     persist(LS_KEYS.theme, currentTheme);
     var bs = $("themeControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-theme-opt") === currentTheme);
-    // iOS status bar / URL bar tint follow the theme.
-    var tc = document.querySelector('meta[name="theme-color"]'); if (tc) tc.setAttribute("content", currentTheme === "dark" ? "#0d1117" : "#ffffff");
-    var cs = document.querySelector('meta[name="color-scheme"]'); if (cs) cs.setAttribute("content", currentTheme === "dark" ? "dark" : "light");
+    applyResolvedTheme();
+    // Live-update when the OS theme changes while in Auto.
+    if (window.matchMedia && !themeMedia) {
+      themeMedia = window.matchMedia("(prefers-color-scheme: dark)");
+      var onSysChange = function () { if (currentTheme === "auto") applyResolvedTheme(); };
+      if (themeMedia.addEventListener) themeMedia.addEventListener("change", onSysChange);
+      else if (themeMedia.addListener) themeMedia.addListener(onSysChange);
+    }
   }
   (function wireTheme() {
     var bs = $("themeControl").querySelectorAll("button");
@@ -1913,12 +1929,12 @@
   ];
   // Resolves a status's chip/column colors for the active theme.
   function statusColors(s) {
-    if (currentTheme === "dark") return { bg: s.dbg, text: "#" + s.dtext, dot: s.dot, colBg: "#" + s.dcol, count: "#" + s.dtext };
+    if (resolvedThemeIsDark()) return { bg: s.dbg, text: "#" + s.dtext, dot: s.dot, colBg: "#" + s.dcol, count: "#" + s.dtext };
     return { bg: s.color, text: darken(s.dot), dot: s.dot, colBg: "#" + s.color + "40", count: "#" + s.dot + "b3" };
   }
   // Status-selector rows (detail): text + active-row background per theme.
   function statusRowColors(s) {
-    if (currentTheme === "dark") return { text: "#" + s.dtext, active: "#" + s.dbg };
+    if (resolvedThemeIsDark()) return { text: "#" + s.dtext, active: "#" + s.dbg };
     return { text: "#" + s.dot, active: "#" + s.color };
   }
   function statusByName(name) { name = String(name).toLowerCase(); for (var i = 0; i < STATUSES.length; i++) if (STATUSES[i].name === name) return STATUSES[i]; return null; }
