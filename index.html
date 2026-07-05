@@ -2601,6 +2601,9 @@
   // ----- Input wiring -----
   $("chatInput").addEventListener("input", function () { if (!this.textContent.trim() && this.innerHTML !== "") this.innerHTML = ""; $("chatSend").disabled = chatBusy || !chatText(); });
   $("chatInput").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+  // iOS sometimes reports the viewport size a beat after the keyboard animates in;
+  // re-sync on focus so the composer hugs the keyboard without leaving a gap.
+  $("chatInput").addEventListener("focus", function () { setTimeout(syncViewport, 250); setTimeout(syncViewport, 600); });
   $("chatSend").innerHTML = svg("send", 17);
   $("chatSend").disabled = true;
   $("chatSend").addEventListener("click", sendChat);
