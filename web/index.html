@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Issue Composer — Write GitHub issues with AI, from your phone</title>
-<meta name="description" content="Issue Composer is a single-page, no-backend app to draft and publish GitHub issues with the help of an LLM, manage them on a Kanban board and comment on them — designed like an iPhone app." />
+<title>Issue Composer — The AI issue tracker that lives inside GitHub</title>
+<meta name="description" content="Turn rough notes into professional, code-aware GitHub issues, run a Kanban board on plain issue labels and manage the tracker by chatting with an AI — all in one page, no backend, your keys stay in your browser." />
 <meta name="theme-color" content="#0d1117" />
-<meta property="og:title" content="Issue Composer" />
-<meta property="og:description" content="Write GitHub issues with AI, manage them on a Kanban board, comment — from your phone. No backend, your keys stay in your browser." />
+<meta property="og:title" content="Issue Composer — The AI issue tracker that lives inside GitHub" />
+<meta property="og:description" content="AI-written, code-aware GitHub issues. A Kanban on plain labels. A conversational assistant for your tracker. No backend — everything stays in GitHub." />
 <meta property="og:type" content="website" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='black'/><circle cx='50' cy='50' r='30' fill='white'/></svg>" />
 <style>
@@ -170,6 +170,55 @@
   .home { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 30%; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--s-text) 45%, transparent); z-index: 6; }
   @media (max-width: 400px) { .phone-duo { width: 96vw; } .screen { font-size: 10px; } }
 
+  /* ===== GitHub-native value section ===== */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 56px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: 1fr 1fr; } }
+  .stat { text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 10px; }
+  .stat b { display: block; font-size: clamp(1.5rem, 3.4vw, 2.1rem); letter-spacing: -.03em; font-weight: 830; }
+  .stat span { color: var(--muted); font-size: .84rem; font-weight: 600; }
+  .value-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  @media (max-width: 880px) { .value-grid { grid-template-columns: 1fr; } }
+  .value-copy h2 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); letter-spacing: -.03em; font-weight: 800; margin: 12px 0 16px; line-height: 1.12; }
+  .value-copy > p { color: var(--muted); font-size: 1.05rem; margin-bottom: 22px; }
+  .vlist { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .vlist li { display: flex; gap: 12px; align-items: flex-start; }
+  .vlist svg { flex: none; width: 18px; height: 18px; color: var(--accent); margin-top: 3px; }
+  .vlist b { display: block; font-size: .99rem; }
+  .vlist span { color: var(--muted); font-size: .92rem; }
+  .vlist code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .82em; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+  /* GitHub issue card mockup: what actually lands in the repo */
+  .ghcard { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; font-size: .88rem; }
+  .ghcard .ghc-src { background: var(--bg-soft); border-bottom: 1px solid var(--border); padding: 9px 16px; font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 7px; font-weight: 600; }
+  .ghcard .ghc-src svg { width: 14px; height: 14px; }
+  .ghcard .ghc-head { display: flex; gap: 9px; padding: 16px 16px 8px; align-items: flex-start; }
+  .ghcard .ghc-head svg { flex: none; width: 17px; height: 17px; color: var(--accent); margin-top: 2px; }
+  .ghcard .ghc-title { font-weight: 750; font-size: 1.02rem; line-height: 1.3; letter-spacing: -.01em; }
+  .ghcard .ghc-num { color: var(--muted); font-weight: 500; }
+  .ghcard .ghc-labels { display: flex; gap: 6px; flex-wrap: wrap; padding: 2px 16px 12px 42px; }
+  .ghl { font-size: .68rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .ghl.status { background: color-mix(in srgb, #3b82f6 16%, transparent); color: #3b82f6; }
+  .ghl.enh { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  .ghcard .ghc-body { border-top: 1px solid var(--border); padding: 14px 16px; color: var(--muted); font-size: .84rem; line-height: 1.65; }
+  .ghcard .ghc-body b { color: var(--text); display: block; margin-top: 8px; font-size: .8rem; }
+  .ghcard .ghc-body b:first-child { margin-top: 0; }
+  .ghcard .ghc-body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .84em; background: var(--bg-soft); border-radius: 4px; padding: 1px 4px; }
+  .ghcard .ghc-foot { border-top: 1px solid var(--border); padding: 9px 16px; font-size: .76rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .ghcard .ghc-foot .spark { color: var(--closed); }
+
+  /* ===== Assistant chat demo ===== */
+  .assist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+  @media (max-width: 880px) { .assist-grid { grid-template-columns: 1fr; } }
+  .chatdemo { background: var(--card); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 22px; display: flex; flex-direction: column; gap: 13px; font-size: .9rem; }
+  .cd-user { align-self: flex-end; max-width: 85%; background: var(--bg-soft); border: 1px solid var(--border); padding: 9px 15px; border-radius: 16px; font-weight: 550; }
+  .cd-tools { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cd-tools span { font-size: .72rem; font-weight: 650; color: var(--muted); background: var(--bg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 3px 11px; }
+  .cd-ai { color: var(--text); line-height: 1.6; }
+  .cd-ai .pill-review { display: inline-block; font-size: .7rem; font-weight: 700; background: color-mix(in srgb, var(--closed) 15%, transparent); color: var(--closed); border-radius: 999px; padding: 1px 9px; vertical-align: 1px; }
+  .cd-input { display: flex; align-items: center; gap: 10px; margin-top: 6px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 999px; padding: 10px 8px 10px 18px; color: var(--muted); font-size: .88rem; }
+  .cd-input .sp { flex: 1; }
+  .cd-input .snd { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; }
+  .cd-input .snd svg { width: 14px; height: 14px; }
+
   /* ===== Sections ===== */
   section { padding: 76px 0; }
   .sec-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
@@ -242,8 +291,9 @@
     <div class="wrap nav-inner">
       <a class="brand" href="#top"><span class="mark"></span> Issue Composer</a>
       <nav class="nav-links">
+        <a class="text" href="#github-native">Why GitHub</a>
         <a class="text" href="#features">Features</a>
-        <a class="text" href="#modes">AI modes</a>
+        <a class="text" href="#assistant">Assistant</a>
         <a class="text" href="#privacy">Privacy</a>
         <a class="btn btn-primary" href="https://jalopezsuarez.github.io/issue-composer/" target="_blank" rel="noopener">Open the app</a>
       </nav>
@@ -256,9 +306,9 @@
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <span class="badge"><span class="dot"></span> No backend · Runs in your browser</span>
+          <span class="badge"><span class="dot"></span> AI-powered · No backend · 100% GitHub-native</span>
           <h1>Ship better <span class="grad">GitHub issues</span> — from your phone.</h1>
-          <p class="lede">Draft and publish issues with an LLM, run a Kanban board and reply to threads. All in one page, styled like a native iPhone app.</p>
+          <p class="lede">AI that reads your code and writes professional issues, a Kanban on plain labels, and an assistant that runs your tracker in chat. Everything stays in GitHub.</p>
           <div class="cta-row">
             <a class="btn btn-primary" href="https://jalopezsuarez.github.io/issue-composer/" target="_blank" rel="noopener">
               <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.49-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg>
@@ -269,7 +319,7 @@
           <div class="hero-meta">
             <span><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Zero install</span>
             <span><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Your keys, your browser</span>
-            <span><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Light & dark</span>
+            <span><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Light · dark · auto</span>
           </div>
         </div>
 
@@ -307,6 +357,50 @@
       </div>
     </section>
 
+    <!-- GITHUB-NATIVE VALUE -->
+    <section id="github-native">
+      <div class="wrap">
+        <div class="stats">
+          <div class="stat"><b>1</b><span>static HTML file</span></div>
+          <div class="stat"><b>0</b><span>servers &amp; databases</span></div>
+          <div class="stat"><b>0</b><span>setup on your repo</span></div>
+          <div class="stat"><b>100%</b><span>GitHub-native data</span></div>
+        </div>
+        <div class="value-grid">
+          <div class="value-copy">
+            <span class="eyebrow">Why it makes GitHub better</span>
+            <h2>Your tracker never leaves GitHub.</h2>
+            <p>Issue Composer doesn't replace your issue tracker — it supercharges the one you already have. Everything it creates is a plain GitHub issue, label or comment.</p>
+            <ul class="vlist">
+              <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                <div><b>Kanban without GitHub Projects</b><span>Board statuses are simple <code>status:</code> labels — the board works on any repo in seconds, with zero configuration.</span></div></li>
+              <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                <div><b>Visible to your whole team</b><span>Teammates on github.com see the same issues, labels and comments — no second tool to adopt, no sync to break.</span></div></li>
+              <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                <div><b>Issues that respect your codebase</b><span>The AI reads your README and source files before writing, so issues cite real paths and symbols — not inventions.</span></div></li>
+              <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+                <div><b>Zero lock-in</b><span>Close the tab or delete the app whenever you want — every issue, status and comment is already in your repository.</span></div></li>
+            </ul>
+          </div>
+          <!-- What actually lands in the repo: a plain GitHub issue -->
+          <div class="ghcard" aria-hidden="true">
+            <div class="ghc-src"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.49-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"/></svg> github.com/acme/webapp · Issues</div>
+            <div class="ghc-head">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/></svg>
+              <div class="ghc-title">Add password reset flow <span class="ghc-num">#87</span></div>
+            </div>
+            <div class="ghc-labels"><span class="ghl status">status:progress</span><span class="ghl enh">enhancement</span></div>
+            <div class="ghc-body">
+              <b>User story</b> As a user, I want to reset my password by email so I can regain access on my own.
+              <b>Status in the code</b> Login lives in <code>src/auth/Login.tsx</code>; there's no <code>reset</code> route yet in <code>src/router.ts</code>.
+              <b>Acceptance criteria</b> Expiring email link · rate limiting · audit log entry.
+            </div>
+            <div class="ghc-foot"><span class="spark">✦</span> Drafted with Issue Composer · a plain GitHub issue, nothing proprietary</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- FEATURES -->
     <section id="features" class="features">
       <div class="wrap">
@@ -322,9 +416,19 @@
             <p>Describe what you want in plain words. The LLM turns it into a clean, structured issue with a proper title and Markdown body.</p>
           </div>
           <div class="card">
+            <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M9.5.75a.75.75 0 0 0-1.46 0l-.9 3.32a3 3 0 0 1-2.07 2.07l-3.32.9a.75.75 0 0 0 0 1.46l3.32.9a3 3 0 0 1 2.07 2.07l.9 3.32a.75.75 0 0 0 1.46 0l.9-3.32a3 3 0 0 1 2.07-2.07l3.32-.9a.75.75 0 0 0 0-1.46l-3.32-.9a3 3 0 0 1-2.07-2.07Z"/></svg></div>
+            <h3>Conversational assistant</h3>
+            <p>A ChatGPT-style chat with real tools: it lists, searches and reads issues, digs into the code, creates issues, comments and moves statuses for you.</p>
+          </div>
+          <div class="card">
             <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 1h3.5A1.75 1.75 0 0 1 7 2.75v10.5A1.75 1.75 0 0 1 5.25 15h-3.5A1.75 1.75 0 0 1 0 13.25V2.75C0 1.784.784 1 1.75 1Zm9 0h3.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 10h-3.5A1.75 1.75 0 0 1 9 8.25v-5.5C9 1.784 9.784 1 10.75 1Z"/></svg></div>
             <h3>Drag-and-drop Kanban</h3>
-            <p>See every issue on a board by status. Drag cards between columns to update them, reorder within a column, tap to open.</p>
+            <p>A board on top of plain issue labels — no GitHub Projects to set up. Drag between columns, reorder within one, tap to open.</p>
+          </div>
+          <div class="card">
+            <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.72 3.22a.75.75 0 0 1 1.06 1.06L2.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L.47 8.53a.75.75 0 0 1 0-1.06Zm6.56 0a.75.75 0 0 0-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 1 0 1.06 1.06l4.25-4.25a.75.75 0 0 0 0-1.06Z"/></svg></div>
+            <h3>Reads your code</h3>
+            <p>For features and bugs, the AI scans the README and the relevant files first, so every issue reflects what's already built and what isn't.</p>
           </div>
           <div class="card">
             <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Z"/></svg></div>
@@ -332,9 +436,9 @@
             <p>Read and post comments — and let AI draft replies that take the issue and the whole thread into account.</p>
           </div>
           <div class="card">
-            <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.72 3.22a.75.75 0 0 1 1.06 1.06L2.06 8l3.72 3.72a.75.75 0 1 1-1.06 1.06L.47 8.53a.75.75 0 0 1 0-1.06Zm6.56 0a.75.75 0 0 0-1.06 1.06L13.94 8l-3.72 3.72a.75.75 0 1 0 1.06 1.06l4.25-4.25a.75.75 0 0 0 0-1.06Z"/></svg></div>
-            <h3>Reads your code</h3>
-            <p>For features and bugs, the AI scans the README and relevant files to judge what's already implemented and what's pending.</p>
+            <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z"/></svg></div>
+            <h3>Instant search</h3>
+            <p>A toggleable search bar on both the board and the list, powered by the GitHub Search API — with sort order built into the bar.</p>
           </div>
           <div class="card">
             <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a.75.75 0 0 1 .32.07l6 2.8A.75.75 0 0 1 14.75 4v3.5c0 3.64-2.3 6.5-6.5 8.44a.75.75 0 0 1-.5 0C3.55 14 1.25 11.14 1.25 7.5V4a.75.75 0 0 1 .43-.68l6-2.8A.75.75 0 0 1 8 0Z"/></svg></div>
@@ -342,16 +446,49 @@
             <p>There's no server. Requests go straight from your browser to GitHub and your LLM. Credentials never leave your device.</p>
           </div>
           <div class="card">
+            <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z"/></svg></div>
+            <h3>Encrypted settings transfer</h3>
+            <p>Move your setup between devices as an AES-256-GCM encrypted blob plus its key — copy both, paste both, done.</p>
+          </div>
+          <div class="card">
             <div class="ic"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2ZM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-4.5V13a5 5 0 0 0 0-9.5Z"/></svg></div>
-            <h3>iOS design, light & dark</h3>
-            <p>A monochrome, glassy, GitHub-flavored interface built to feel native on the phone — with a dark theme you can pick and keep.</p>
+            <h3>Light, dark &amp; auto</h3>
+            <p>A monochrome, glassy, GitHub-flavored interface that feels native on the phone and scales to the desktop — with a theme that can follow your system.</p>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- AI ASSISTANT -->
+    <section id="assistant">
+      <div class="wrap assist-grid">
+        <div class="value-copy">
+          <span class="eyebrow">Your tracker, in chat</span>
+          <h2>Run the whole board in a conversation.</h2>
+          <p>The built-in assistant speaks GitHub. It's scoped to your active repository — its issues and its source code — and acts through real tools, not copy-paste.</p>
+          <ul class="vlist">
+            <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+              <div><b>Ask anything about the tracker</b><span>"What's still pending?", "Summarize the thread on #42", "Which issues touch the auth flow?"</span></div></li>
+            <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+              <div><b>Act without leaving the chat</b><span>Create issues, add or edit comments, change statuses and rewrite titles or descriptions — each action shows up as a tool chip.</span></div></li>
+            <li><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>
+              <div><b>Grounded in your source</b><span>It can list and read the repository's files, so its answers about the code are based on the code.</span></div></li>
+          </ul>
+        </div>
+        <div class="chatdemo" aria-hidden="true">
+          <div class="cd-user">Move #42 to review and summarize the thread</div>
+          <div class="cd-tools"><span>Reading issue</span><span>Changing status</span></div>
+          <div class="cd-ai">Done — <b>#42 "Login button unresponsive on mobile"</b> is now in <span class="pill-review">review</span>.<br>Summary: Maria reproduced it on iOS with the keyboard open; Jon traced it to a stale <b>touchend</b> handler and pushed a fix that's awaiting review.</div>
+          <div class="cd-user">Great — open a follow-up to add a regression test</div>
+          <div class="cd-tools"><span>Creating issue</span></div>
+          <div class="cd-ai">Created <b>#43 "Add regression test for mobile login tap"</b> with the context from #42.</div>
+          <div class="cd-input">Message the assistant…<span class="sp"></span><span class="snd"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 1.6 14.7 7.3a.75.75 0 0 1 0 1.38L1.5 14.4a.75.75 0 0 1-1.03-.86L1.9 8.5 8 8l-6.1-.5L.47 2.46A.75.75 0 0 1 1.5 1.6Z"/></svg></span></div>
+        </div>
+      </div>
+    </section>
+
     <!-- MODES -->
-    <section id="modes">
+    <section id="modes" class="features">
       <div class="wrap">
         <div class="sec-head">
           <span class="eyebrow">Three ways to write</span>
@@ -382,7 +519,7 @@
     </section>
 
     <!-- STEPS -->
-    <section class="features">
+    <section>
       <div class="wrap">
         <div class="sec-head">
           <span class="eyebrow">Get going in a minute</span>
@@ -391,8 +528,8 @@
         <div class="steps">
           <div class="step"><div class="n">1</div><h3>Open the app</h3><p>Load the page on your phone or add it to the home screen as a web app.</p></div>
           <div class="step"><div class="n">2</div><h3>Add your keys</h3><p>Paste a GitHub token and your OpenAI-compatible LLM settings in Settings.</p></div>
-          <div class="step"><div class="n">3</div><h3>Compose with AI</h3><p>Write a note, choose a mode, and let the AI draft the title and body.</p></div>
-          <div class="step"><div class="n">4</div><h3>Publish & manage</h3><p>Publish the issue, move it on the board and reply to comments.</p></div>
+          <div class="step"><div class="n">3</div><h3>Compose with AI</h3><p>Write a note, choose a mode, and let the AI draft a code-aware title and body.</p></div>
+          <div class="step"><div class="n">4</div><h3>Publish &amp; manage</h3><p>Publish to GitHub, move it on the board, reply in threads — or just ask the assistant.</p></div>
         </div>
       </div>
     </section>
@@ -401,12 +538,12 @@
     <section id="privacy">
       <div class="wrap">
         <div class="privacy">
-          <span class="eyebrow" style="color:#8b949e">No backend. No telemetry.</span>
+          <span class="eyebrow" style="color:#8b949e">No backend. No telemetry. No middleman.</span>
           <h2>Your tokens stay on your device</h2>
-          <p>Issue Composer is a single static file. Every request goes directly from your browser to the GitHub API and to your LLM provider. Your credentials live only in your browser's local storage.</p>
+          <p>Issue Composer is a single static file. Every request goes directly from your browser to the GitHub API and to your LLM provider — nothing passes through anyone else's server. Your credentials live only in your browser, and settings travel between devices as an AES-256-GCM encrypted blob with its own key.</p>
           <div class="chips">
             <span class="pchip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Runs 100% client-side</span>
-            <span class="pchip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Export & import your settings</span>
+            <span class="pchip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> AES-256 encrypted settings transfer</span>
             <span class="pchip"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg> Open source on GitHub</span>
           </div>
         </div>
@@ -416,8 +553,8 @@
     <!-- FINAL CTA -->
     <section class="final">
       <div class="wrap">
-        <h2>Turn a rough idea into a great issue.</h2>
-        <p>Open Issue Composer and publish your first AI-written issue in minutes.</p>
+        <h2>Give your GitHub issues superpowers.</h2>
+        <p>Open Issue Composer and publish your first AI-written, code-aware issue in minutes — it lands in your repo like any other.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="https://jalopezsuarez.github.io/issue-composer/" target="_blank" rel="noopener">Open the app</a>
           <a class="btn btn-ghost" href="https://github.com/jalopezsuarez/issue-composer" target="_blank" rel="noopener">Star on GitHub</a>
