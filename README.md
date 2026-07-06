@@ -1,6 +1,8 @@
 # Issue Composer
 
-Single-page web app (a single `index.html`, **no dependencies or build**) to **write and publish GitHub issues with the help of an LLM**, manage them on a **Kanban board** and comment on them. Designed as an **iPhone-style mobile app** (iOS + GitHub aesthetic, monochrome, *glass* effect, light **and** dark), meant to be used from the phone but fully functional on the desktop.
+Single-page web app (a single `index.html`, **no dependencies or build**) that supercharges the issue tracker you already have on GitHub: **write and publish code-aware issues with the help of an LLM**, manage them on a **Kanban board built on plain `status:` labels** (no GitHub Projects setup), comment on them, and run the whole tracker from a **conversational AI assistant** with real tools. Designed as an **iPhone-style mobile app** (iOS + GitHub aesthetic, monochrome, *glass* effect, light/dark/auto), meant to be used from the phone but fully functional on the desktop.
+
+Everything it creates is a **plain GitHub issue, label or comment** — your data never leaves GitHub, there's no second tracker to sync and no lock-in.
 
 🔗 **Demo (GitHub Pages):** https://jalopezsuarez.github.io/issue-composer/
 📣 **Landing page:** https://jalopezsuarez.github.io/issue-composer/web/
