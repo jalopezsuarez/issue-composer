@@ -80,7 +80,7 @@ Each tool call is shown as a small chip while it runs. Conversations are **not p
 - **LLM provider**: Base URL, API key and Model.
 - **Generation language**: Spanish / English.
 - **Appearance**: Light / Dark / Auto theme.
-- **Settings export / import**: a JSON with 100% of the settings (token, LLM, active repo, recents, favorites, mode, language and theme) that you can copy out and paste back in.
+- **Settings export / import**: 100% of the settings (token, LLM, active repo, recents, favorites, mode, language and theme), exported **encrypted** (AES-256-GCM via Web Crypto) as an opaque blob plus a randomly generated **encryption key** — copy both with their buttons, and paste both on the other device to import (with paste-from-clipboard buttons).
 
 ### 🖊️ Full-screen editor
 A reusable view (a single borderless, full-screen `textarea`) to edit **one element at a time**: the issue **title**, its **body** or a **comment**. **Back** button (cancel) at the top left and **save** (↑) at the top right. It adapts dynamically to the visible height and the keyboard.
