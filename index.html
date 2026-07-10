@@ -600,8 +600,9 @@
         <div class="field">
           <label for="ghToken">Personal Access Token</label>
           <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
+          <div class="group-hint" style="padding:8px 0 0">Create one at <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens</a>: a <b>fine-grained</b> token with access to your repos and the <b>Issues (read &amp; write)</b> and <b>Metadata (read)</b> permissions — or a <b>classic</b> token with the <b>repo</b> scope. If your organization uses SAML SSO, authorize the token for it.</div>
         </div>
-        <div class="field"><button id="btnConnect" class="block">Connect</button></div>
+        <div class="field"><button id="btnConnect" class="block">Connect GitHub</button></div>
         <div class="field">
           <label for="repoSearch">Search repository</label>
           <input type="text" id="repoSearch" placeholder="Filter by name…" autocomplete="off" disabled />
@@ -1525,7 +1526,7 @@
         var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
         showMsg(msg, "success", "Loaded " + loadedRepos.length + " repositories." + (matched ? " Restored: <strong>" + esc(stored) + "</strong>." : ""));
       }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Connect"; });
+      .then(function () { btn.disabled = false; btn.textContent = "Connect GitHub"; });
   });
 
   $("btnAddRepo").addEventListener("click", function () {
