@@ -95,7 +95,7 @@ Available when creating issues and when writing comments:
 
 | Mode | Reviews the code | What it produces |
 |------|:---:|-------------|
-| **Simple** | No (instant) | Transforms your text as little as possible: fixes it and applies light Markdown formatting, keeping your words and intent. Doesn't add sections or new information. |
+| **Simple** | No (README only) | Cleans, structures and polishes your text so it reads well, grounded in the **project's context** (the README — adopting the project's own terminology), never in the code: no file paths, symbols or snippets, and no invented details. Keeps your meaning and intent. |
 | **Feature** | Yes | Develops a **new feature** as a User Story / PBI: *User story, Description and context, Status in the code, Scope, Areas/files involved, Acceptance criteria, Technical notes and dependencies*. |
 | **Bug** | Yes | **Bug** report: *Description, Reproduction steps, Expected vs actual behavior, Status in the code, Files involved, Probable root cause, Impact, Edge cases, Proposed fix, Acceptance criteria*. |
 
