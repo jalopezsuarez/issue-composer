@@ -539,17 +539,15 @@
           <textarea id="note" rows="5" placeholder="Describe what you want…"></textarea>
         </div>
         <div class="field">
-          <label>Writing mode</label>
+          <label>Generate with AI</label>
+          <!-- Tapping a mode generates directly with that mode (no separate button) -->
           <div class="segmented" id="toneControl">
             <button type="button" data-tone="simple">Simple</button>
             <button type="button" data-tone="feature">Feature</button>
             <button type="button" data-tone="bug">Bug</button>
           </div>
+          <button id="btnClearNote" class="secondary block" type="button" style="margin-top:10px">Clear note</button>
           <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
-        </div>
-        <div class="field actions">
-          <button id="btnAnalyze" class="block">Generate with AI</button>
-          <button id="btnClearNote" class="secondary block" type="button">Clear note</button>
         </div>
         <div id="analyzeStatus" class="status"></div>
         <div id="analyzeMsg" class="msg"></div>
@@ -942,6 +940,13 @@
     function paint() { for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("active", btns[i].getAttribute("data-tone") === getVal()); }
     for (var i = 0; i < btns.length; i++) btns[i].addEventListener("click", function () { setVal(this.getAttribute("data-tone")); paint(); });
     paint();
+  }
+  // Disables/enables a tone segmented control while a generation is running
+  // (tapping a mode IS the "Generate with AI" action).
+  function setToneBusy(el, on) {
+    if (!el) return;
+    var bs = el.querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) bs[i].disabled = on;
   }
   var TONE_HINT = {
     simple: "Simple: cleans, structures and polishes your text using the project's context (README) — no code analysis, no code references.",
@@ -1852,11 +1857,10 @@
           '<div class="pad"><div class="group-title" style="padding:0">New comment with AI</div></div>' +
           '<div class="field"><label for="commentNote">Proposed text</label>' +
             '<textarea id="commentNote" rows="3" placeholder="Write your comment…"></textarea></div>' +
-          '<div class="field"><label>Mode</label><div class="segmented" id="commentToneControl">' +
+          '<div class="field"><label>Generate with AI</label><div class="segmented" id="commentToneControl">' +
             '<button type="button" data-tone="simple">Simple</button>' +
             '<button type="button" data-tone="feature">Feature</button>' +
             '<button type="button" data-tone="bug">Bug</button></div></div>' +
-          '<div class="field actions"><button id="btnGenComment" class="block">Generate with AI</button></div>' +
           '<div id="commentGenStatus" class="status"></div>' +
           '<div class="field"><label for="commentGenerated">Generated text (editable, this is what gets published)</label>' +
             '<textarea id="commentGenerated" rows="5" placeholder="The generated comment appears here…"></textarea></div>' +
@@ -1882,8 +1886,8 @@
           .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); alert(err.message); })
           .then(function () { hideBusy(); });
       });
-      buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; });
-      $("btnGenComment").addEventListener("click", function () { generateComment(issue, comments); });
+      // Tapping a mode selects it AND generates the comment with it.
+      buildToneControl($("commentToneControl"), function () { return commentTone; }, function (v) { commentTone = v; generateComment(issue, comments); });
       $("btnPostComment").addEventListener("click", function () { postComment(repo, number); });
       var cl = $("commentsList"); if (cl) cl.addEventListener("click", onCommentAction);
     }).catch(function (err) {
@@ -2022,8 +2026,9 @@
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
     if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM in Settings."); return; }
     if (!note) { showMsg(msg, "error", "Write a proposed text for the comment."); return; }
-    var btn = $("btnGenComment"); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Generating…';
+    setToneBusy($("commentToneControl"), true);
     function setStat(t) { $("commentGenStatus").textContent = t; }
+    setStat("Generating…");
 
     var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
     var parts = (currentIssue ? currentIssue.repo : "/").split("/"), owner = parts[0], name = parts[1];
@@ -2048,7 +2053,7 @@
       showMsg(msg, "success", "Comment generated. Edit it if you want and press Publish.");
     }).catch(function (err) {
       setStat(""); showMsg(msg, "error", esc(err.message));
-    }).then(function () { btn.disabled = false; btn.textContent = "Generate with AI"; });
+    }).then(function () { setToneBusy($("commentToneControl"), false); });
   }
 
   function postComment(repo, number) {
@@ -2529,8 +2534,9 @@
       .catch(function () { return null; });
   }
 
-  $("btnAnalyze").addEventListener("click", function () {
-    var btn = this, msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
+  // Generation is triggered by tapping a mode in the segmented control.
+  function generateIssue() {
+    var msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
     var repo = getSelectedRepo(), note = $("note").value.trim();
     if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Select a repository in Settings."); return; }
@@ -2538,7 +2544,7 @@
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
     if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM Base URL, API key and Model."); return; }
 
-    rememberRepo(); addRecent(repo); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Analyzing…';
+    rememberRepo(); addRecent(repo); setToneBusy($("toneControl"), true); setStatus("Analyzing…");
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
     var tone = currentTone;
 
@@ -2562,8 +2568,8 @@
       showMsg(msg, "success", "Issue written. Review it below and publish it.");
       $("issueTitle").scrollIntoView({ behavior: "smooth", block: "center" });
     }).catch(function (err) { setStatus(""); showMsg(msg, "error", esc(err.message)); })
-      .then(function () { btn.disabled = false; btn.textContent = "Generate with AI"; });
-  });
+      .then(function () { setToneBusy($("toneControl"), false); });
+  }
 
   // =================== COMPOSER: PUBLISH ===================
   $("btnPublish").addEventListener("click", function () {
@@ -2840,7 +2846,8 @@
 
   // ----- Init -----
   loadSettings();
-  buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; commentTone = v; persist(LS_KEYS.tone, v); paintToneHint(); });
+  // Tapping a mode selects it, persists it AND generates the issue with it.
+  buildToneControl($("toneControl"), function () { return currentTone; }, function (v) { currentTone = v; commentTone = v; persist(LS_KEYS.tone, v); paintToneHint(); generateIssue(); });
   paintToneHint();
   setLang(currentLang);   // marks the active language in the control
   applyTheme(currentTheme);   // applies the saved theme and marks the active button
