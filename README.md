@@ -116,7 +116,7 @@ Open the [demo](https://jalopezsuarez.github.io/issue-composer/) (or your deploy
 
 ### 1. GitHub token
 
-Create a **Personal Access Token** on GitHub and paste it into the *Personal Access Token* field. Press **Connect** to load your repositories (your own, as a collaborator, and from your organizations), or type `owner/repo` by hand.
+Create a **Personal Access Token** on GitHub and paste it into the *Personal Access Token* field (the app shows this guidance inline, with a direct link to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens/new)). Press **Connect GitHub** to load your repositories (your own, as a collaborator, and from your organizations), or type `owner/repo` by hand.
 
 Recommended permissions:
 - **Fine-grained token**: access to the desired repos with *Issues* (read and write) and *Metadata* (read) permissions.
