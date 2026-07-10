@@ -154,6 +154,23 @@
   .fab-add svg { width: 24px; height: 24px; }
   .fab-save svg { width: 24px; height: 24px; }
 
+  /* ===== Toast: capsule notice below the top navigation bar (like the
+     settings repo banner: fully rounded sides). Tap or wait to dismiss. ===== */
+  .toast {
+    position: fixed; z-index: 70;
+    top: calc(env(safe-area-inset-top) + 60px + var(--vvtop, 0px));
+    left: 50%; transform: translateX(-50%) translateY(-6px);
+    display: flex; align-items: center; gap: 8px;
+    max-width: min(680px, calc(100vw - 24px));
+    background: var(--black); color: var(--on-black);
+    padding: 10px 18px; border-radius: 999px; font-size: .84rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25); cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .25s ease;
+  }
+  .toast.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+  .toast svg { flex: none; }
+  .toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
   /* ===== Centered modal spinner (blocks during a change) ===== */
   .busy { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.18); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
   .busy[hidden] { display: none; }
@@ -480,6 +497,8 @@
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
   <!-- Close the AI assistant (top right); returns to the previous view -->
   <button id="assistantClose" class="fab-close" hidden aria-label="Close assistant"></button>
+  <!-- Toast below the nav bar (e.g. "issue created"); tap or wait to dismiss -->
+  <div id="toast" class="toast" role="status"></div>
 
   <main class="content" id="content">
 
@@ -789,6 +808,14 @@
   // Unified text across the whole system: "Loading…".
   function showBusy() { $("busyText").textContent = "Loading…"; $("busy").hidden = false; }
   function hideBusy() { $("busy").hidden = true; }
+  // Toast below the nav bar: auto-hides after a few seconds; tapping it hides it.
+  var toastTimer = null;
+  function showToast(html, ms) {
+    var t = $("toast"); t.innerHTML = html; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms || 4000);
+  }
+  function hideToast() { clearTimeout(toastTimer); $("toast").classList.remove("show"); }
+  $("toast").addEventListener("click", hideToast);
   function esc(s) {
     return String(s).replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
@@ -2558,7 +2585,11 @@
         .then(function () { return issue; });
     }).then(function (issue) {
       issuesState.repo = null; KAN.repo = null;   // new issue → reload list/board when opening them
-      showMsg(msg, "success", "Issue #" + issue.number + " created: " + '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + esc(issue.html_url) + "</a>");
+      // Close the composer (clean for the next use), return to the origin view
+      // (kanban/list) and confirm with a toast under the nav bar.
+      $("note").value = ""; $("issueTitle").value = ""; $("issueBody").value = ""; setStatus("");
+      showView(composerOrigin);
+      showToast(svg("issue", 15) + "<span>Issue <b>#" + issue.number + "</b> created · " + esc(issue.title || title) + "</span>");
     }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
       .then(function () { hideBusy(); });
   });

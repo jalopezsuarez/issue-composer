@@ -56,7 +56,7 @@ AI issue composer:
 1. You write a **note** describing what you want.
 2. You choose the writing **mode**.
 3. **Generate with AI**: if the mode requires it, the AI **reviews the codebase** (README + up to 5 files it picks as relevant) and writes a **title + body** in Markdown.
-4. You review/edit the result and **Publish** the issue.
+4. You review/edit the result and **Publish** the issue. The composer closes, you're back on the board/list, and a **toast** under the nav bar confirms the created issue (tap it or wait a few seconds to dismiss).
 
 ### 🔍 Issue detail
 - Description rendered in **Markdown** (headings, lists, checklists, code, quotes, links…).
