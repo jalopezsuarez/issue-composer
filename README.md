@@ -81,7 +81,7 @@ Each tool call is shown as a small chip while it runs. Conversations are **not p
 - **GitHub**: token + repository search/selection (or manual `owner/repo`).
 - **LLM provider**: Base URL, API key and Model.
 - **Generation language**: Spanish / English.
-- **Appearance**: Light / Dark / Auto theme.
+- **Appearance**: Light / Dark / Auto theme, and a **font size** control (− / current offset / +) that scales the whole app uniformly — everything is sized in `rem` over a single root value, and the center button restores the base size.
 - **Settings export / import**: 100% of the settings (token, LLM, active repo, recents, favorites, mode, language and theme), exported **encrypted** (AES-256-GCM via Web Crypto) as an opaque blob plus a randomly generated **encryption key** — copy both with their buttons, and paste both on the other device to import (with paste-from-clipboard buttons).
 
 ### 🖊️ Full-screen editor
@@ -204,6 +204,7 @@ Each status has a color that adapts to the theme (soft pastels in light mode, a 
 | `ic_tone` | Writing mode |
 | `ic_lang` | Generation language |
 | `ic_theme` | UI theme (light/dark/auto) |
+| `ic_font` | Font-size offset over the base |
 | `ic_tab` | Last used tab |
 | `ic_repo_tab` | Recent/Favorites segment |
 
