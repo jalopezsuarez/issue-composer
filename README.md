@@ -54,9 +54,8 @@ List with **infinite scroll** (25 per page) and navigation to the detail. Issues
 ### ✏️ Create (+ button)
 AI issue composer:
 1. You write a **note** describing what you want.
-2. You choose the writing **mode**.
-3. **Generate with AI**: if the mode requires it, the AI **reviews the codebase** (README + up to 5 files it picks as relevant) and writes a **title + body** in Markdown.
-4. You review/edit the result and **Publish** the issue. The composer closes, you're back on the board/list, and a **toast** under the nav bar confirms the created issue (tap it or wait a few seconds to dismiss).
+2. You tap a writing **mode** (Simple / Feature / Bug) — tapping it **generates with AI** directly: if the mode requires it, the AI **reviews the codebase** (README + up to 5 files it picks as relevant) and writes a **title + body** in Markdown. The same applies to comments: tapping the mode generates the comment.
+3. You review/edit the result and **Publish** the issue. The composer closes, you're back on the board/list, and a **toast** under the nav bar confirms the created issue (tap it or wait a few seconds to dismiss).
 
 ### 🔍 Issue detail
 - Description rendered in **Markdown** (headings, lists, checklists, code, quotes, links…).
