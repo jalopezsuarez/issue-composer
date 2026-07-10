@@ -46,10 +46,10 @@ Board by **status**, one column per fixed status. Each card shows the title, an 
 - **Reordering within a column** by dragging vertically (persistent manual order).
 - Tapping a card to open its **detail**.
 
-Order within each column: first the ones with a manual order (`order:n` ascending), then the rest by date (most recent on top); closed ones at the bottom.
+Order within each column: first the ones with a manual order (`order:n` ascending), then the rest by date (most recent on top); closed ones at the bottom. **Issues published from the app land at the top of the *pending* column** (they're created with `status:pending` and `order:0`).
 
 ### 📋 Issues
-List with **infinite scroll** (25 per page) and navigation to the detail. Each row shows on two lines: the `open/closed` capsule + the status chip, and `#no · user · comments`. A **sort** toggle (Newest / Oldest) lives inside the search bar.
+List with **infinite scroll** (25 per page) and navigation to the detail. Issues are shown as **two groups: open first, closed always at the end**, each ordered by date. Each row shows on two lines: the `open/closed` capsule + the status chip, and `#no · user · comments · date`. A **sort** toggle (Newest / Oldest) lives inside the search bar.
 
 ### ✏️ Create (+ button)
 AI issue composer:

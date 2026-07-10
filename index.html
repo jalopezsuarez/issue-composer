@@ -1639,10 +1639,17 @@
     return li;
   }
   // Re-paints the list from the in-memory cache (reflects changes without reloading from the network).
+  // Two groups: open issues first, closed ones always at the end. The stable
+  // sort keeps the date order (the API's sort direction) within each group.
+  function sortedIssueItems() {
+    return issuesState.items.slice().sort(function (a, b) {
+      return (a.state === "closed" ? 1 : 0) - (b.state === "closed" ? 1 : 0);
+    });
+  }
   function renderIssuesList() {
     var ul = $("issuesList"); ul.innerHTML = "";
     if (!issuesState.items.length) { if (issuesState.done) ul.innerHTML = stateBlock(issuesEmptyMsg()); return; }
-    issuesState.items.forEach(function (it) { ul.appendChild(renderIssueRow(it)); });
+    sortedIssueItems().forEach(function (it) { ul.appendChild(renderIssueRow(it)); });
   }
   function resetAndLoadIssues() {
     issuesState.token++;   // invalidate any in-flight request (avoids stale appends)
@@ -1692,8 +1699,10 @@
       if (items.length < PER_PAGE) issuesState.done = true;
       issuesState.page = page;
       var issues = items.filter(function (it) { return !it.pull_request; });
-      if (firstLoad) ul.innerHTML = "";   // clear the centered loader before painting rows
-      issues.forEach(function (it) { issuesState.items.push(it); ul.appendChild(renderIssueRow(it)); });
+      issues.forEach(function (it) { issuesState.items.push(it); });
+      // Re-paint the whole list so closed issues stay grouped at the end
+      // even when they arrive in an earlier page than open ones.
+      renderIssuesList();
       if (!issuesState.items.length && issuesState.done) ul.innerHTML = stateBlock(issuesEmptyMsg());
     }).catch(function (err) {
       if (myToken !== issuesState.token) return;
@@ -2505,6 +2514,13 @@
     var parts = repo.split("/");
     ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
+    }).then(function (issue) {
+      // New issues land at the TOP of the kanban's pending column:
+      // status:pending + order:0 (manual orders start at 1, so 0 sorts first;
+      // among several new ones the newest wins by date). Non-fatal if it fails.
+      return putIssueLabels(repo, { number: issue.number, labels: issue.labels || [] }, [statusLabelName("pending"), orderLabelName(0)])
+        .catch(function () {})
+        .then(function () { return issue; });
     }).then(function (issue) {
       issuesState.repo = null; KAN.repo = null;   // new issue → reload list/board when opening them
       showMsg(msg, "success", "Issue #" + issue.number + " created: " + '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + esc(issue.html_url) + "</a>");
