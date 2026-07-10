@@ -546,11 +546,9 @@
             <button type="button" data-tone="feature">Feature</button>
             <button type="button" data-tone="bug">Bug</button>
           </div>
-          <button id="btnClearNote" class="secondary block" type="button" style="margin-top:10px">Clear note</button>
           <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
         </div>
         <div id="analyzeStatus" class="status"></div>
-        <div id="analyzeMsg" class="msg"></div>
       </div>
 
       <div class="group">
@@ -2464,7 +2462,6 @@
   var IGNORE_DIRS = /(^|\/)(node_modules|\.git|dist|build|vendor|\.next|coverage)(\/|$)/;
   var BINARY_EXT = /\.(png|jpe?g|gif|svg|ico|webp|bmp|tiff?|pdf|zip|gz|tar|rar|7z|exe|dll|so|dylib|bin|woff2?|ttf|eot|otf|mp[34]|mov|avi|mkv|wav|ogg|class|jar|wasm|lock|map|min\.js|min\.css)$/i;
   function setStatus(text) { $("analyzeStatus").textContent = text; }
-  $("btnClearNote").addEventListener("click", function () { $("note").value = ""; hideMsg($("analyzeMsg")); setStatus(""); $("note").focus(); });
 
   function b64ToUtf8(b64) {
     var clean = (b64 || "").replace(/\n/g, ""), bin = atob(clean), bytes = new Uint8Array(bin.length);
@@ -2536,7 +2533,9 @@
 
   // Generation is triggered by tapping a mode in the segmented control.
   function generateIssue() {
-    var msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
+    // Generation messages (validations, errors, success) show below the
+    // Publish issue button, same as the comment composer does.
+    var msg = $("publishMsg"); hideMsg(msg); setStatus("");
     var repo = getSelectedRepo(), note = $("note").value.trim();
     if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
     if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Select a repository in Settings."); return; }
