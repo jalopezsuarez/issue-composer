@@ -142,7 +142,7 @@
     display: inline-flex; align-items: center; gap: 6px;
     max-width: calc(100% - 64px - 60px);
     font-size: .84rem; font-weight: 600; color: var(--text);
-    background: transparent; pointer-events: none; overflow: hidden;
+    background: transparent; cursor: pointer; overflow: hidden;
   }
   .view-repo-tag[hidden] { display: none; }
   /* En ajustes no hay fab a la izquierda: el título va pegado al borde izquierdo. */
@@ -1248,6 +1248,12 @@
     tag.classList.toggle("at-left", inConfig || inAssistant);   // no left fab in settings/assistant
     if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
   }
+  // Tapping the floating repo label triggers the action of the left fab:
+  // back (detail/create) or reload (kanban/list). No-op when neither is shown.
+  $("viewRepoTag").addEventListener("click", function () {
+    if (!$("navBack").hidden) $("navBack").click();
+    else if (!$("viewReload").hidden) $("viewReload").click();
+  });
   // Favorite fab (settings, top right): a filled heart that adds the active repo
   // to favorites (mark only, never unmarks). Shown only in Settings with a repo.
   function syncFavFab() {
