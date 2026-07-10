@@ -286,7 +286,6 @@
   .msg.error { background: var(--danger-bg); color: var(--danger); }
   .msg.success { background: var(--ok-bg); color: var(--text); }
   .msg.info { background: var(--ok-bg); color: var(--muted); }
-  .status { font-size: .82rem; color: var(--muted); padding: 8px 16px 0; min-height: 1.1em; }
 
   .spinner {
     display: inline-block; width: 14px; height: 14px;
@@ -557,7 +556,6 @@
           </div>
           <div class="group-hint" id="toneHint" style="padding:8px 0 0"></div>
         </div>
-        <div id="analyzeStatus" class="status"></div>
       </div>
 
       <div class="group">
@@ -1868,7 +1866,6 @@
             '<button type="button" data-tone="simple">Simple</button>' +
             '<button type="button" data-tone="feature">Feature</button>' +
             '<button type="button" data-tone="bug">Bug</button></div></div>' +
-          '<div id="commentGenStatus" class="status"></div>' +
           '<div class="field"><label for="commentGenerated">Generated text (editable, this is what gets published)</label>' +
             '<textarea id="commentGenerated" rows="5" placeholder="The generated comment appears here…"></textarea></div>' +
           '<div class="field"><button id="btnPostComment" class="block">Publish comment</button></div>' +
@@ -2034,7 +2031,8 @@
     if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM in Settings."); return; }
     if (!note) { showMsg(msg, "error", "Write a proposed text for the comment."); return; }
     setToneBusy($("commentToneControl"), true);
-    function setStat(t) { $("commentGenStatus").textContent = t; }
+    // Progress shares the message slot below Publish comment (same as results).
+    function setStat(t) { if (t) showMsg(msg, "info", '<span class="spinner"></span>' + esc(t)); else hideMsg(msg); }
     setStat("Generating…");
 
     var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
@@ -2470,7 +2468,12 @@
   // =================== COMPOSER: ANALYZE AND WRITE ===================
   var IGNORE_DIRS = /(^|\/)(node_modules|\.git|dist|build|vendor|\.next|coverage)(\/|$)/;
   var BINARY_EXT = /\.(png|jpe?g|gif|svg|ico|webp|bmp|tiff?|pdf|zip|gz|tar|rar|7z|exe|dll|so|dylib|bin|woff2?|ttf|eot|otf|mp[34]|mov|avi|mkv|wav|ogg|class|jar|wasm|lock|map|min\.js|min\.css)$/i;
-  function setStatus(text) { $("analyzeStatus").textContent = text; }
+  // Generation progress shares the message slot below Publish issue: it shows
+  // as an info banner with a spinner, and results/errors replace it in place.
+  function setStatus(text) {
+    if (text) showMsg($("publishMsg"), "info", '<span class="spinner"></span>' + esc(text));
+    else hideMsg($("publishMsg"));
+  }
 
   function b64ToUtf8(b64) {
     var clean = (b64 || "").replace(/\n/g, ""), bin = atob(clean), bytes = new Uint8Array(bin.length);
