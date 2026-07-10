@@ -21,7 +21,7 @@
 <link rel="icon" type="image/png" href="favicon.png" />
 <title>GH Issue Composer</title>
 <!-- Apply the saved theme before the first paint to avoid a light flash. -->
-<script>try{var t=localStorage.getItem("ic_theme");if(t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
+<script>try{var t=localStorage.getItem("ic_theme");if(t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-theme","dark");var f=parseInt(localStorage.getItem("ic_font"),10);if(f)document.documentElement.style.setProperty("--fofs",Math.max(-4,Math.min(6,f))+"px");}catch(e){}</script>
 <style>
   :root {
     /* GitHub-style palette: blacks, grays and whites (monochrome) */
@@ -72,7 +72,9 @@
      the view color is painted by #viewbg (only between the safe area and the visible
      bottom edge), so the top safe area and the background behind the keyboard stay transparent.
      color-scheme: light forces the iOS keyboard to be light. */
-  html { font-size: 19px; background: transparent; color-scheme: light; }
+  /* Root font size: 19px base + user offset (Settings → Font size). Every
+     component size is in rem, so this one knob scales the whole app uniformly. */
+  html { font-size: calc(19px + var(--fofs, 0px)); background: transparent; color-scheme: light; }
   html, body { height: 100%; }
   body {
     margin: 0;
@@ -619,13 +621,21 @@
       <!-- 5. Appearance (light / dark mode) -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Appearance</div>
-        <div class="group-hint" style="padding:0">Light or dark mode.</div></div>
+        <div class="group-hint" style="padding:0">Light or dark mode, and the app's font size.</div></div>
         <div class="field">
           <label>Theme</label>
           <div class="segmented" id="themeControl">
             <button type="button" data-theme-opt="light">Light</button>
             <button type="button" data-theme-opt="dark">Dark</button>
             <button type="button" data-theme-opt="auto">Auto</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Font size</label>
+          <div class="segmented" id="fontControl">
+            <button type="button" id="fontMinus" aria-label="Smaller text">−</button>
+            <button type="button" id="fontReset" aria-label="Restore base size">0</button>
+            <button type="button" id="fontPlus" aria-label="Larger text">+</button>
           </div>
         </div>
       </div>
@@ -755,7 +765,7 @@
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
     recent: "ic_recent", favs: "ic_favs", lang: "ic_lang", repoTab: "ic_repo_tab",
-    theme: "ic_theme"
+    theme: "ic_theme", fontSize: "ic_font"
   };
   // Keys whose value is a JSON array (recent/favorites): exported/imported as a list.
   var ARRAY_KEYS = { recent: 1, favs: 1 };
@@ -768,7 +778,8 @@
   var commentTone = "feature";
   var VALID_TONES = { simple: 1, feature: 1, bug: 1 };
   var currentLang = "en";   // generation language (English by default; Spanish selectable)
-  var currentTheme = "light";   // UI theme: light | dark
+  var currentTheme = "light";   // UI theme: light | dark | auto
+  var currentFontOfs = 0;       // font-size offset in px over the 19px base (rem-scaled app)
 
   // ----- DOM helpers -----
   function $(id) { return document.getElementById(id); }
@@ -886,6 +897,8 @@
       if (tone && VALID_TONES[tone]) { currentTone = tone; commentTone = tone; }
       if (lang === "en" || lang === "es") currentLang = lang;
       if (theme === "dark" || theme === "light" || theme === "auto") currentTheme = theme;
+      var fofs = parseInt(localStorage.getItem(LS_KEYS.fontSize), 10);
+      if (!isNaN(fofs)) currentFontOfs = fofs;
     } catch (e) {}
   }
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
@@ -1047,6 +1060,21 @@
     var bs = $("themeControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { applyTheme(this.getAttribute("data-theme-opt")); });
   })();
+
+  // ----- Font size (Appearance): px offset over the 19px root; the whole app
+  // is sized in rem, so the single --fofs variable scales it uniformly. -----
+  var FONT_MIN = -4, FONT_MAX = 6;
+  function applyFontSize(o) {
+    o = parseInt(o, 10); if (isNaN(o)) o = 0;
+    currentFontOfs = Math.max(FONT_MIN, Math.min(FONT_MAX, o));
+    document.documentElement.style.setProperty("--fofs", currentFontOfs + "px");
+    persist(LS_KEYS.fontSize, String(currentFontOfs));
+    // The center button shows the current offset (+x / -x); pressing it restores 0.
+    $("fontReset").textContent = (currentFontOfs > 0 ? "+" : "") + currentFontOfs;
+  }
+  $("fontMinus").addEventListener("click", function () { applyFontSize(currentFontOfs - 1); });
+  $("fontPlus").addEventListener("click", function () { applyFontSize(currentFontOfs + 1); });
+  $("fontReset").addEventListener("click", function () { applyFontSize(0); });
 
   // ----- Export / Import settings -----
   // The JSON includes 100% of the settings-screen parameters:
@@ -2779,6 +2807,7 @@
   paintToneHint();
   setLang(currentLang);   // marks the active language in the control
   applyTheme(currentTheme);   // applies the saved theme and marks the active button
+  applyFontSize(currentFontOfs);   // applies the saved font-size offset and paints the center button
   (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
   renderRecents();   // paints the saved recents table
   // Restores the last used tab (localStorage); if none, opens Kanban (with repo) or Settings.
