@@ -903,7 +903,7 @@
     paint();
   }
   var TONE_HINT = {
-    simple: "Simple: fixes and tidies your text with minimal changes (doesn't analyze the code, instant).",
+    simple: "Simple: cleans, structures and polishes your text using the project's context (README) — no code analysis, no code references.",
     feature: "Feature: develops a new feature / user story (PBI); reviews the code to see whether it already exists or is yet to be implemented.",
     bug: "Bug: bug report with reproduction, root cause and a proposed fix; reviews the code to validate the problem."
   };
@@ -927,10 +927,13 @@
       "You respond ONLY with a valid JSON object {\"title\",\"body\"} (no fences or text outside the JSON). " +
       "'title': concise, specific and imperative, < 70 characters and without a trailing period. ";
     if (tone === "simple") {
-      base += "SIMPLE MODE: rewrite the user's note to make it correct and readable. Fix spelling, grammar and punctuation, " +
-        "and apply a basic structure (capitalization, paragraphs and line breaks; use lists only if the user already hints at them). " +
-        "Make the MINIMAL but NECESSARY changes so it's understandable and well written, keeping their words, order, tone and intent. " +
-        "You are FORBIDDEN from adding sections, steps, criteria or information the user didn't provide. The 'title' summarizes their note in one sentence.";
+      base += "SIMPLE MODE: clean up, structure and polish the user's note so it reads as a clear, well-written issue. " +
+        "Fix spelling, grammar and punctuation; organize it with a clean structure (short paragraphs, lists only where the content naturally calls for them); " +
+        "refine the wording while KEEPING the user's meaning, intent and key details. " +
+        "Tie it to the PROJECT CONTEXT: use the provided project context (README) to adopt the project's own terminology and naming, " +
+        "so the issue connects naturally with what the project is and does. " +
+        "Base it on that context, NOT on the code: do NOT include code references of any kind (no file paths, no symbols, no snippets) " +
+        "and do NOT invent requirements, steps or technical details the user didn't provide. The 'title' summarizes the note in one sentence.";
     } else if (tone === "feature") {
       base += "FEATURE MODE (you develop a NEW feature as a User Story / Product Backlog Item, not a bug). " +
         "The 'title' describes the feature in the imperative (e.g. 'Add…', 'Allow…')." + CODE_ASSESS +
@@ -954,7 +957,13 @@
     return base + " " + langInstruction();
   }
   function issueUserPrompt(tone, note, ctx) {
-    if (tone === "simple" || !ctx) return "User's note:\n" + note + "\n\nReturn ONLY the JSON {\"title\",\"body\"}.";
+    // Simple: project context only (README), never code.
+    if (tone === "simple") {
+      return "User's note:\n" + note +
+        ((ctx && ctx.readme) ? "\n\nProject context (README):\n" + ctx.readme : "") +
+        "\n\nReturn ONLY the JSON {\"title\",\"body\"}.";
+    }
+    if (!ctx) return "User's note:\n" + note + "\n\nReturn ONLY the JSON {\"title\",\"body\"}.";
     return "User's note:\n" + note + "\n\nREADME:\n" + (ctx.readme || "(no README)") +
       "\n\nReviewed code:\n" + (ctx.codeBlob || "(no code selected)") + "\n\nReturn ONLY the JSON {\"title\",\"body\"}.";
   }
@@ -963,9 +972,13 @@
       "Take into account the issue description and the previous comments provided: respond consistently with the thread " +
       "(add something new, don't repeat what's already been said) and build on the text the user proposed. ";
     if (tone === "simple") {
-      base += "SIMPLE MODE: rewrite the proposed text to make it correct and readable. Fix spelling, grammar and punctuation, " +
-        "and give it a basic structure (capitalization, paragraphs and line breaks). Make the MINIMAL but NECESSARY changes, " +
-        "keeping the user's words, tone and intent. Don't add sections or new information.";
+      base += "SIMPLE MODE: clean up, structure and polish the proposed text so it reads as a clear, well-written comment. " +
+        "Fix spelling, grammar and punctuation; give it a clean structure (short paragraphs, lists only where the content naturally calls for them); " +
+        "refine the wording while keeping the user's meaning, tone and intent. " +
+        "Tie it to the PROJECT CONTEXT and the thread: use the provided project context (README) to adopt the project's own terminology, " +
+        "and keep it consistent with the issue and the previous comments. " +
+        "Base it on that context, NOT on the code: do NOT include code references of any kind (no file paths, no symbols, no snippets) " +
+        "and do NOT add information the user didn't provide.";
     } else if (tone === "feature") {
       base += "FEATURE MODE (you contribute or refine a feature / user story in the thread, not a bug)." + CODE_ASSESS +
         " Organize into **Summary**, **Feature proposal** (user story if applicable), " +
@@ -981,7 +994,9 @@
   function commentUserPrompt(tone, issue, thread, note, ctx) {
     var s = "Issue #" + issue.number + ": " + issue.title + "\n\nDescription:\n" + (issue.body || "(no description)") +
       "\n\nLatest comments:\n" + (thread || "(none)");
-    if (tone !== "simple" && ctx) s += "\n\nREADME:\n" + (ctx.readme || "(no README)") + "\n\nReviewed code:\n" + (ctx.codeBlob || "(no code selected)");
+    // Simple: project context only (README), never code.
+    if (tone === "simple") { if (ctx && ctx.readme) s += "\n\nProject context (README):\n" + ctx.readme; }
+    else if (ctx) s += "\n\nREADME:\n" + (ctx.readme || "(no README)") + "\n\nReviewed code:\n" + (ctx.codeBlob || "(no code selected)");
     return s + "\n\nText proposed by the user:\n" + note + "\n\nWrite the final comment.";
   }
 
@@ -1951,8 +1966,10 @@
         { role: "user", content: commentUserPrompt(tone, issue, thread, note, ctx) }
       ]);
     }
-    // SIMPLE MODE: doesn't review the code (fast and simple). Others: review the codebase.
-    var work = toneReviewsCode(tone) ? reviewCodebase(owner, name, query, setStat).then(draft) : draft(null);
+    // SIMPLE MODE: project context only (README, no code). Others: review the codebase.
+    var work = toneReviewsCode(tone)
+      ? reviewCodebase(owner, name, query, setStat).then(draft)
+      : projectContext(owner, name, setStat).then(draft);
 
     work.then(function (content) {
       $("commentGenerated").value = cleanText(content);
@@ -2432,6 +2449,15 @@
     });
   }
 
+  // Project context WITHOUT code (Simple mode): just the README, from the
+  // per-repo cache. Falls back to no context if the repo can't be read.
+  function projectContext(owner, name, setStat) {
+    setStat("Reading project context…");
+    return getRepoBase(owner, name, setStat)
+      .then(function (base) { return { readme: base.readme || "", codeBlob: "" }; })
+      .catch(function () { return null; });
+  }
+
   $("btnAnalyze").addEventListener("click", function () {
     var btn = this, msg = $("analyzeMsg"); hideMsg(msg); setStatus("");
     var repo = getSelectedRepo(), note = $("note").value.trim();
@@ -2452,10 +2478,10 @@
         { role: "user", content: issueUserPrompt(tone, note, ctx) }
       ]);
     }
-    // SIMPLE MODE: doesn't review the code (fast and simple). Others: review the codebase.
+    // SIMPLE MODE: project context only (README, no code). Others: review the codebase.
     var work = toneReviewsCode(tone)
       ? reviewCodebase(owner, name, "User's note:\n" + note, setStatus).then(draft)
-      : draft(null);
+      : projectContext(owner, name, setStatus).then(draft);
 
     work.then(function (content) {
       var obj = parseLooseJSON(content);
