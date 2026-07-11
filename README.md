@@ -203,13 +203,15 @@ Reads use `cache: "no-store"` (GitHub serves `max-age=60`, which otherwise made 
 
 Any **OpenAI-compatible** `POST {baseURL}/chat/completions` with `Authorization: Bearer`. Two thin client functions sit on one shared transport, `llmPost(baseUrl, apiKey, body)`:
 
-- `llmComplete(messages)` — plain text/JSON completions for issue & comment writing (`max_tokens: 1500`, `temperature: 0.3`).
-- `llmChatRaw(messages, tools)` — the assistant's calls, with `tools` + `tool_choice: "auto"` (`temperature: 0.2`).
+- `llmComplete(messages)` — plain text/JSON completions for issue & comment writing.
+- `llmChatRaw(messages, tools)` — the assistant's calls, with `tools`.
+
+Requests carry **only `model` + `messages` (+ `tools`)** — no `temperature`, `max_tokens` or `tool_choice`. Optional sampling/limit parameters vary wildly across providers and models (some deprecate `temperature`, some reject tools when reasoning is on, some rename token limits), so the safest universal contract is to send none and let each provider apply its defaults.
 
 `llmPost` provides two compatibility layers:
 
 - **Headers** (`llmHeaders`): when the provider is **Anthropic (Claude)** — base URL on `anthropic.com` or an `sk-ant-` key — it adds `anthropic-dangerous-direct-browser-access: true`, which Anthropic requires before it will serve CORS headers to a browser (without it every call fails as "Failed to fetch" even with valid credentials). Anthropic's OpenAI-compatible endpoint (`https://api.anthropic.com/v1`) then works directly, including assistant tool-calling.
-- **Adaptive parameters**: optional parameters vary across models — some reject `temperature`, others demand `max_completion_tokens` instead of `max_tokens`. On a `400` whose message names one of them, `llmPost` drops it (`temperature`, `tool_choice`) or renames it (`max_tokens` → `max_completion_tokens`) and retries; each retry removes a distinct parameter so chains terminate, and genuine 400s surface unchanged.
+- **Adaptive parameters**: a few models *demand* a parameter the minimal body doesn't carry. On a `400` whose message names one, `llmPost` adds it and retries once per parameter: `reasoning_effort: "none"` (reasoning models that refuse function tools otherwise) and `max_tokens` (providers that require an explicit limit). Each retry adds a distinct parameter so chains terminate, and genuine 400s surface unchanged.
 
 The Settings **Test LLM** button makes one tiny round-trip through this same path and reports the result (with latency) in the section's message zone.
 
