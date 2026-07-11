@@ -8,17 +8,15 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <!-- Title and icon when adding to the iOS home screen (web app) -->
 <meta name="apple-mobile-web-app-title" content="Issue Composer" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="apple-touch-icon" href="favicon.svg" />
 <!-- default: white status bar with dark clock (legible over the white safe area). -->
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <!-- URL/status bar tint in iOS Safari: white -->
 <meta name="theme-color" content="#ffffff" />
 <!-- Forces light appearance: the iOS keyboard shows light/white (not dark). -->
 <meta name="color-scheme" content="light" />
-<!-- Favicon SVG (preferred) + PNG (fallback): white background with a central black circle
-     (r=32, circle centered with a uniform white margin). -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='white'/><circle cx='50' cy='50' r='32' fill='black'/></svg>" />
-<link rel="icon" type="image/png" href="favicon.png" />
+<!-- SVG-only icon (no PNGs in the repo): black circle + issue octicon. -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 <title>GH Issue Composer</title>
 <!-- Apply the saved theme before the first paint to avoid a light flash. -->
 <script>try{var t=localStorage.getItem("ic_theme");if(t==="dark"||(t==="auto"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.setAttribute("data-theme","dark");var f=parseInt(localStorage.getItem("ic_font"),10);if(f)document.documentElement.style.setProperty("--fofs",Math.max(-4,Math.min(6,f))+"px");}catch(e){}</script>
@@ -347,6 +345,10 @@
   .repo-banner b { font-weight: 700; color: #1f2328; }
   /* Private repos: "open" green with a lock, text and icons in white. */
   .repo-banner.priv { background: #1f883d; color: #fff; }
+  /* Inside the Repositories pad (which already pads 16px): no side margins. */
+  .pad .repo-banner { margin: 2px 0 12px; }
+  /* Star icon before "Favorites" in the Recent|Favorites segmented control. */
+  #repoTabControl svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 5px; }
   .repo-banner.priv b { color: #fff; }
   .repo-banner.priv svg { color: #fff; }
   .repo-banner svg { width: 16px; height: 16px; color: var(--muted); flex: none; }
@@ -609,13 +611,13 @@
 
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-config">
-      <!-- Active repo banner, right above Recent -->
-      <div class="repo-banner" id="repoBannerSettings"></div>
       <!-- 1. Repositories: recent / favorites -->
       <div class="group">
         <div class="pad">
           <div class="group-title" style="padding:0 0 4px">Repositories</div>
           <div class="group-hint" style="padding:0 0 8px">Lists local to this app (not GitHub stars). Tap a row to select the repo; the ✕ removes it. Favorites are added with the star on the active repo.</div>
+          <!-- Active repo banner (green private / yellow public), below the section intro -->
+          <div class="repo-banner" id="repoBannerSettings"></div>
           <div class="segmented" id="repoTabControl">
             <button type="button" data-rtab="recent">Recent</button>
             <button type="button" data-rtab="fav">Favorites</button>
@@ -1473,6 +1475,8 @@
   (function wireRepoTabs() {
     var bs = $("repoTabControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setRepoTab(this.getAttribute("data-rtab")); });
+    var fav = $("repoTabControl").querySelector('[data-rtab="fav"]');
+    if (fav) fav.innerHTML = svg("star", 12) + fav.textContent;   // ★ before "Favorites"
     var saved; try { saved = localStorage.getItem(LS_KEYS.repoTab); } catch (e) { saved = null; }
     setRepoTab(saved === "fav" ? "fav" : "recent");
   })();

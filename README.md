@@ -335,8 +335,7 @@ To self-host: copy `index.html` (optionally `web/index.html` and the workflow), 
 ├── index.html                     # The whole app (HTML + CSS + JS, no build)
 ├── web/
 │   └── index.html                 # Marketing landing page (self-contained)
-├── favicon.png                    # App icons
-├── apple-touch-icon.png
+├── favicon.svg                    # App icon (SVG only, no PNGs)
 ├── README.md
 └── .github/
     └── workflows/
