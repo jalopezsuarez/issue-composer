@@ -345,13 +345,14 @@
      Fixed (sticky) at the top: always visible while scrolling settings. */
   /* Active-repo banner: in flow, above the Repositories section.
      Capsule shape (fully rounded sides + side insets), like the bottom nav capsule. */
-  .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; padding: 10px 10px 10px 16px; font-size: .84rem; color: #1f2328; border-radius: 999px; margin: 0 12px; }
+  .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; padding: 10px 10px 10px 16px; font-size: .84rem; color: #1f2328; border-radius: 999px; margin: 0 12px 14px; }
   .repo-banner b { font-weight: 700; color: #1f2328; }
   /* Private repos: "open" green with a lock, text and icons in white. */
   .repo-banner[hidden] { display: none; }   /* no repo selected → no banner */
-  /* Without the banner, the first section title sits right under the nav bar:
-     trim its default 20px top margin so there's no dead gap. */
-  .repo-banner[hidden] + .group .group-title { margin-top: 6px; }
+  /* Settings top spacing, one rule for both states: the first section title
+     sits close under the nav bar (6px); when the banner is visible, its own
+     bottom margin restores the normal 20px rhythm before REPOSITORIES. */
+  .repo-banner + .group .group-title { margin-top: 6px; }
   .repo-banner.priv { background: #1f883d; color: #fff; }
   /* Star icon before "Favorites" in the Recent|Favorites segmented control. */
   #repoTabControl svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 5px; }
