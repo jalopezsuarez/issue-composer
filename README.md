@@ -101,7 +101,7 @@ On **wide screens (≥ 768px — tablets and desktop)** a **dock button** (VS Co
 ### ⚙️ Settings
 - **Active repo banner** — a capsule pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached). Hidden entirely while no repo is selected.
 - **Repositories** — a **Recent / ★ My Favorites** segmented list (max 25 each, app-local). Recents are ordered **most-recently-used first**: activating a repo from anywhere (the select, a recent, a favorite) moves it to the top. Tap a row to select (the active repo shows a green/yellow dot — private/public), ✕ removes, private repos show a lock; the **star fab** (top right) toggles the active repo as a favorite. Each row shows a subtitle with the repo's **issue count + last issue activity** ("34 issues • 12:34" under 24h, "… • wednesday" under 7 days, "… • 12/07" under a year, "… • 12/07/24" beyond) — fetched with one Search API call per repo, cached in memory + `ic_repo_meta` (10-minute TTL, pruned to listed repos), loaded lazily one at a time and only for the visible tab; a "…" placeholder reserves the line so rows don't shift when data lands.
-- **Privacy &amp; Security** — right below the repositories list: a plain-language **disclaimer** (tokens/keys live unencrypted in this browser's localStorage and only travel to GitHub and the LLM provider; use minimal-permission tokens, avoid shared computers, wipe or revoke before handing the device over), followed by the **100% local, 100% yours** card making the local-first design explicit: no backend, everything stored in the browser, requests go only to GitHub and the LLM provider. The card renders as a **rounded blue card**: sky-blue `#ddf0fb` with vivid blue text `#3267d6` in light mode, near-black blue-tinted `#060b14` with `#5b8def` text in dark mode.
+- **Privacy &amp; Security** — right below the repositories list: a plain-language **disclaimer** (tokens/keys are stored encrypted at rest with a device-bound key the browser cannot export, and only travel to GitHub and the LLM provider; anyone using this browser can still open the app, so use minimal-permission tokens, avoid shared computers, wipe or revoke before handing the device over), followed by the **100% local, 100% yours** card making the local-first design explicit: no backend, everything stored in the browser, requests go only to GitHub and the LLM provider. The card renders as a **rounded blue card**: sky-blue `#ddf0fb` with vivid blue text `#3267d6` in light mode, near-black blue-tinted `#060b14` with `#5b8def` text in dark mode.
 - **GitHub** — token (with inline guidance and a direct link to create one), repository search + select, and the **Connect GitHub** button below them.
 - **LLM provider** — Base URL, API key, Model (OpenAI-compatible), plus a **Test LLM** button that makes one tiny round-trip and reports the result (with latency) in the section's message zone.
 - **Generation language** — Spanish / English (for AI output; the UI is English).
@@ -251,8 +251,8 @@ The Settings **Test LLM** button makes one tiny round-trip through this same pat
 
 | Key | Content |
 |-------|-----------|
-| `ic_gh_token` | GitHub Personal Access Token |
-| `ic_llm_base_url` / `ic_llm_api_key` / `ic_llm_model` | LLM configuration |
+| `ic_gh_token` | GitHub Personal Access Token (encrypted at rest, `enc:` prefix) |
+| `ic_llm_base_url` / `ic_llm_api_key` / `ic_llm_model` | LLM configuration (the API key encrypted at rest, `enc:` prefix) |
 | `ic_repo` | Active repository |
 | `ic_recent` / `ic_favs` | Recent / favorite repositories (JSON arrays, max 25, self-healing; recents MRU-first) |
 | `ic_tone` | Writing mode |
@@ -312,7 +312,8 @@ This is the **fixed standard** for user feedback on anything that talks to a thi
 
 ## Privacy and security
 
-- The **GitHub token** and **LLM credentials** live only in the browser's `localStorage` (by design, at the user's request): they stay on the device and are accessible to same-origin scripts only.
+- The **GitHub token** and the **LLM API key** live only in this browser, **encrypted at rest**: AES-256-GCM under a **non-extractable device key** kept in IndexedDB (`ic_secrets`). A copy of `localStorage` (backup, sync, disk read) carries only unusable ciphertext, because the browser refuses to export the key's bytes. Values decrypt once at boot into memory; plaintext values from older versions migrate to ciphertext automatically on first load, and without WebCrypto/IndexedDB the app falls back to plaintext storage as before.
+- Honest limits: same-origin scripts can still *use* the device key, and anyone who opens the app in this browser gets in — encryption at rest protects the stored copy, not a shared computer.
 - Use a **minimal-permissions token** on a trusted device. Private-repo status is detected and shown (green banner + lock).
 - **No backend, no telemetry, no middleman**: browser → GitHub, browser → LLM. Settings transfer is end-to-end encrypted (AES-256-GCM) with a key that's displayed only to you.
 

@@ -685,7 +685,7 @@
       <!-- 2. Privacy & Security: disclaimer + the local-first card below it -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Privacy &amp; Security</div>
-        <div class="group-hint" style="padding:0">Your GitHub token and LLM API key are stored unencrypted in this browser's local storage and never leave this device except to call GitHub and your LLM provider directly. Use tokens with the minimum permissions, avoid shared or public computers, and remove your data (or revoke the tokens) before handing the device to someone else. You are responsible for the credentials you paste here.</div></div>
+        <div class="group-hint" style="padding:0">Your GitHub token and LLM API key are stored encrypted at rest (AES-256) with a key this browser cannot export, and they never leave this device except to call GitHub and your LLM provider directly. Anyone using this browser can still open the app, so the usual hygiene applies: use tokens with the minimum permissions, avoid shared or public computers, and remove your data (or revoke the tokens) before handing the device to someone else. You are responsible for the credentials you paste here.</div></div>
       </div>
       <div class="group privacy-note">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Issue Composer — 100% local, 100% yours</div>
@@ -905,9 +905,10 @@
   };
   // Keys whose value is a JSON array (recent/favorites): exported/imported as a list.
   var ARRAY_KEYS = { recent: 1, favs: 1 };
-  // SECURITY NOTE: the GitHub PAT is persisted in localStorage at the user's
-  // request (it stays on the browser's disk, accessible to same-origin scripts).
-  // Use it on a trusted device and with minimal permissions (repo scope).
+  // SECURITY NOTE: the GitHub PAT and the LLM API key persist in localStorage
+  // encrypted at rest (see "Secrets at rest"): AES-GCM under a non-extractable
+  // device key in IndexedDB. Same-origin scripts can still use them, so keep
+  // using minimal-permission tokens on trusted devices.
   var ghTokenMem = "";
   var ghUserLogin = null;   // login of the token's user (to edit/delete own comments)
   var currentTone = "feature";   // simple | feature | bug
@@ -1062,13 +1063,12 @@
 
   // ----- localStorage -----
   function loadSettings() {
+    // The GitHub token and the LLM API key are secrets: they load separately
+    // via loadSecrets() (decrypted with the device key in IndexedDB).
     try {
-      var t = localStorage.getItem(LS_KEYS.ghToken), k = localStorage.getItem(LS_KEYS.llmApiKey),
-          b = localStorage.getItem(LS_KEYS.llmBaseUrl), m = localStorage.getItem(LS_KEYS.llmModel),
+      var b = localStorage.getItem(LS_KEYS.llmBaseUrl), m = localStorage.getItem(LS_KEYS.llmModel),
           tone = localStorage.getItem(LS_KEYS.tone), lang = localStorage.getItem(LS_KEYS.lang),
           theme = localStorage.getItem(LS_KEYS.theme);
-      if (t) { $("ghToken").value = t; ghTokenMem = t; }
-      if (k) $("llmApiKey").value = k;
       if (b) $("llmBaseUrl").value = b;
       if (m) $("llmModel").value = m;
       if (tone && VALID_TONES[tone]) { currentTone = tone; commentTone = tone; }
@@ -1081,10 +1081,10 @@
   function persist(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
   function getStoredRepo() { try { return localStorage.getItem(LS_KEYS.repo) || ""; } catch (e) { return ""; } }
 
-  $("llmApiKey").addEventListener("input", function () { persist(LS_KEYS.llmApiKey, this.value.trim()); });
+  $("llmApiKey").addEventListener("input", function () { persistSecret(LS_KEYS.llmApiKey, this.value.trim()); });
   $("llmBaseUrl").addEventListener("input", function () { persist(LS_KEYS.llmBaseUrl, this.value.trim()); });
   $("llmModel").addEventListener("input", function () { persist(LS_KEYS.llmModel, this.value.trim()); });
-  $("ghToken").addEventListener("input", function () { ghTokenMem = this.value.trim(); persist(LS_KEYS.ghToken, ghTokenMem); });
+  $("ghToken").addEventListener("input", function () { ghTokenMem = this.value.trim(); persistSecret(LS_KEYS.ghToken, ghTokenMem); });
   // While typing credentials, confirm in that section's message zone that the
   // value is stored locally (debounced on input, NOT on blur: a blur-time
   // message would shift the layout right under the user's tap on a button).
@@ -1286,6 +1286,9 @@
     var out = {};
     for (var k in LS_KEYS) {
       if (!LS_KEYS.hasOwnProperty(k)) continue;
+      // Secrets are stored device-encrypted (useless on another device): export
+      // the live plaintext from their fields so the bundle stays portable.
+      if (SECRET_KEYS[k]) { var s = $(k).value.trim(); if (s) out[k] = s; continue; }
       var v;
       try { v = localStorage.getItem(LS_KEYS[k]); } catch (e) { v = null; }
       if (v === null) continue;
@@ -1321,6 +1324,75 @@
       return crypto.subtle.decrypt({ name: "AES-GCM", iv: full.slice(0, 12) }, key, full.slice(12));
     }).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); })
       .catch(function () { throw new Error("Couldn't decrypt: wrong key or corrupted settings."); });
+  }
+
+  // ===== Secrets at rest (GitHub token & LLM API key) =====
+  // Both are stored encrypted (AES-256-GCM) under a NON-EXTRACTABLE device key
+  // kept in IndexedDB: a copy of localStorage (backup, sync, disk read) only
+  // carries unusable ciphertext, because the browser refuses to export the
+  // key's bytes. Values decrypt once at boot into the field/memory the app has
+  // always used; saves re-encrypt in the background. Scripts running on this
+  // page can still USE the key (there is no passphrase), and without
+  // WebCrypto/IndexedDB the app falls back to plaintext exactly as before.
+  var SECRET_KEYS = { ghToken: 1, llmApiKey: 1 };   // LS_KEYS entries (and field ids) holding secrets
+  var SECRET_PREFIX = "enc:";
+  var deviceKeyPromise = null, secretSeq = {};
+  function deviceKey() {
+    if (!deviceKeyPromise) deviceKeyPromise = new Promise(function (resolve) {
+      if (!cryptoReady() || !window.indexedDB) return resolve(null);
+      var open = indexedDB.open("ic_secrets", 1);
+      open.onupgradeneeded = function () { open.result.createObjectStore("keys"); };
+      open.onerror = open.onblocked = function () { resolve(null); };
+      open.onsuccess = function () {
+        var db = open.result;
+        var get = db.transaction("keys", "readonly").objectStore("keys").get("device");
+        get.onerror = function () { resolve(null); };
+        get.onsuccess = function () {
+          if (get.result) return resolve(get.result);
+          crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]).then(function (k) {
+            var put = db.transaction("keys", "readwrite").objectStore("keys").put(k, "device");
+            put.onsuccess = function () { resolve(k); };
+            put.onerror = function () { resolve(null); };
+          }, function () { resolve(null); });
+        };
+      };
+    });
+    return deviceKeyPromise;
+  }
+  // Encrypt-and-save; a per-key sequence guard keeps rapid re-typing from
+  // persisting a stale value out of order (encryption is asynchronous).
+  function persistSecret(lsKey, value) {
+    var seq = secretSeq[lsKey] = (secretSeq[lsKey] || 0) + 1;
+    if (!value) return persist(lsKey, "");
+    deviceKey().then(function (key) {
+      if (!key) { if (seq === secretSeq[lsKey]) persist(lsKey, value); return; }   // no crypto: plaintext, as before
+      var iv = crypto.getRandomValues(new Uint8Array(12));
+      crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(value)).then(function (ct) {
+        var full = new Uint8Array(12 + ct.byteLength); full.set(iv, 0); full.set(new Uint8Array(ct), 12);
+        if (seq === secretSeq[lsKey]) persist(lsKey, SECRET_PREFIX + bufToB64(full.buffer));
+      }, function () { if (seq === secretSeq[lsKey]) persist(lsKey, value); });
+    });
+  }
+  function readSecret(lsKey) {
+    var v = ""; try { v = localStorage.getItem(lsKey) || ""; } catch (e) {}
+    if (v.slice(0, SECRET_PREFIX.length) !== SECRET_PREFIX) {
+      if (v) persistSecret(lsKey, v);   // legacy plaintext: migrate to encrypted at rest
+      return Promise.resolve(v);
+    }
+    return deviceKey().then(function (key) {
+      if (!key) return "";
+      try {
+        var full = b64ToBuf(v.slice(SECRET_PREFIX.length));
+        return crypto.subtle.decrypt({ name: "AES-GCM", iv: full.slice(0, 12) }, key, full.slice(12))
+          .then(function (pt) { return new TextDecoder().decode(pt); }, function () { return ""; });   // key lost → re-enter the secret
+      } catch (e) { return ""; }
+    });
+  }
+  function loadSecrets() {
+    return Promise.all([readSecret(LS_KEYS.ghToken), readSecret(LS_KEYS.llmApiKey)]).then(function (r) {
+      if (r[0]) { $("ghToken").value = r[0]; ghTokenMem = r[0]; }
+      if (r[1]) $("llmApiKey").value = r[1];
+    });
   }
   function setIoMode(mode) {
     mode = (mode === "import") ? "import" : "export";
@@ -1386,7 +1458,8 @@
           var v = data[k];
           if (ARRAY_KEYS[k]) { try { v = JSON.stringify((Array.isArray(v) ? v : []).slice(0, REPO_LIST_MAX)); } catch (e) { v = "[]"; } }
           else if (typeof v !== "string") v = String(v);
-          persist(LS_KEYS[k], v);
+          if (SECRET_KEYS[k]) persistSecret(LS_KEYS[k], v);   // re-encrypt for THIS device
+          else persist(LS_KEYS[k], v);
           n++;
         }
         msgInfo(msg, "Imported " + n + " settings — reloading the app…");
@@ -3306,21 +3379,23 @@
   setLang(currentLang);   // marks the active language in the control
   applyTheme(currentTheme);   // applies the saved theme and marks the active button
   applyFontSize(currentFontOfs);   // applies the saved font-size offset and paints the center button
-  (function restoreSelectedRepo() { activeRepo = getStoredRepo(); })();
-  renderRecents();   // paints the saved recents table
-  // Restores the last used tab (localStorage); if none, opens Kanban (with repo) or Settings.
-  // "composer" is no longer a tab: it's opened with the + button and isn't remembered.
-  // Restores the docked-assistant preference (wide screens show the sidebar immediately).
-  (function restoreChatDock() {
-    var on = false; try { on = localStorage.getItem(LS_KEYS.chatDock) === "1"; } catch (e) {}
-    if (on) setChatDock(true);
-  })();
-  (function restoreTab() {
+  // The secrets decrypt asynchronously (device key in IndexedDB), so everything
+  // that may call GitHub — recents metadata, the initial tab's load — waits for
+  // them. It resolves in a few ms; the same path runs whether or not it worked.
+  function bootTail() {
+    activeRepo = getStoredRepo();
+    renderRecents();   // paints the saved recents table
+    // Restores the docked-assistant preference (wide screens show the sidebar immediately).
+    var dock = false; try { dock = localStorage.getItem(LS_KEYS.chatDock) === "1"; } catch (e) {}
+    if (dock) setChatDock(true);
+    // Restores the last used tab; if none, opens Kanban (with repo) or Settings.
+    // "composer" is no longer a tab: it's opened with the + button and isn't remembered.
     var saved = ""; try { saved = localStorage.getItem(LS_KEYS.tab) || ""; } catch (e) {}
     var valid = { kanban: 1, issues: 1, config: 1, assistant: 1 };
     if (saved === "assistant" && chatDocked()) saved = "";   // the sidebar is already open: land on a main view
     showView(valid[saved] ? saved : (getSelectedRepo() ? "kanban" : "config"));
-  })();
+  }
+  loadSecrets().then(bootTail, bootTail);
 })();
 </script>
 </body>
