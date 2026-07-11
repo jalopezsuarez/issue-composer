@@ -617,7 +617,6 @@
           <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
           <div class="group-hint" style="padding:8px 0 0">Create one at <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens</a>: a <b>fine-grained</b> token with access to your repos and the <b>Issues (read &amp; write)</b> and <b>Metadata (read)</b> permissions — or a <b>classic</b> token with the <b>repo</b> scope. If your organization uses SAML SSO, authorize the token for it.</div>
         </div>
-        <div class="field"><button id="btnConnect" class="block">Connect GitHub</button></div>
         <div class="field">
           <label for="repoSearch">Search repository</label>
           <input type="text" id="repoSearch" placeholder="Filter by name…" autocomplete="off" disabled />
@@ -626,11 +625,7 @@
           <label for="repoSelect">Select a repository <span id="repoCount" class="pill" style="display:none"></span></label>
           <select id="repoSelect"><option value="">— Connect to load your repos —</option></select>
         </div>
-        <div class="field">
-          <label for="repoManual">Or type owner/repo (takes priority)</label>
-          <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" />
-          <div class="actions" style="margin-top:10px"><button id="btnAddRepo" class="secondary block">Add to the list</button></div>
-        </div>
+        <div class="field"><button id="btnConnect" class="block">Connect GitHub</button></div>
       </div>
 
       <!-- 3. LLM provider (at the bottom) -->
@@ -1229,13 +1224,12 @@
     // Export: generates the encrypted settings + their key into the two fields.
     $("btnDoExport").addEventListener("click", function () {
       var msg = $("ioMsg");
-      if (!cryptoReady()) { msgError(msg, "Encryption isn't available here (it needs HTTPS)."); alert("Encryption isn't available in this context (it needs HTTPS)."); return; }
+      if (!cryptoReady()) { msgError(msg, "Encryption isn't available here (it needs HTTPS)."); return; }
       msgWork(msg, "Encrypting your settings…");
       encryptSettings(buildSettingsExport()).then(function (r) {
         $("ioExportText").value = r.payload; $("ioExportKey").value = r.key;
-        msgInfo(msg, "Encrypted settings generated — copy BOTH values below.");
-        alert("Encrypted settings generated. Copy the encrypted settings AND the encryption key below — you'll need both to import.");
-      }).catch(function (err) { msgError(msg, "Couldn't encrypt the settings: " + err.message); alert("Couldn't encrypt the settings: " + err.message); });
+        msgInfo(msg, "Encrypted settings generated — copy BOTH values below; you'll need both to import.");
+      }).catch(function (err) { msgError(msg, "Couldn't encrypt the settings: " + err.message); });
     });
     $("ioCopyData").innerHTML = svg("copy", 17);
     $("ioCopyData").addEventListener("click", function () {
@@ -1256,8 +1250,8 @@
     $("ioPasteKey").addEventListener("click", function () { pasteInto($("ioImportKey"), $("ioMsg")); });
     $("btnImport").addEventListener("click", function () {
       var msg = $("ioMsg"), payload = $("ioImportText").value.trim(), keyB64 = $("ioImportKey").value.trim();
-      if (!payload || !keyB64) { msgWarn(msg, "Paste the encrypted settings and their key first."); alert("Paste both the encrypted settings and the encryption key before importing."); return; }
-      if (!cryptoReady()) { msgError(msg, "Encryption isn't available here (it needs HTTPS)."); alert("Encryption isn't available in this context (it needs HTTPS)."); return; }
+      if (!payload || !keyB64) { msgWarn(msg, "Paste the encrypted settings and their key first."); return; }
+      if (!cryptoReady()) { msgError(msg, "Encryption isn't available here (it needs HTTPS)."); return; }
       msgWork(msg, "Decrypting and validating your settings…");
       decryptSettings(payload, keyB64).then(function (data) {
         if (!data || typeof data !== "object") throw new Error("The decrypted settings are not valid.");
@@ -1271,22 +1265,19 @@
           n++;
         }
         msgInfo(msg, "Imported " + n + " settings — reloading the app…");
-        alert(n + " settings were imported successfully. The app will reload to apply them.");
-        setTimeout(function () { location.reload(); }, 300);
-      }).catch(function (err) { msgError(msg, "Couldn't import: " + err.message); alert("Couldn't import: " + err.message); });
+        setTimeout(function () { location.reload(); }, 1200);   // long enough to read the confirmation
+      }).catch(function (err) { msgError(msg, "Couldn't import: " + err.message); });
     });
     setIoMode("export");
   })();
 
   // ----- Repo selection -----
-  function getSelectedRepo() {
-    var manual = $("repoManual").value.trim();
-    if (manual) return manual;
-    return $("repoSelect").value.trim();
-  }
-  function rememberRepo() { var r = getSelectedRepo(); if (r) persist(LS_KEYS.repo, r); updateActiveRepoBanners(); }
-  $("repoSelect").addEventListener("change", function () { if (this.value) { $("repoManual").value = ""; addRecent(this.value); } rememberRepo(); });
-  $("repoManual").addEventListener("input", rememberRepo);
+  // The active repo lives in this variable (restored from localStorage on
+  // load); it is set from the select or from the recents/favorites lists.
+  var activeRepo = "";
+  function getSelectedRepo() { return activeRepo; }
+  function rememberRepo() { if (activeRepo) persist(LS_KEYS.repo, activeRepo); updateActiveRepoBanners(); }
+  $("repoSelect").addEventListener("change", function () { if (this.value) { activeRepo = this.value; addRecent(this.value); } rememberRepo(); });
 
   // Internal per-repo privacy cache: each time a repo is activated, whether it's
   // private/public is determined (from the loaded list) and stored, so the
@@ -1378,7 +1369,8 @@
     renderRecents();
   }
   function selectRepo(full) {
-    $("repoManual").value = full;            // the manual field takes priority
+    activeRepo = full;
+    $("repoSelect").value = full;            // syncs the select ("" if not loaded)
     persist(LS_KEYS.repo, full);
     addRecent(full);
     updateActiveRepoBanners();
@@ -1587,27 +1579,6 @@
         else showMsg(msg, "success", "Connected — " + loadedRepos.length + " repositories loaded." + (matched ? " Restored: <strong>" + esc(stored) + "</strong>." : ""));
       }).catch(function (err) { msgError(msg, ghErrorText(err)); })
       .then(function () { btn.disabled = false; btn.textContent = "Connect GitHub"; });
-  });
-
-  $("btnAddRepo").addEventListener("click", function () {
-    var btn = this, msg = $("repoMsg"); hideMsg(msg);
-    var full = $("repoManual").value.trim().replace(/^\/+|\/+$/g, "");
-    if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub Personal Access Token first."); return; }
-    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) { msgWarn(msg, "Write the repository as owner/repo."); return; }
-    btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Verifying…';
-    msgWork(msg, "Checking " + full + " on GitHub…");
-    ghFetch(GH_API + "/repos/" + full).then(function (r) {
-      var exists = loadedRepos.some(function (x) { return x.full_name === r.full_name; });
-      if (!exists) { loadedRepos.push({ full_name: r.full_name, private: !!r.private }); loadedRepos.sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); }); }
-      $("repoSearch").disabled = false; $("repoSearch").value = ""; $("repoManual").value = "";
-      renderRepoOptions(); $("repoSelect").value = r.full_name; persist(LS_KEYS.repo, r.full_name); addRecent(r.full_name); updateActiveRepoBanners();
-      showMsg(msg, exists ? "info" : "success", (exists ? "Already in the list: " : "Added to the list: ") + "<strong>" + esc(r.full_name) + "</strong>" + (r.private ? " (priv)" : "") + ".");
-    }).catch(function (err) {
-      var extra = /\b404\b/.test(err.message)
-        ? " — a 404 usually means your token CANNOT see this repo: (1) fine-grained token without access to the repo/org; (2) classic token without the repo scope; (3) SAML SSO not authorized; (4) owner/repo misspelled."
-        : " — check the name, the token permissions and SAML SSO authorization if applicable.";
-      showMsg(msg, "error", esc(err.message) + extra);
-    }).then(function () { btn.disabled = false; btn.textContent = prev; });
   });
 
   // Test LLM: one tiny round-trip to the configured endpoint, reported in the
@@ -2974,7 +2945,7 @@
   setLang(currentLang);   // marks the active language in the control
   applyTheme(currentTheme);   // applies the saved theme and marks the active button
   applyFontSize(currentFontOfs);   // applies the saved font-size offset and paints the center button
-  (function restoreSelectedRepo() { var stored = getStoredRepo(); if (stored) $("repoManual").value = stored; })();
+  (function restoreSelectedRepo() { activeRepo = getStoredRepo(); })();
   renderRecents();   // paints the saved recents table
   // Restores the last used tab (localStorage); if none, opens Kanban (with repo) or Settings.
   // "composer" is no longer a tab: it's opened with the + button and isn't remembered.

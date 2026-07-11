@@ -96,7 +96,7 @@ A **ChatGPT-style** conversational view scoped to the **active repository's issu
 ### ⚙️ Settings
 - **Active repo banner** — a capsule pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached).
 - **Repositories** — a **Recent / Favorites** segmented list (max 10 each, app-local). Tap a row to select, ✕ removes, private repos show a lock; the **star fab** (top right) marks the active repo as a favorite.
-- **GitHub** — token (with inline guidance and a direct link to create one) + repository search/selection, or manual `owner/repo`.
+- **GitHub** — token (with inline guidance and a direct link to create one), repository search + select, and the **Connect GitHub** button below them.
 - **LLM provider** — Base URL, API key, Model (OpenAI-compatible), plus a **Test LLM** button that makes one tiny round-trip and reports the result (with latency) in the section's message zone.
 - **Generation language** — Spanish / English (for AI output; the UI is English).
 - **Appearance** — **Light / Dark / Auto** theme and a **font size** control (− / offset / +) that scales the whole app.
@@ -288,7 +288,7 @@ This is the **fixed standard** for user feedback on anything that talks to a thi
 - GitHub errors go through `ghErrorText(err)`; LLM errors surface the provider message.
 - The **only exception**: successful issue creation is confirmed with the **toast** under the nav bar (the composer closes, so there is no section left to report into).
 - Debounced "saved on this device" notes (token / LLM fields) must never stomp an action's progress or result: any explicit `showMsg`/`hideMsg` on the zone cancels the pending note (`cancelSavedNote`).
-- No `alert()` for API outcomes in sections that have a zone (alerts remain only where explicitly requested — settings export/import — and in the full-screen editor, which has no section header).
+- No `alert()` for API outcomes in sections that have a zone; the only remaining alerts are in the full-screen editor, which has no section header.
 
 ---
 
