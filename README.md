@@ -19,7 +19,7 @@ Issue Composer takes the opposite bet: **GitHub is already your tracker — it j
 - 🗂️ **A Kanban board with zero setup.** Statuses are plain `status:` labels. No GitHub Projects to configure, no permissions dance — the board works on any repo you can open issues on, in seconds.
 - ✨ **A conversational assistant with real tools.** Ask "what's still pending?", "summarize the thread on #42", "move it to review and open a follow-up" — the assistant reads and searches issues, digs into the code, creates issues, comments and changes statuses for you.
 - 📱 **Feels like a native iPhone app.** Monochrome iOS + GitHub aesthetic, glass floating buttons, light/dark/auto theme, adjustable type size — installable on your home screen, great on the desktop too.
-- 🔒 **Private by architecture.** There is no server. Every request goes straight from your browser to the GitHub API and to your LLM provider. Your credentials never leave your device, and settings travel between devices as an AES-256-GCM encrypted blob.
+- 🔒 **Private by architecture.** There is no server. Every request goes straight from your browser to the GitHub API and to your LLM provider. Your credentials are stored encrypted at rest with a device-bound key and never leave your device; settings travel between devices as an AES-256-GCM encrypted blob.
 
 **1** static HTML file · **0** servers & databases · **0** setup on your repo · **100%** GitHub-native data
 
@@ -54,6 +54,7 @@ Everything Issue Composer creates is a plain GitHub issue, label or comment. You
   - [State and persistence](#state-and-persistence)
   - [Encrypted settings export/import](#encrypted-settings-exportimport)
   - [UI conventions](#ui-conventions)
+  - [Section message zones (feedback standard)](#section-message-zones-feedback-standard)
 - [Privacy and security](#privacy-and-security)
 - [Deployment](#deployment)
 - [Known limitations](#known-limitations)
@@ -148,7 +149,7 @@ Both the **Kanban** and the **Issues** list have a 🔍 fab that toggles a pill 
 
 **One file, no build.** The entire application is `index.html`: a `<style>` block, the markup for every view, and one IIFE `<script>` (`(function () { "use strict"; ... })()`) in ES5-style vanilla JavaScript. There are no dependencies, no framework, no build step and no module system. A tiny inline `<head>` script applies the persisted theme/font-size before first paint.
 
-**Rendering model.** Views are `<section class="view">` elements toggled with an `.active` class by `showView(name)` / `markActiveView(name)` (`VIEWS = ["kanban", "issues", "composer", "config", "edit", "assistant"]`). Dynamic content (lists, board, detail, chat) is rendered by building HTML strings from escaped data (`esc()`) and assigning `innerHTML`, or via `document.createElement` for rows/cards. The **editor** and the **assistant** are fixed, full-viewport overlays; the others live inside the scrollable `<main id="content">`.
+**Rendering model.** Views are `<section class="view">` elements toggled with an `.active` class by `showView(name)` / `markActiveView(name)` (`VIEWS = ["kanban", "issues", "composer", "config", "edit", "assistant"]`). Dynamic content (lists, board, detail, chat) is rendered by building HTML strings from escaped data (`esc()`) and assigning `innerHTML`, or via `document.createElement` for rows/cards. The **editor** and the **assistant** are fixed, full-viewport overlays (the assistant can also dock as a 360px right sidebar on wide screens — one `html.chatdock` class); the others live inside the scrollable `<main id="content">`.
 
 **Responsive width.** The scroll containers span the **full viewport** (so scrollbars sit at the screen edge). Content width is capped per view through the `--appmax` CSS variable set by `markActiveView`: `100%` for kanban/issues, `720px` (centered) for create/detail/settings; the fixed overlays center their ~720px column with side padding.
 
@@ -159,8 +160,8 @@ Both the **Kanban** and the **Issues** list have a 🔍 fab that toggles a pill 
 `index.html` is organized top-to-bottom:
 
 1. `<head>` — meta/viewport/PWA tags, the inline icons (SVG-less: one embedded PNG data URI shared by the favicon and the apple-touch icon), the **no-flash theme + font script**, and the full `<style>` sheet (CSS variables → dark overrides → fabs/nav → groups/fields → tables/banners/search → lists → detail/markdown → status rows → kanban → assistant chat → toast → export rows).
-2. `<body>` — fixed chrome (fabs: back, reload, repo tag, add, search, favorite star, save, assistant close, share; toast), `<main id="content">` with the kanban / issues(+detail) / composer / settings sections, the nav capsule, and the fixed editor + assistant sections.
-3. `<script>` IIFE — a numbered table of contents at the top of the script mirrors this order: octicon `PATHS` + `svg()` · constants (`GH_API`, `LS_KEYS`, `ARRAY_KEYS`, tones, theme/font state) · DOM helpers (`$`, message zones `msgInfo/msgWork/msgWarn/msgError`, `showBusy`, **toast**, `esc`, `fmtShort`) · view navigation (`markActiveView`, `setChrome`, `showView`, repo tag) · settings load/persist · segmented controls (language, theme, font size, io mode, tones) · prompts (`issueSystemPrompt`, `commentSystemPrompt`, `GROUNDING`, `CODE_ASSESS`) · repo banners/tag/star fab · recents & favorites (`renderRepoTable`) · encrypted export/import · repo selection + privacy cache · transport: `ghFetch` / `parseLooseJSON` / `llmCfg`+`llmReady` / `llmPost`+`llmComplete` · repos connect + Test LLM · issues list (state, rows, search, sort, infinite scroll) · markdown renderer (`renderMd`) · detail + comments (+ AI comment generation) · full-screen editor · statuses/labels machinery · kanban (paged load, render, drag) · composer (code review pipeline + generate + publish) · **AI assistant** (tool schemas, executors, chat loop, UI) · viewport sync · init (restore settings, controls, tab).
+2. `<body>` — fixed chrome (fabs: back, reload, repo tag, add, search, favorite star, save, share, assistant dock, assistant close; toast), `<main id="content">` with the kanban / issues(+detail) / composer / settings sections, the nav capsule, and the fixed editor + assistant sections.
+3. `<script>` IIFE — a numbered table of contents at the top of the script mirrors this order: octicon `PATHS` + `svg()` · constants (`GH_API`, `LS_KEYS`, `ARRAY_KEYS`, tones, theme/font state) · DOM helpers (`$`, message zones `msgInfo/msgWork/msgWarn/msgError`, `showBusy`, **toast**, `esc`, `fmtShort`) · view navigation (`markActiveView`, `setChrome`, `showView`, repo tag) · settings load/persist · segmented controls (language, theme, font size, io mode, tones) · prompts (`issueSystemPrompt`, `commentSystemPrompt`, `GROUNDING`, `CODE_ASSESS`) · repo banners/tag/star fab · recents & favorites (`renderRepoTable`) · encrypted export/import · **secrets at rest** (`deviceKey`/`persistSecret`/`readSecret`/`loadSecrets`) · repo selection + privacy cache · transport: `ghFetch` / `parseLooseJSON` / `llmCfg`+`llmReady` / `llmPost`+`llmComplete` · repos connect + Test LLM · issues list (state, rows, search, sort, infinite scroll) · markdown renderer (`renderMd`) · detail + comments (+ AI comment generation) · full-screen editor · statuses/labels machinery · kanban (paged load, render, drag) · composer (code review pipeline + generate + publish) · **AI assistant** (tool schemas, executors, chat loop, UI) · viewport sync · init (restore settings, controls, tab).
 
 ### Data model: GitHub as the database
 
@@ -263,7 +264,7 @@ The Settings **Test LLM** button makes one tiny round-trip through this same pat
 | `ic_repo_tab` | Recent/Favorites segment |
 | `ic_chat_dock` | Assistant docked as right sidebar (wide screens) |
 
-Internal helpers outside export/import: `ic_repo_priv` (per-repo public/private cache), `ic_repo_meta` (per-repo issue count + last activity, 10-minute TTL) and `ic_srch_kanban` / `ic_srch_issues` (search-bar open state).
+Internal helpers outside export/import: `ic_repo_priv` (per-repo public/private cache), `ic_repo_meta` (per-repo issue count + last activity, 10-minute TTL) and `ic_srch_kanban` / `ic_srch_issues` (search-bar open state). Outside `localStorage` entirely: the `ic_secrets` IndexedDB database holds the non-extractable device key that encrypts the two secrets.
 
 ### Encrypted settings export/import
 
