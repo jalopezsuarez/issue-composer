@@ -348,6 +348,7 @@
   .repo-banner { display: flex; align-items: center; gap: 8px; background: #f6d84a; padding: 10px 10px 10px 16px; font-size: .84rem; color: #1f2328; border-radius: 999px; margin: 0 12px; }
   .repo-banner b { font-weight: 700; color: #1f2328; }
   /* Private repos: "open" green with a lock, text and icons in white. */
+  .repo-banner[hidden] { display: none; }   /* no repo selected → no banner */
   .repo-banner.priv { background: #1f883d; color: #fff; }
   /* Star icon before "Favorites" in the Recent|Favorites segmented control. */
   #repoTabControl svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 5px; }
@@ -1325,13 +1326,11 @@
     var repo = getSelectedRepo();
     var ok = repo && repo.indexOf("/") !== -1;
     if (el) {
+      el.hidden = !ok;   // no repo selected → no banner at all
       if (ok) {
         var priv = isPrivateRepo(repo);
         el.className = "repo-banner" + (priv ? " priv" : "");   // private -> green with a lock
         el.innerHTML = svg(priv ? "lock" : "repo", 16) + "<span><b>" + esc(repo) + "</b></span>";
-      } else {
-        el.className = "repo-banner";
-        el.innerHTML = svg("repo", 16) + "<span>No repo — pick one in <b>Settings</b></span>";
       }
     }
     syncRepoTag();
