@@ -96,6 +96,8 @@ List with **infinite scroll** (25 per page). Issues render as **two groups — o
 ### ✨ AI assistant
 A **ChatGPT-style** conversational view scoped to the **active repository's issues and code**. Using your configured LLM with **function/tool calling**, it can read and search issues, read source files, create issues, add/edit comments, change statuses and edit titles/descriptions. Each tool call shows as a small chip while it runs. Conversations are **not persisted**. A round **(X)** closes it and returns to the previous view.
 
+On **wide screens (≥ 768px — tablets and desktop)** a **dock button** (VS Code-style sidebar icon, left of the ✕) pins the assistant as a **360px right sidebar** so it stays open beside the Kanban, the list or Settings: navigation keeps working on the left, the right-anchored chrome (＋/🔍 fabs, capsule nav, toasts) steps left of the panel, and changes made by the assistant's tools refresh the visible board/list automatically. Tapping the dock button again returns to full screen; the ✕ closes the sidebar. The preference persists (`ic_chat_dock`) and degrades gracefully: below the breakpoint the sidebar folds away (the phone UI is untouched — the button doesn't even show) and it comes back when the window grows again.
+
 ### ⚙️ Settings
 - **Active repo banner** — a capsule pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached). Hidden entirely while no repo is selected.
 - **Repositories** — a **Recent / ★ My Favorites** segmented list (max 25 each, app-local). Recents are ordered **most-recently-used first**: activating a repo from anywhere (the select, a recent, a favorite) moves it to the top. Tap a row to select (the active repo shows a green/yellow dot — private/public), ✕ removes, private repos show a lock; the **star fab** (top right) toggles the active repo as a favorite. Each row shows a subtitle with the repo's **issue count + last issue activity** ("34 issues • 12:34" under 24h, "… • wednesday" under 7 days, "… • 12/07" under a year, "… • 12/07/24" beyond) — fetched with one Search API call per repo, cached in memory + `ic_repo_meta` (10-minute TTL, pruned to listed repos), loaded lazily one at a time and only for the visible tab; a "…" placeholder reserves the line so rows don't shift when data lands.
@@ -257,6 +259,7 @@ The Settings **Test LLM** button makes one tiny round-trip through this same pat
 | `ic_font` | Font-size offset over the base |
 | `ic_tab` | Last used tab |
 | `ic_repo_tab` | Recent/Favorites segment |
+| `ic_chat_dock` | Assistant docked as right sidebar (wide screens) |
 
 Internal helpers outside export/import: `ic_repo_priv` (per-repo public/private cache), `ic_repo_meta` (per-repo issue count + last activity, 10-minute TTL) and `ic_srch_kanban` / `ic_srch_issues` (search-bar open state).
 
