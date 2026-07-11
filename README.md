@@ -97,7 +97,7 @@ A **ChatGPT-style** conversational view scoped to the **active repository's issu
 - **Active repo banner** — a capsule pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached).
 - **Repositories** — a **Recent / Favorites** segmented list (max 10 each, app-local). Tap a row to select, ✕ removes, private repos show a lock; the **star fab** (top right) marks the active repo as a favorite.
 - **GitHub** — token (with inline guidance and a direct link to create one) + repository search/selection, or manual `owner/repo`.
-- **LLM provider** — Base URL, API key, Model (OpenAI-compatible).
+- **LLM provider** — Base URL, API key, Model (OpenAI-compatible), plus a **Test LLM** button that makes one tiny round-trip and reports the result (with latency) in the section's message zone.
 - **Generation language** — Spanish / English (for AI output; the UI is English).
 - **Appearance** — **Light / Dark / Auto** theme and a **font size** control (− / offset / +) that scales the whole app.
 - **Settings export/import** — everything encrypted (see [below](#encrypted-settings-exportimport)).
@@ -259,10 +259,36 @@ Web Crypto, **AES-256-GCM**:
 
 - **Borderless design:** no divider or container borders anywhere; sections are separated only by their uppercase title (with top margin). The *only* lines are the per-row `border-bottom` inside genuine lists — issues, comments, recents/favorites and the status selector.
 - **Capsules:** the settings repo banner, search inputs, chips and the toast are fully-rounded; the fabs and the nav are frosted glass (`backdrop-filter`).
-- **Toast:** a single fixed capsule below the top bar (`showToast(html)`), auto-hides in ~4 s, tap to dismiss — used for "issue created".
+- **Toast:** a single fixed capsule below the top bar (`showToast(html, ms)`), auto-hides in ~7 s, tap to dismiss — used for "issue created".
 - **Dates:** one format everywhere (`fmtShort`): `04 jul 11:38`, adding the year only when it differs from the current one.
 - **Empty/loading/error states:** one shared centered block (`stateBlock`) with identical wording across the board and the list.
 - **Icons:** inline monochrome octicons from a `PATHS` map rendered by `svg(name, size)` (16×16 viewBox, `currentColor`).
+
+### Section message zones (feedback standard)
+
+This is the **fixed standard** for user feedback on anything that talks to a third-party service (GitHub API, LLM endpoint, clipboard, Web Crypto). Every new feature MUST follow it.
+
+**Placement.** Each section that interacts with an external service has one reserved message zone — a `<div class="msg">` — placed **directly below the section's title + description** and above its first field. It is invisible (`display:none`) until a message is shown.
+
+**Severities.** Exactly three states, each with a fixed meaning and color (light/dark variables in `:root`):
+
+| State | Class | Color | Used for |
+|---|---|---|---|
+| Info / OK | `.msg.info` / `.msg.success` | **blue** (`--info-bg`/`--info-fg`) | progress (with `<span class="spinner">`), confirmations, successful results |
+| Warning | `.msg.warn` | **yellow** (`--warn-bg`/`--warn-fg`) | missing input / user action needed before the call (guards), non-fatal issues (clipboard unavailable, 0 results) |
+| Error | `.msg.error` | **red** (`--danger-bg`/`--danger`) | failed API calls, crypto failures, network errors |
+
+**Helpers** (always use these, never set classes by hand): `msgInfo(el, text)`, `msgWork(el, text)` (info + spinner, for in-flight calls), `msgWarn(el, text)`, `msgError(el, text)`, `hideMsg(el)`.
+
+**Zones.** `repoMsg` (Settings › GitHub), `llmMsg` (Settings › LLM provider), `ioMsg` (Settings › export/import), `genMsg` (Create › note & generation), `publishMsg` (Create › review and publish), `statusMsg` (Detail › status + close/reopen), `commentsMsg` (Detail › comments list), `commentMsg` (Detail › new comment). Board/list-wide errors use the view-level `kanbanMsg` / `issuesMsg` banners.
+
+**Rules.**
+- Be maximally informative with **short, simple, descriptive** messages: show a spinner message while a call is in flight, a blue confirmation when it succeeds, and a mapped, actionable red message when it fails (`ghErrorText` translates 401/403/404/network into plain language).
+- Guard checks (missing token, repo, note, LLM config…) are **yellow**, not red — nothing failed yet.
+- GitHub errors go through `ghErrorText(err)`; LLM errors surface the provider message.
+- The **only exception**: successful issue creation is confirmed with the **toast** under the nav bar (the composer closes, so there is no section left to report into).
+- Debounced "saved on this device" notes (token / LLM fields) must never stomp an action's progress or result: any explicit `showMsg`/`hideMsg` on the zone cancels the pending note (`cancelSavedNote`).
+- No `alert()` for API outcomes in sections that have a zone (alerts remain only where explicitly requested — settings export/import — and in the full-screen editor, which has no section header).
 
 ---
 
