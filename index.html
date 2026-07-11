@@ -986,8 +986,11 @@
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit" || name === "assistant");   // hidden while editing / in the assistant
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
-    $("assistantClose").hidden = !(name === "assistant" || chatDocked());   // ✕: assistant view or docked sidebar
-    $("assistantDock").hidden = !(name === "assistant" || chatDocked());    // dock toggle: next to the ✕
+    // Chat chrome (dock toggle + ✕): in the assistant view, or while the sidebar is
+    // docked — except under the full-screen editor, whose Save fab shares the corner.
+    var chatFabs = name === "assistant" || (chatDocked() && name !== "edit");
+    $("assistantClose").hidden = !chatFabs;
+    $("assistantDock").hidden = !chatFabs;
     $("shareFab").hidden = true;   // share (top-right) only while an issue detail is open
     // View color (painted by #viewbg below the safe area): white in every view.
     document.documentElement.style.setProperty("--cbg", "var(--surface)");
