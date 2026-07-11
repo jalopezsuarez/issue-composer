@@ -2601,15 +2601,24 @@
     if (!title) { showMsg(msg, "error", "The title can't be empty."); return; }
     rememberRepo(); addRecent(repo); showBusy();
     var parts = repo.split("/");
-    ghFetch(GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: title, body: body })
-    }).then(function (issue) {
-      // New issues land at the TOP of the kanban's pending column:
-      // status:pending + order:0 (manual orders start at 1, so 0 sorts first;
-      // among several new ones the newest wins by date). Non-fatal if it fails.
-      return putIssueLabels(repo, { number: issue.number, labels: issue.labels || [] }, [statusLabelName("pending"), orderLabelName(0)])
-        .catch(function () {})
-        .then(function () { return issue; });
+    var createUrl = GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues";
+    // New issues land at the TOP of the kanban's pending column: the labels
+    // (status:pending + order:0; manual orders start at 1, so 0 sorts first)
+    // go IN the creation request itself, so they're applied exactly once —
+    // no separate labels call that could double-tag the issue.
+    var newLabels = [statusLabelName("pending"), orderLabelName(0)];
+    function create(payload) {
+      return ghFetch(createUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    }
+    create({ title: title, body: body, labels: newLabels }).catch(function (err) {
+      if (!/\b422\b/.test(err.message)) throw err;
+      // Fallback: some setups reject unknown labels at creation — create bare
+      // and label afterwards with the usual machinery (creates labels on 422).
+      return create({ title: title, body: body }).then(function (issue) {
+        return putIssueLabels(repo, { number: issue.number, labels: [] }, newLabels)
+          .catch(function () {})
+          .then(function () { return issue; });
+      });
     }).then(function (issue) {
       issuesState.repo = null; KAN.repo = null;   // new issue → reload list/board when opening them
       // Close the composer (clean for the next use), return to the origin view
