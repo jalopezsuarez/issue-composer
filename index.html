@@ -328,6 +328,11 @@
   .rtable td.num { color: var(--muted); width: 34px; }
   .rtable td.repo { display: flex; align-items: center; gap: 7px; word-break: break-all; }
   .rtable td.repo svg { width: 14px; height: 14px; color: var(--muted); flex: none; }
+  /* Name + subtitle stack; the active-repo dot sits inline with the name. */
+  .rtable .rwrap { display: flex; flex-direction: column; min-width: 0; }
+  .rtable .rline { display: flex; align-items: center; gap: 8px; }
+  .rtable .rsub { font-size: .72rem; font-weight: 400; color: var(--muted); margin-top: 1px; }
+  .rtable .rsub:empty { display: none; }
   /* Active-repo dot next to the name: green = private, yellow = public
      (same meaning as the repo banner). Only the selected row shows it. */
   .rtable .seldot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex: none; }
@@ -1453,9 +1458,71 @@
     persist(LS_KEYS.recent, JSON.stringify(getRecents().filter(function (x) { return x !== full; })));
     renderRecents();
   }
+  // ----- Per-repo metadata: total issues + last issue activity -----
+  // One Search API call per repo returns both (total_count + newest updated
+  // issue), cached in localStorage for 10 minutes and fetched lazily, one at
+  // a time, only while Settings is visible.
+  var META_KEY = "ic_repo_meta", META_TTL = 10 * 60 * 1000;
+  var metaInFlight = {};
+  function getMetaCache() { try { var c = JSON.parse(localStorage.getItem(META_KEY) || "{}"); return (c && typeof c === "object") ? c : {}; } catch (e) { return {}; } }
+  function repoMeta(full) { return getMetaCache()[full] || null; }
+  function rememberMeta(full, meta) { var c = getMetaCache(); c[full] = meta; persist(META_KEY, JSON.stringify(c)); }
+  // "34 issues • 12:34" (<24h) / "… • Wednesday" (<7 days) / "… • 12/07"
+  // (<1 year) / "… • 12/07/24" (older). The date is the repo's most recently
+  // created-or-updated issue.
+  function fmtRepoMeta(m) {
+    if (!m || m.count == null) return "";
+    var label = m.count === 1 ? "1 issue" : m.count + " issues";
+    if (!m.ts) return label;
+    var d = new Date(m.ts), diff = Date.now() - d.getTime();
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    var when;
+    if (diff < 864e5) when = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    else if (diff < 7 * 864e5) when = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getDay()];
+    else if (diff < 365 * 864e5) when = pad(d.getDate()) + "/" + pad(d.getMonth() + 1);
+    else when = pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(2);
+    return label + " • " + when;
+  }
+  // Repaints the subtitle of every visible row for this repo (both tables).
+  function refreshRepoSubtitles(full) {
+    var text = fmtRepoMeta(repoMeta(full));
+    var rows = document.querySelectorAll('.rtable tr[data-full="' + full + '"] .rsub');
+    for (var i = 0; i < rows.length; i++) rows[i].textContent = text;
+  }
+  function ensureRepoMeta(list) {
+    if (!ghTokenMem || !$("view-config").classList.contains("active")) return;
+    var now = Date.now();
+    var stale = list.filter(function (full) {
+      var m = repoMeta(full);
+      return !metaInFlight[full] && (!m || !m.fetched || now - m.fetched > META_TTL);
+    });
+    (function next() {
+      var full = stale.shift();
+      if (!full) return;
+      // Re-check at dequeue time: another queue (the other table) may have
+      // fetched or be fetching this repo since the stale list was built.
+      var m = repoMeta(full);
+      if (metaInFlight[full] || (m && m.fetched && Date.now() - m.fetched <= META_TTL)) return next();
+      metaInFlight[full] = true;
+      ghFetch(GH_API + "/search/issues?q=" + encodeURIComponent("repo:" + full + " type:issue") + "&sort=updated&order=desc&per_page=1")
+        .then(function (data) {
+          var it = data && data.items && data.items[0];
+          rememberMeta(full, { count: (data && data.total_count) || 0, ts: it ? it.updated_at : null, fetched: Date.now() });
+          refreshRepoSubtitles(full);
+        })
+        .catch(function () {
+          var m = repoMeta(full) || {};
+          m.fetched = Date.now();   // remember the failure so we don't hammer the API
+          rememberMeta(full, m);
+        })
+        .then(function () { delete metaInFlight[full]; next(); });
+    })();
+  }
+
   // Shared row/table builder for the recents and favorites tables. The active
   // repo row is highlighted and gets a colored dot after the name: green if
   // the repo is private, yellow if public (same meaning as the repo banner).
+  // Under the name, a subtitle shows the repo's issue count + last activity.
   function renderRepoTable(el, list, emptyText, removeLabel, onRemove) {
     if (!el) return;
     if (!list.length) { el.innerHTML = '<div class="rt-empty">' + emptyText + "</div>"; return; }
@@ -1465,7 +1532,9 @@
       var dot = on ? ' <span class="seldot" style="background:' + (priv ? "#1f883d" : "#f6d84a") + '"></span>' : "";
       return '<tr class="' + (on ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
-        '<td class="repo">' + svg(priv ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span>" + dot + "</td>" +
+        '<td class="repo">' + svg(priv ? "lock" : "repo", 14) +
+          '<span class="rwrap"><span class="rline"><span>' + esc(full) + "</span>" + dot + "</span>" +
+          '<span class="rsub">' + esc(fmtRepoMeta(repoMeta(full))) + "</span></span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="' + removeLabel + '">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
     el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
@@ -1473,6 +1542,7 @@
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); onRemove(this.getAttribute("data-full")); });
+    ensureRepoMeta(list);
   }
   function renderRecents() {
     renderRepoTable($("recentList"), getRecents(), "You haven't used any repository yet.", "Remove from recent", removeRecent);
