@@ -1460,14 +1460,29 @@
   }
   // ----- Per-repo metadata: total issues + last issue activity -----
   // One Search API call per repo returns both (total_count + newest updated
-  // issue), cached in localStorage for 10 minutes and fetched lazily, one at
-  // a time, only while Settings is visible.
+  // issue). The cache lives in memory (parsed from localStorage once) with
+  // write-through persistence, 10-minute TTL, and is pruned to the repos
+  // still present in the lists. Fetches run lazily, one at a time, and only
+  // for the table panel that is actually visible.
   var META_KEY = "ic_repo_meta", META_TTL = 10 * 60 * 1000;
-  var metaInFlight = {};
-  function getMetaCache() { try { var c = JSON.parse(localStorage.getItem(META_KEY) || "{}"); return (c && typeof c === "object") ? c : {}; } catch (e) { return {}; } }
+  var metaInFlight = {}, metaCache = null;
+  function getMetaCache() {
+    if (!metaCache) {
+      try { var c = JSON.parse(localStorage.getItem(META_KEY) || "{}"); metaCache = (c && typeof c === "object") ? c : {}; }
+      catch (e) { metaCache = {}; }
+    }
+    return metaCache;
+  }
   function repoMeta(full) { return getMetaCache()[full] || null; }
-  function rememberMeta(full, meta) { var c = getMetaCache(); c[full] = meta; persist(META_KEY, JSON.stringify(c)); }
-  // "34 issues • 12:34" (<24h) / "… • Wednesday" (<7 days) / "… • 12/07"
+  function rememberMeta(full, meta) {
+    var c = getMetaCache();
+    c[full] = meta;
+    // Prune entries for repos no longer in either list (keeps the cache small).
+    var keep = {}; getRecents().concat(getFavs()).forEach(function (r) { keep[r] = 1; });
+    for (var k in c) if (c.hasOwnProperty(k) && !keep[k]) delete c[k];
+    persist(META_KEY, JSON.stringify(c));
+  }
+  // "34 issues • 12:34" (<24h) / "… • wednesday" (<7 days) / "… • 12/07"
   // (<1 year) / "… • 12/07/24" (older). The date is the repo's most recently
   // created-or-updated issue.
   function fmtRepoMeta(m) {
@@ -1478,10 +1493,17 @@
     function pad(n) { return (n < 10 ? "0" : "") + n; }
     var when;
     if (diff < 864e5) when = pad(d.getHours()) + ":" + pad(d.getMinutes());
-    else if (diff < 7 * 864e5) when = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][d.getDay()];
+    else if (diff < 7 * 864e5) when = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"][d.getDay()];
     else if (diff < 365 * 864e5) when = pad(d.getDate()) + "/" + pad(d.getMonth() + 1);
     else when = pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + String(d.getFullYear()).slice(2);
     return label + " • " + when;
+  }
+  // Row subtitle at build time: the cached text, or a "…" placeholder when a
+  // fetch is coming — it reserves the line so rows don't jump when data lands.
+  function metaSubtitle(full) {
+    var text = fmtRepoMeta(repoMeta(full));
+    if (text) return text;
+    return ghTokenMem ? "…" : "";
   }
   // Repaints the subtitle of every visible row for this repo (both tables).
   function refreshRepoSubtitles(full) {
@@ -1489,8 +1511,10 @@
     var rows = document.querySelectorAll('.rtable tr[data-full="' + full + '"] .rsub');
     for (var i = 0; i < rows.length; i++) rows[i].textContent = text;
   }
-  function ensureRepoMeta(list) {
-    if (!ghTokenMem || !$("view-config").classList.contains("active")) return;
+  function ensureRepoMeta(el, list) {
+    // Skip when there is nothing to fetch with, Settings isn't shown, or this
+    // table's panel is hidden (the Recent|Favorites tab not being viewed).
+    if (!ghTokenMem || !$("view-config").classList.contains("active") || el.offsetParent === null) return;
     var now = Date.now();
     var stale = list.filter(function (full) {
       var m = repoMeta(full);
@@ -1508,14 +1532,13 @@
         .then(function (data) {
           var it = data && data.items && data.items[0];
           rememberMeta(full, { count: (data && data.total_count) || 0, ts: it ? it.updated_at : null, fetched: Date.now() });
-          refreshRepoSubtitles(full);
         })
         .catch(function () {
-          var m = repoMeta(full) || {};
-          m.fetched = Date.now();   // remember the failure so we don't hammer the API
-          rememberMeta(full, m);
+          var m2 = repoMeta(full) || {};
+          m2.fetched = Date.now();   // remember the failure so we don't hammer the API
+          rememberMeta(full, m2);
         })
-        .then(function () { delete metaInFlight[full]; next(); });
+        .then(function () { delete metaInFlight[full]; refreshRepoSubtitles(full); next(); });
     })();
   }
 
@@ -1534,7 +1557,7 @@
         '<td class="num">' + (i + 1) + "</td>" +
         '<td class="repo">' + svg(priv ? "lock" : "repo", 14) +
           '<span class="rwrap"><span class="rline"><span>' + esc(full) + "</span>" + dot + "</span>" +
-          '<span class="rsub">' + esc(fmtRepoMeta(repoMeta(full))) + "</span></span></td>" +
+          '<span class="rsub">' + esc(metaSubtitle(full)) + "</span></span></td>" +
         '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="' + removeLabel + '">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
     el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
@@ -1542,7 +1565,7 @@
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
     var dels = el.querySelectorAll(".rdel");
     for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); onRemove(this.getAttribute("data-full")); });
-    ensureRepoMeta(list);
+    ensureRepoMeta(el, list);
   }
   function renderRecents() {
     renderRepoTable($("recentList"), getRecents(), "You haven't used any repository yet.", "Remove from recent", removeRecent);
