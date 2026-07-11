@@ -73,7 +73,7 @@
   :root[data-theme="dark"] .navcap-btn.active { background: rgba(255,255,255,.10); }
   :root[data-theme="dark"] .navcap-btn:active { background: rgba(255,255,255,.14); }
   :root[data-theme="dark"] .kcol.kover { background: #30363d; }
-  :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-close:active, :root[data-theme="dark"] .fab-share:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
+  :root[data-theme="dark"] .fab:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Typography enlarged from the default (19px instead of 16). */
   /* White base on html/body: the safe-area strip (and the background behind the keyboard);
@@ -122,7 +122,7 @@
      Common base: almost no background (minimal) while keeping the blur, faint white border,
      light weight. Back (left, in detail/create); in list/kanban reload
      (left) and add (right, mirrored layout). */
-  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav, .fab-search, .fab-close, .fab-share {
+  .fab {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px)); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
@@ -133,12 +133,13 @@
     color: var(--text); cursor: pointer;
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
   }
+  .fab:active { background: rgba(255,255,255,.5); }
+  .fab[hidden] { display: none; }
+  /* Per-fab placement. */
   .fab-back, .fab-reload { left: 12px; }
   .fab-search { right: 12px; }                  /* search toggle: rightmost in kanban/list */
   .fab-add { right: 64px; }                     /* add: to the left of the search fab */
   .fab-save, .fab-fav, .fab-close, .fab-share { right: 12px; }   /* editor/settings/assistant/detail: rightmost */
-  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active, .fab-close:active, .fab-share:active { background: rgba(255,255,255,.5); }
-  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden], .fab-close[hidden], .fab-share[hidden] { display: none; }
   .fab-close svg { width: 25px; height: 25px; }
   /* Share (issue detail, top right): opens the issue on GitHub. */
   .fab-share { text-decoration: none; }
@@ -433,7 +434,6 @@
   .md blockquote { margin: 0 0 10px; padding: 2px 0 2px 12px; color: var(--muted); }
   .md a { text-decoration: underline; }
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
-  .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; padding: 7px 12px; border-radius: 8px; background: var(--bg); }
   /* Close/Reopen button with its own background */
   /* Solid state colors with light text (same in light and dark). */
   .btnstate.close { background: #cf222e; color: #fff; }
@@ -532,21 +532,21 @@
   <!-- View color layer (below the safe area); the safe area stays white -->
   <div id="viewbg"></div>
   <!-- Floating glass back: visible when going back (detail and create) -->
-  <button id="navBack" class="fab-back" hidden aria-label="Back"></button>
+  <button id="navBack" class="fab fab-back" hidden aria-label="Back"></button>
   <!-- In list/kanban: reload on the left and add issue on the right -->
-  <button id="viewReload" class="fab-reload" hidden aria-label="Reload"></button>
+  <button id="viewReload" class="fab fab-reload" hidden aria-label="Reload"></button>
   <!-- Active repo, floating and transparent, to the right of reload (kanban/list) -->
   <div id="viewRepoTag" class="view-repo-tag" hidden></div>
-  <button id="viewAdd" class="fab-add" hidden aria-label="Add issue"></button>
+  <button id="viewAdd" class="fab fab-add" hidden aria-label="Add issue"></button>
   <!-- Search toggle (kanban/list): shows/hides the search bar -->
-  <button id="viewSearch" class="fab-search" hidden aria-label="Search"></button>
+  <button id="viewSearch" class="fab fab-search" hidden aria-label="Search"></button>
   <!-- Favorite toggle for the active repo (settings, top right) -->
-  <button id="favFab" class="fab-fav" hidden aria-label="Add to favorites"></button>
-  <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
+  <button id="favFab" class="fab fab-fav" hidden aria-label="Add to favorites"></button>
+  <button id="btnSaveEdit" class="fab fab-save" hidden aria-label="Save"></button>
   <!-- Share (issue detail, top right): opens the issue on GitHub -->
-  <a id="shareFab" class="fab-share" hidden target="_blank" rel="noopener" aria-label="Open on GitHub"></a>
+  <a id="shareFab" class="fab fab-share" hidden target="_blank" rel="noopener" aria-label="Open on GitHub"></a>
   <!-- Close the AI assistant (top right); returns to the previous view -->
-  <button id="assistantClose" class="fab-close" hidden aria-label="Close assistant"></button>
+  <button id="assistantClose" class="fab fab-close" hidden aria-label="Close assistant"></button>
   <!-- Toast below the nav bar (e.g. "issue created"); tap or wait to dismiss -->
   <div id="toast" class="toast" role="status"></div>
 
@@ -698,7 +698,7 @@
         </div>
         <div class="field">
           <label>Font size</label>
-          <div class="segmented" id="fontControl">
+          <div class="segmented">
             <button type="button" id="fontMinus" aria-label="Smaller text">−</button>
             <button type="button" id="fontReset" aria-label="Restore base size">0</button>
             <button type="button" id="fontPlus" aria-label="Larger text">+</button>
@@ -787,6 +787,25 @@
 </div>
 
 <script>
+/* ============================================================================
+   Issue Composer — application script (single IIFE, no dependencies).
+
+   Sections, in source order:
+     1. Icons          — PATHS octicon map + svg() renderer
+     2. Constants      — GH_API, LS_KEYS, module state
+     3. DOM helpers    — $, msg zones (msgInfo/Work/Warn/Error), busy, toast
+     4. View navigation— markActiveView, setChrome, showView, repo tag
+     5. Settings       — localStorage, mode/language/theme/font, export-import,
+                         repo selection, recents/favorites, connect GitHub
+     6. Transport      — ghFetch (GitHub), llmPost/llmComplete (LLM), Test LLM
+     7. Issues list    — pagination, search, sort, rendering
+     8. Issue detail   — open, status rows, close/reopen, comments CRUD
+     9. Editor         — full-screen single-field editor (title/body/comment)
+    10. Kanban         — board pagination, statuses/orders, drag & drop
+    11. Composer       — code-review pipeline, prompts, generate, publish
+    12. AI assistant   — tool schemas/executors, chat loop, input wiring
+    13. Init           — restore persisted state and open the initial tab
+   ========================================================================== */
 (function () {
   "use strict";
 
@@ -806,7 +825,6 @@
     comment: "M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z",
     search: "M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.5 4.5 0 1 0-9 0 4.5 4.5 0 0 0 9 0Z",
     reload: "M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z",
-    external: "M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.06-1.06l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z",
     clock: "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7 8.25v-3.5a.75.75 0 0 1 1.5 0Z",
     pencil: "M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.062.106l-.618 2.164 2.164-.618a.253.253 0 0 0 .106-.062l6.286-6.286Z",
     sparkle: "M9.5.75a.75.75 0 0 0-1.46 0l-.9 3.32a3 3 0 0 1-2.07 2.07l-3.32.9a.75.75 0 0 0 0 1.46l3.32.9a3 3 0 0 1 2.07 2.07l.9 3.32a.75.75 0 0 0 1.46 0l.9-3.32a3 3 0 0 1 2.07-2.07l3.32-.9a.75.75 0 0 0 0-1.46l-3.32-.9a3 3 0 0 1-2.07-2.07Zm4.25 8.5a.6.6 0 0 0-1.16 0l-.2.74a1.5 1.5 0 0 1-1.05 1.05l-.74.2a.6.6 0 0 0 0 1.16l.74.2a1.5 1.5 0 0 1 1.05 1.05l.2.74a.6.6 0 0 0 1.16 0l.2-.74a1.5 1.5 0 0 1 1.05-1.05l.74-.2a.6.6 0 0 0 0-1.16l-.74-.2a1.5 1.5 0 0 1-1.05-1.05Z",
@@ -853,7 +871,11 @@
   // Any explicit message (or hide) cancels a pending debounced "saved" note on
   // the same zone, so it can't pop up over the progress/result of an action.
   function cancelSavedNote(el) { if (el._savedTimer) { clearTimeout(el._savedTimer); el._savedTimer = null; } }
-  function showMsg(el, type, html) { cancelSavedNote(el); el.className = "msg show " + type; el.innerHTML = html; }
+  function showMsg(el, type, html) {
+    cancelSavedNote(el);
+    el.setAttribute("role", "status");   // screen readers announce zone updates
+    el.className = "msg show " + type; el.innerHTML = html;
+  }
   function hideMsg(el) { cancelSavedNote(el); el.className = "msg"; el.innerHTML = ""; }
   // Section message zones (below each section title): blue = OK/info,
   // yellow = warning, red = error; "work" adds a spinner for in-progress calls.
@@ -924,19 +946,26 @@
     for (var i = 0; i < VIEWS.length; i++) { if (VIEWS[i] !== "assistant" && VIEWS[i] !== "edit" && $("view-" + VIEWS[i]).classList.contains("active")) return VIEWS[i]; }
     return "kanban";
   }
+  // Top chrome (floating fabs): which buttons the current screen shows.
+  // Every screen change goes through this so no stale fab survives.
+  function setChrome(o) {
+    o = o || {};
+    $("navBack").hidden = !o.back;
+    $("viewReload").hidden = !o.reload;
+    $("viewAdd").hidden = !o.add;
+    $("viewSearch").hidden = !o.search;
+    if (o.share !== undefined) $("shareFab").hidden = !o.share;
+    syncRepoTag();
+  }
   function showView(name) {
     if (name === "assistant" && !$("view-assistant").classList.contains("active")) assistantOrigin = currentActiveView();
     markActiveView(name);
     var isList = (name === "issues" || name === "kanban");
-    $("viewReload").hidden = !isList;   // reload (left)
-    $("viewAdd").hidden = !isList;       // add issue (right)
-    $("viewSearch").hidden = !isList;    // search toggle (rightmost)
+    setChrome({ back: name === "composer", reload: isList, add: isList, search: isList });
     if (isList) applySearchState(name);  // restore the remembered search-bar state
     if (name === "issues") { showIssuesList(); maybeAutoLoadIssues(); }
-    else if (name === "kanban") { $("navBack").hidden = true; maybeAutoLoadKanban(); }
-    else if (name === "composer") { $("navBack").hidden = false; }   // "push" view: go back with the back button
-    else if (name === "assistant") { $("navBack").hidden = true; onAssistantShown(); }
-    else { $("navBack").hidden = true; }
+    else if (name === "kanban") maybeAutoLoadKanban();
+    else if (name === "assistant") onAssistantShown();
     if (name !== "composer") persist(LS_KEYS.tab, name);  // composer is transient, not remembered
     $("content").scrollTop = 0;
     updateActiveRepoBanners();
@@ -1570,10 +1599,13 @@
       throw err;
     });
   }
+  // LLM config from Settings; llmReady() is null while any field is missing.
+  function llmCfg() { return { baseUrl: $("llmBaseUrl").value.trim(), apiKey: $("llmApiKey").value.trim(), model: $("llmModel").value.trim() }; }
+  function llmReady() { var c = llmCfg(); return (c.baseUrl && c.apiKey && c.model) ? c : null; }
   function llmComplete(messages) {
-    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) return Promise.reject(new Error("Configure the LLM Base URL, API key and Model."));
-    return llmPost(baseUrl, apiKey, { model: model, messages: messages, max_tokens: 1500, temperature: 0.3 })
+    var c = llmReady();
+    if (!c) return Promise.reject(new Error("Configure the LLM Base URL, API key and Model."));
+    return llmPost(c.baseUrl, c.apiKey, { model: c.model, messages: messages, max_tokens: 1500, temperature: 0.3 })
       .then(function (message) { return message.content; });
   }
 
@@ -1655,13 +1687,13 @@
   // red = provider/network error).
   $("btnTestLlm").addEventListener("click", function () {
     var btn = this, msg = $("llmMsg"); hideMsg(msg);
-    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { msgWarn(msg, "Configure the LLM Base URL, API key and Model first."); return; }
+    var c = llmReady();
+    if (!c) { msgWarn(msg, "Configure the LLM Base URL, API key and Model first."); return; }
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Testing…';
-    msgWork(msg, "Contacting " + model + " at the configured endpoint…");
+    msgWork(msg, "Contacting " + c.model + " at the configured endpoint…");
     var t0 = Date.now();
     llmComplete([{ role: "user", content: "Reply with the single word: OK" }]).then(function () {
-      msgInfo(msg, "LLM connection works — " + model + " replied in " + ((Date.now() - t0) / 1000).toFixed(1) + "s.");
+      msgInfo(msg, "LLM connection works — " + c.model + " replied in " + ((Date.now() - t0) / 1000).toFixed(1) + "s.");
     }).catch(function (err) { msgError(msg, err.message); })
       .then(function () { btn.disabled = false; btn.textContent = "Test LLM"; });
   });
@@ -1750,7 +1782,7 @@
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
     document.documentElement.style.setProperty("--appmax", "100%");   // list spans the full width
-    $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false; $("viewSearch").hidden = false; $("shareFab").hidden = true; applySearchState("issues");
+    setChrome({ reload: true, add: true, search: true, share: false }); applySearchState("issues");
     if (issuesState.items.length) renderIssuesList();   // re-paints from cache (reflects changes on return)
     updateActiveRepoBanners();
   }
@@ -1939,7 +1971,7 @@
     document.documentElement.style.setProperty("--appmax", "720px");   // detail is a reading view → 720px
     var box = $("issueDetail");
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
+    setChrome({ back: true });
     $("content").scrollTop = 0;
     box.innerHTML = '<div class="empty-state"><span class="spinner"></span>Loading…</div>';
 
@@ -2068,7 +2100,7 @@
   function openEditor(opts) {
     editState = opts;
     markActiveView("edit");
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
+    setChrome({ back: true });
     var ta = $("editBody");
     ta.placeholder = opts.placeholder || "Write here…";
     ta.value = opts.value || "";
@@ -2082,7 +2114,7 @@
     markActiveView("issues");
     document.documentElement.style.setProperty("--appmax", "720px");   // back to the detail (reading view)
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; $("shareFab").hidden = false; syncRepoTag();
+    setChrome({ back: true, share: true });
   }
   // Shortcuts to avoid repeating the PATCH plumbing on every call.
   function editIssueField(repo, number, field, value) {
@@ -2171,8 +2203,7 @@
   function generateComment(issue, comments) {
     var msg = $("commentMsg"); hideMsg(msg);
     var note = $("commentNote").value.trim();
-    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { msgWarn(msg, "Configure the LLM in Settings first."); return; }
+    if (!llmReady()) { msgWarn(msg, "Configure the LLM in Settings first."); return; }
     if (!note) { msgWarn(msg, "Write a proposed text for the comment first."); return; }
     setToneBusy($("commentToneControl"), true);
     // Progress shares the section's message zone (below "New comment with AI").
@@ -2746,8 +2777,7 @@
     if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub token in Settings first."); return; }
     if (!repo || repo.indexOf("/") === -1) { msgWarn(msg, "Select a repository in Settings first."); return; }
     if (!note) { msgWarn(msg, "Write a note describing the issue first."); return; }
-    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { msgWarn(msg, "Configure the LLM Base URL, API key and Model in Settings first."); return; }
+    if (!llmReady()) { msgWarn(msg, "Configure the LLM Base URL, API key and Model in Settings first."); return; }
 
     rememberRepo(); addRecent(repo); setToneBusy($("toneControl"), true); setStatus("Analyzing…");
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
@@ -2826,12 +2856,11 @@
   var chatMessages = [];       // OpenAI-protocol message list (system + turns + tool results)
   var chatBusy = false, chatStarted = false, chatTypingEl = null;
 
-  function llmCfg() { return { baseUrl: $("llmBaseUrl").value.trim(), apiKey: $("llmApiKey").value.trim(), model: $("llmModel").value.trim() }; }
   // Chat call with tool support; returns the whole assistant message object.
   // Shares llmPost (headers + compatibility retries) with llmComplete.
   function llmChatRaw(messages, tools) {
-    var c = llmCfg();
-    if (!c.baseUrl || !c.apiKey || !c.model) return Promise.reject(new Error("Configure the LLM in Settings."));
+    var c = llmReady();
+    if (!c) return Promise.reject(new Error("Configure the LLM in Settings."));
     var body = { model: c.model, messages: messages, temperature: 0.2, max_tokens: 1500 };
     if (tools && tools.length) { body.tools = tools; body.tool_choice = "auto"; }
     return llmPost(c.baseUrl, c.apiKey, body);
