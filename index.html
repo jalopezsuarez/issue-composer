@@ -349,8 +349,6 @@
   .repo-banner b { font-weight: 700; color: #1f2328; }
   /* Private repos: "open" green with a lock, text and icons in white. */
   .repo-banner.priv { background: #1f883d; color: #fff; }
-  /* Inside the Repositories pad (which already pads 16px): no side margins. */
-  .pad .repo-banner { margin: 2px 0 12px; }
   /* Star icon before "Favorites" in the Recent|Favorites segmented control. */
   #repoTabControl svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 5px; }
   .repo-banner.priv b { color: #fff; }
@@ -615,13 +613,13 @@
 
     <!-- ====== SETTINGS ====== -->
     <section class="view" id="view-config">
+      <!-- Active repo banner (green private / yellow public), right above Repositories -->
+      <div class="repo-banner" id="repoBannerSettings"></div>
       <!-- 1. Repositories: recent / favorites -->
       <div class="group">
         <div class="pad">
           <div class="group-title" style="padding:0 0 4px">Repositories</div>
           <div class="group-hint" style="padding:0 0 8px">Lists local to this app (not GitHub stars). Tap a row to select the repo; the ✕ removes it. Favorites are added with the star on the active repo.</div>
-          <!-- Active repo banner (green private / yellow public), below the section intro -->
-          <div class="repo-banner" id="repoBannerSettings"></div>
           <div class="segmented" id="repoTabControl">
             <button type="button" data-rtab="recent">Recent</button>
             <button type="button" data-rtab="fav">Favorites</button>
