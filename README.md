@@ -66,7 +66,7 @@ Everything Issue Composer creates is a plain GitHub issue, label or comment. You
 Navigation is a **floating glass capsule** (bottom right) with four destinations — **Kanban**, **Issues**, **AI assistant** and **Settings** — plus a **+** button to create and a 🔍 button to search. The floating repo label at the top acts as a shortcut: tapping it triggers the left button's action (back or reload).
 
 ### 🗂️ Kanban
-Board by **status**, one column per fixed status. Column headers show the status chip (slightly heavier and larger than the shared badges: weight 500, +1px) with the card count beside it. Each card shows the title, a 2-line excerpt, the number, comments and the last-updated date. It allows:
+Board by **status**, one column per fixed status. Column headers show the status chip (slightly heavier and larger than the shared badges: weight 500, +2px) with the card count beside it. Each card shows the title, a 2-line excerpt, the number, comments and the last-updated date. It allows:
 - **Dragging between columns** to change the issue's status.
 - **Reordering within a column** by dragging vertically (persistent manual order).
 - Tapping a card to open its **detail**.
