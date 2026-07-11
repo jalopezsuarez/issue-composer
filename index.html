@@ -1348,10 +1348,12 @@
     var inAssistant = $("view-assistant").classList.contains("active");
     var inRepoView = inConfig || inAssistant || $("view-kanban").classList.contains("active") ||
       $("view-issues").classList.contains("active") || $("view-composer").classList.contains("active");
-    var show = ok && inRepoView;
-    tag.hidden = !show;
+    tag.hidden = !inRepoView;
     tag.classList.toggle("at-left", inConfig || inAssistant);   // no left fab in settings/assistant
-    if (show) tag.innerHTML = svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>";
+    // With a repo: its name (+ lock if private). Without: the app name.
+    if (inRepoView) tag.innerHTML = ok
+      ? svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>"
+      : "<span>Issue Composer</span>";
   }
   // Tapping the floating repo label triggers the action of the left fab:
   // back (detail/create) or reload (kanban/list). No-op when neither is shown.
