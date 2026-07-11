@@ -345,6 +345,7 @@
           <h2>Some days you don't want to manage a tracker. So just talk to it.</h2>
           <p class="sub">The built-in assistant knows your repo — the issues <b>and</b> the code. Ask what's still pending, get a long thread summarized, have it open a follow-up or move three things to review. It does the clicking for you.</p>
           <p class="sub">And it's not a chatbot bolted on the side: it works with real tools that read and write your actual GitHub issues, and it shows you every action it takes.</p>
+          <p class="sub">On a big screen, dock it — VS Code style — as a sidebar next to the board, and keep talking while you drag cards. Anything it changes shows up beside it, live.</p>
         </div>
         <div class="art">
           <div class="chat-art">
@@ -363,9 +364,10 @@
         <div class="privacy">
           <div class="inner">
             <h2>Yours. Actually, properly yours.</h2>
-            <p class="sub">Issue Composer has no backend, no accounts and no database — it lives entirely in your browser. Your tokens and keys are stored only on your device, and every request goes straight from there to GitHub and to your LLM provider. <b>Nobody else ever sees your code, your issues or your keys.</b> Not even us — there's no "us" server to send them to.</p>
+            <p class="sub">Issue Composer has no backend, no accounts and no database — it lives entirely in your browser. Your tokens and keys are stored <b>encrypted</b> on your device — AES-256, under a key your browser refuses to hand over to anyone — and every request goes straight from there to GitHub and to your LLM provider. <b>Nobody else ever sees your code, your issues or your keys.</b> Not even us — there's no "us" server to send them to.</p>
             <div class="facts">
-              <span class="fact">🔑 Keys never leave your device</span>
+              <span class="fact">🔐 Keys encrypted at rest, AES-256</span>
+              <span class="fact">🔑 Nothing ever leaves your device</span>
               <span class="fact">🔒 Settings travel AES-256 encrypted</span>
               <span class="fact">🗑️ Close the tab, nothing is left behind</span>
             </div>
@@ -388,7 +390,7 @@
           <div class="step">
             <span class="n">2</span>
             <h3>Connect GitHub &amp; your AI</h3>
-            <p>Paste a GitHub token (the app links you to the exact page and permissions) and any OpenAI-compatible LLM key. There's a <code>Test LLM</code> button to check it in one tap.</p>
+            <p>Paste a GitHub token (the app links you to the exact page and permissions) and any OpenAI-compatible LLM key — cloud or local, the app adapts to your provider's quirks automatically. There's a <code>Test LLM</code> button to check it in one tap.</p>
           </div>
           <div class="step">
             <span class="n">3</span>
