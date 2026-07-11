@@ -255,6 +255,10 @@
   .group { background: var(--surface); }
   .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 20px; padding: 0 16px 7px; }
   .group-hint { font-size: .8rem; color: var(--muted); padding: 0 16px 10px; }
+  /* Privacy section ("100% local, 100% yours"): dark blue, the same blue as
+     the progress chip's text in each theme. */
+  .privacy-note .group-title, .privacy-note .group-hint { color: #234e94; }
+  :root[data-theme="dark"] .privacy-note .group-title, :root[data-theme="dark"] .privacy-note .group-hint { color: #6cb6ff; }
   .field { padding: 12px 16px; }
   label { display: block; font-weight: 600; font-size: .82rem; margin: 2px 0 6px; color: var(--text); }
   input, select, textarea {
@@ -620,7 +624,7 @@
       </div>
 
       <!-- 2. Privacy: title + text only, making the local-first design explicit -->
-      <div class="group">
+      <div class="group privacy-note">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">100% local, 100% yours</div>
         <div class="group-hint" style="padding:0">There is no backend, no accounts and no database — this app lives entirely in your browser. Your tokens, keys and preferences are stored only on this device, and every request goes straight from here to GitHub and to your LLM provider. Nothing else ever sees your data. Clean, private and secure by design.</div></div>
       </div>
