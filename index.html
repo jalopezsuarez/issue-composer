@@ -375,6 +375,9 @@
 
   /* Issue detail + comments */
   .detail-head { background: var(--surface); padding: 16px; }
+  /* The head already pads 16px: the status message zone drops its own side
+     margins so it doesn't get double-indented. */
+  .detail-head .msg { margin-left: 0; margin-right: 0; }
   .detail-head h3 { margin: 0 0 8px; font-size: 1.5rem; word-break: break-word; overflow-wrap: anywhere; }
   .detail-head h3.editable { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
   .detail-meta { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
