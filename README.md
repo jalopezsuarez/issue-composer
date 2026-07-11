@@ -66,7 +66,7 @@ Everything Issue Composer creates is a plain GitHub issue, label or comment. You
 Navigation is a **floating glass capsule** (bottom right) with four destinations — **Kanban**, **Issues**, **AI assistant** and **Settings** — plus a **+** button to create and a 🔍 button to search. The floating repo label at the top acts as a shortcut: tapping it triggers the left button's action (back or reload).
 
 ### 🗂️ Kanban
-Board by **status**, one column per fixed status. Each card shows the title, a 2-line excerpt, the number, comments and the last-updated date. It allows:
+Board by **status**, one column per fixed status. Column headers show the status chip (slightly heavier and larger than the shared badges: weight 500, +1px) with the card count beside it. Each card shows the title, a 2-line excerpt, the number, comments and the last-updated date. It allows:
 - **Dragging between columns** to change the issue's status.
 - **Reordering within a column** by dragging vertically (persistent manual order).
 - Tapping a card to open its **detail**.
@@ -98,7 +98,7 @@ A **ChatGPT-style** conversational view scoped to the **active repository's issu
 ### ⚙️ Settings
 - **Active repo banner** — a capsule pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached).
 - **Repositories** — a **Recent / Favorites** segmented list (max 25 each, app-local). Recents are ordered **most-recently-used first**: activating a repo from anywhere (the select, a recent, a favorite) moves it to the top. Tap a row to select (the active repo shows a green/yellow dot — private/public), ✕ removes, private repos show a lock; the **star fab** (top right) toggles the active repo as a favorite.
-- **100% local, 100% yours** — an informational section (title + text) above GitHub making the local-first design explicit: no backend, everything stored in the browser, requests go only to GitHub and the LLM provider.
+- **100% local, 100% yours** — an informational section (title + text) above GitHub making the local-first design explicit: no backend, everything stored in the browser, requests go only to GitHub and the LLM provider. Rendered in the *progress*-chip blue (`#234e94` light / `#6cb6ff` dark) so it stands out from regular hints.
 - **GitHub** — token (with inline guidance and a direct link to create one), repository search + select, and the **Connect GitHub** button below them.
 - **LLM provider** — Base URL, API key, Model (OpenAI-compatible), plus a **Test LLM** button that makes one tiny round-trip and reports the result (with latency) in the section's message zone.
 - **Generation language** — Spanish / English (for AI output; the UI is English).
