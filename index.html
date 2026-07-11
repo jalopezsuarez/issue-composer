@@ -439,6 +439,11 @@
   .md blockquote { margin: 0 0 10px; padding: 2px 0 2px 12px; color: var(--muted); }
   .md a { text-decoration: underline; }
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  /* Tables: normal word-wrap inside cells; the wrapper scrolls horizontally when the table doesn't fit. */
+  .md .mdtable { overflow-x: auto; margin: 0 0 10px; -webkit-overflow-scrolling: touch; }
+  .md table { border-collapse: collapse; font-size: .85rem; line-height: 1.45; }
+  .md th, .md td { border: 1px solid var(--border); padding: 5px 10px; text-align: left; vertical-align: top; word-break: normal; overflow-wrap: normal; }
+  .md th { font-weight: 600; background: var(--bg); }
   /* Close/Reopen button with its own background */
   /* Solid state colors with light text (same in light and dark). */
   .btnstate.close { background: #cf222e; color: #fff; }
@@ -1924,6 +1929,22 @@
       if (ol) { flushPara(); if (listType !== "ol") { flushList(); listType = "ol"; } items.push("<li>" + mdInline(ol[1]) + "</li>"); i++; continue; }
       var bq = line.match(/^&gt;\s?(.*)$/);  // ">" already comes escaped as "&gt;"
       if (bq) { flushList(); flushPara(); out.push("<blockquote>" + mdInline(bq[1]) + "</blockquote>"); i++; continue; }
+      // GFM table: a header row with "|" followed by a separator row (| --- | :---: |).
+      var sep = lines[i + 1];
+      if (line.indexOf("|") !== -1 && sep && sep.indexOf("|") !== -1 && /^\s*\|?(\s*:?-{3,}:?\s*\|)*\s*:?-{3,}:?\s*\|?\s*$/.test(sep)) {
+        flushList(); flushPara();
+        var cells = function (l) { return l.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map(function (c) { return c.trim(); }); };
+        var aligns = cells(sep).map(function (c) { return /^:-+:$/.test(c) ? "center" : /^-+:$/.test(c) ? "right" : ""; });
+        var row = function (cs, tag) {
+          return "<tr>" + cs.map(function (c, j) {
+            return "<" + tag + (aligns[j] ? ' style="text-align:' + aligns[j] + '"' : "") + ">" + mdInline(c) + "</" + tag + ">";
+          }).join("") + "</tr>";
+        };
+        var trs = [row(cells(line), "th")]; i += 2;
+        while (i < lines.length && lines[i].indexOf("|") !== -1 && !/^\s*$/.test(lines[i])) { trs.push(row(cells(lines[i]), "td")); i++; }
+        out.push('<div class="mdtable"><table><thead>' + trs[0] + "</thead><tbody>" + trs.slice(1).join("") + "</tbody></table></div>");
+        continue;
+      }
       para.push(line.trim()); i++;
     }
     flushList(); flushPara();
