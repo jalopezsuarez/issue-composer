@@ -446,6 +446,9 @@
   /* Notion-style header: chip (dot + name) and the count in gray beside it. */
   .kcol-head { padding: 12px 12px 10px; display: flex; align-items: center; gap: 8px; }
   .kchip { display: inline-flex; align-items: center; gap: 7px; padding: 2px 12px; border-radius: 999px; font-weight: 400; font-size: calc(.77rem - 1px); line-height: 1.25; flex: none; }
+  /* Only the board's column-header chips (pending/progress/…): one step up
+     in weight and size; the shared .kchip badges elsewhere stay as-is. */
+  .kcol-head .kchip { font-weight: 500; font-size: .77rem; }
   .kchip .kdot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
   .kcount { color: var(--muted); font-weight: 500; font-size: .77rem; }
   .kcol-body { padding: 0 10px 10px; min-height: 40px; }
