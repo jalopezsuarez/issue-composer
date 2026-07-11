@@ -3001,9 +3001,9 @@
   }
   var STATUS_NAMES = STATUSES.map(function (s) { return s.name; });
   var ASSISTANT_TOOLS = [
-    toolFn("list_issues", "List issues of the active repository.", { state: { type: "string", enum: ["open", "closed", "all"], description: "Filter by state (default open)." } }),
-    toolFn("search_issues", "Search issues in the active repository by text/qualifiers.", { query: { type: "string" } }, ["query"]),
-    toolFn("get_issue", "Get one issue with its body, status and comments.", { number: { type: "integer" } }, ["number"]),
+    toolFn("list_issues", "List issues of the active repository (number, title, state, status, author, comment count, creation and update dates).", { state: { type: "string", enum: ["open", "closed", "all"], description: "Filter by state (default open)." } }),
+    toolFn("search_issues", "Search issues in the active repository by text/qualifiers. Returns the same fields as list_issues.", { query: { type: "string" } }, ["query"]),
+    toolFn("get_issue", "Get one issue with its body, status, author, dates and comments.", { number: { type: "integer" } }, ["number"]),
     toolFn("create_issue", "Create a new issue in the active repository.", { title: { type: "string" }, body: { type: "string", description: "Markdown body." } }, ["title"]),
     toolFn("update_issue", "Update an issue's title, body (description) and/or open/closed state.", { number: { type: "integer" }, title: { type: "string" }, body: { type: "string" }, state: { type: "string", enum: ["open", "closed"] } }, ["number"]),
     toolFn("set_issue_status", "Set the Kanban status label of an issue.", { number: { type: "integer" }, status: { type: "string", enum: STATUS_NAMES } }, ["number", "status"]),
@@ -3019,7 +3019,7 @@
     if (!repo || repo.indexOf("/") === -1) throw new Error("No active repository. Ask the user to pick one in Settings.");
     var p = repo.split("/"); return { repo: repo, owner: p[0], name: p[1] };
   }
-  function issueBrief(it) { return { number: it.number, title: it.title, state: it.state, status: statusOf(it), comments: it.comments || 0 }; }
+  function issueBrief(it) { return { number: it.number, title: it.title, state: it.state, status: statusOf(it), comments: it.comments || 0, author: it.user ? it.user.login : "?", created_at: it.created_at, updated_at: it.updated_at }; }
   function invalidateIssueCaches() { issuesState.repo = null; KAN.repo = null; }
   var ASSISTANT_IMPL = {
     list_issues: function (a) {
@@ -3039,8 +3039,9 @@
       ]).then(function (res) {
         var it = res[0], comments = Array.isArray(res[1]) ? res[1] : [];
         return { number: it.number, title: it.title, state: it.state, status: statusOf(it), body: it.body || "",
+          author: it.user ? it.user.login : "?", created_at: it.created_at, updated_at: it.updated_at,
           labels: userLabels(it).map(function (l) { return l.name; }),
-          comments: comments.map(function (c) { return { id: c.id, user: c.user ? c.user.login : "?", body: c.body || "" }; }) };
+          comments: comments.map(function (c) { return { id: c.id, user: c.user ? c.user.login : "?", created_at: c.created_at, body: c.body || "" }; }) };
       });
     },
     create_issue: function (a) {

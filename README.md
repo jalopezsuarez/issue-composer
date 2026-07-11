@@ -225,9 +225,9 @@ The Settings **Test LLM** button makes one tiny round-trip through this same pat
 
 | Tool | Action |
 |------|--------|
-| `list_issues` | List issues (state filter), PRs excluded, brief shape |
-| `search_issues` | Search API query |
-| `get_issue` | Full issue + comments |
+| `list_issues` | List issues (state filter), PRs excluded, brief shape (number, title, state, status, author, comment count, created/updated dates) |
+| `search_issues` | Search API query, same brief shape |
+| `get_issue` | Full issue (body, author, dates, labels) + comments with author and date |
 | `create_issue` | Create (title, body) |
 | `update_issue` | Patch title / body / open-closed state |
 | `set_issue_status` | Set the `status:` label (kanban machinery) |
