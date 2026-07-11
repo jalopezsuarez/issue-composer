@@ -1266,7 +1266,7 @@
         for (var k in LS_KEYS) {
           if (!LS_KEYS.hasOwnProperty(k) || !data.hasOwnProperty(k)) continue;
           var v = data[k];
-          if (ARRAY_KEYS[k]) { try { v = JSON.stringify((Array.isArray(v) ? v : []).slice(0, 10)); } catch (e) { v = "[]"; } }
+          if (ARRAY_KEYS[k]) { try { v = JSON.stringify((Array.isArray(v) ? v : []).slice(0, REPO_LIST_MAX)); } catch (e) { v = "[]"; } }
           else if (typeof v !== "string") v = String(v);
           persist(LS_KEYS[k], v);
           n++;
@@ -1361,27 +1361,28 @@
     syncFavFab();
   });
 
-  // Reads a repo list from localStorage, sanitized and trimmed to 10 (and if it was
-  // oversized it rewrites it, to auto-clean old data).
+  // Fixed capacity of the recents and favorites lists.
+  var REPO_LIST_MAX = 25;
+  // Reads a repo list from localStorage, sanitized and trimmed to the cap
+  // (and if it was oversized it rewrites it, to auto-clean old data).
   function readRepoList(key) {
     try {
       var a = JSON.parse(localStorage.getItem(key) || "[]");
       if (!Array.isArray(a)) return [];
       a = a.filter(function (x) { return typeof x === "string" && x.indexOf("/") !== -1; });
-      if (a.length > 10) { a = a.slice(0, 10); persist(key, JSON.stringify(a)); }
+      if (a.length > REPO_LIST_MAX) { a = a.slice(0, REPO_LIST_MAX); persist(key, JSON.stringify(a)); }
       return a;
     } catch (e) { return []; }
   }
-  // ----- Recent repositories (local use in Issue Composer), max 10 -----
+  // ----- Recent repositories (local use in Issue Composer) -----
   function getRecents() { return readRepoList(LS_KEYS.recent); }
-  // Recents are NOT reordered: if the repo is already there, it stays in place;
-  // new ones are added AT THE END. When exceeding 10 the oldest is dropped.
+  // Most-recently-used first: activating a repo (from anywhere — the select,
+  // recents itself or favorites) moves it to the TOP of the recents list.
   function addRecent(full) {
     if (!full || full.indexOf("/") === -1) return;
-    var arr = getRecents();
-    if (arr.indexOf(full) !== -1) return;   // already there: doesn't change position
-    arr.push(full);                          // new ones at the bottom
-    if (arr.length > 10) arr = arr.slice(arr.length - 10);
+    var arr = getRecents().filter(function (x) { return x !== full; });
+    arr.unshift(full);                       // active one always on top
+    if (arr.length > REPO_LIST_MAX) arr = arr.slice(0, REPO_LIST_MAX);
     persist(LS_KEYS.recent, JSON.stringify(arr));
     renderRecents();
   }
@@ -1421,14 +1422,14 @@
     renderRepoTable($("recentList"), getRecents(), "You haven't used any repository yet.", "Remove from recent", removeRecent);
   }
 
-  // ----- Favorite repositories (local use in Issue Composer), max 10 -----
+  // ----- Favorite repositories (local use in Issue Composer) -----
   function getFavs() { return readRepoList(LS_KEYS.favs); }
   function isFav(full) { return getFavs().indexOf(full) !== -1; }
   function addFav(full) {
     if (!full || full.indexOf("/") === -1) return false;
     var arr = getFavs().filter(function (x) { return x !== full; });
     arr.push(full);                          // new ones at the bottom
-    if (arr.length > 10) arr = arr.slice(arr.length - 10);
+    if (arr.length > REPO_LIST_MAX) arr = arr.slice(arr.length - REPO_LIST_MAX);
     persist(LS_KEYS.favs, JSON.stringify(arr));
     renderFavs(); syncFavFab();
     return true;
