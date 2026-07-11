@@ -255,10 +255,14 @@
   .group { background: var(--surface); }
   .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 20px; padding: 0 16px 7px; }
   .group-hint { font-size: .8rem; color: var(--muted); padding: 0 16px 10px; }
-  /* Privacy section ("100% local, 100% yours"): dark blue, the same blue as
-     the progress chip's text in each theme. */
-  .privacy-note .group-title, .privacy-note .group-hint { color: #234e94; }
-  :root[data-theme="dark"] .privacy-note .group-title, :root[data-theme="dark"] .privacy-note .group-hint { color: #6cb6ff; }
+  /* Privacy section ("100% local, 100% yours"): a rounded card — sky-blue
+     background with vivid blue text (user-provided palette) in light mode,
+     the blue-tinted equivalents in dark mode. */
+  .privacy-note { background: #ddf0fb; border-radius: 12px; margin: 20px 16px 0; }
+  .privacy-note .group-title { margin-top: 0; }   /* the card provides the spacing */
+  .privacy-note .group-title, .privacy-note .group-hint { color: #3267d6; }
+  :root[data-theme="dark"] .privacy-note { background: #060b14; }
+  :root[data-theme="dark"] .privacy-note .group-title, :root[data-theme="dark"] .privacy-note .group-hint { color: #5b8def; }
   .field { padding: 12px 16px; }
   label { display: block; font-weight: 600; font-size: .82rem; margin: 2px 0 6px; color: var(--text); }
   input, select, textarea {
