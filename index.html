@@ -255,8 +255,10 @@
   .group { background: var(--surface); }
   .group-title { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 20px; padding: 0 16px 7px; }
   .group-hint { font-size: .8rem; color: var(--muted); padding: 0 16px 10px; }
-  /* Privacy section ("100% local, 100% yours"): dark blue, the same blue as
-     the progress chip's text in each theme. */
+  /* Privacy section ("100% local, 100% yours"): a rounded card with a light
+     blue background and the progress chip's text blue, in each theme. */
+  .privacy-note { background: var(--info-bg); border-radius: 12px; margin: 20px 16px 0; }
+  .privacy-note .group-title { margin-top: 0; }   /* the card provides the spacing */
   .privacy-note .group-title, .privacy-note .group-hint { color: #234e94; }
   :root[data-theme="dark"] .privacy-note .group-title, :root[data-theme="dark"] .privacy-note .group-hint { color: #6cb6ff; }
   .field { padding: 12px 16px; }
