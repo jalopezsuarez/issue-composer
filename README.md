@@ -58,6 +58,7 @@ Everything Issue Composer creates is a plain GitHub issue, label or comment. You
 - [Deployment](#deployment)
 - [Known limitations](#known-limitations)
 - [Project structure](#project-structure)
+- [License](#license)
 
 ---
 
