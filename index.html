@@ -35,6 +35,10 @@
     --on-black: #ffffff;   /* text/icon color on top of a --black fill (primary button, etc.) */
     --danger: #cf222e;
     --danger-bg: #fff1f0;
+    --info-fg: #0969da;    /* blue: everything OK / progress */
+    --info-bg: #ddf4ff;
+    --warn-fg: #9a6700;    /* yellow: warnings / user action needed */
+    --warn-bg: #fff8c5;
     --ok: #1f2328;
     --ok-bg: #f6f8fa;
     /* Gap (top and bottom) for the floating-button zones: 8px + 44px + 8px. */
@@ -54,6 +58,10 @@
     --on-black: #0d1117;
     --danger: #ff7b72;
     --danger-bg: rgba(248,81,73,.15);
+    --info-fg: #58a6ff;
+    --info-bg: rgba(31,111,235,.15);
+    --warn-fg: #d29922;
+    --warn-bg: rgba(187,128,9,.15);
     --ok: #e6edf3;
     --ok-bg: #161b22;
     color-scheme: dark;
@@ -284,9 +292,10 @@
 
   .msg { padding: 10px 14px; border-radius: 8px; font-size: .86rem; margin: 12px 16px 14px; display: none; }
   .msg.show { display: block; }
+  /* Three message states: blue = OK/progress, yellow = warning, red = error. */
   .msg.error { background: var(--danger-bg); color: var(--danger); }
-  .msg.success { background: var(--ok-bg); color: var(--text); }
-  .msg.info { background: var(--ok-bg); color: var(--muted); }
+  .msg.warn { background: var(--warn-bg); color: var(--warn-fg); }
+  .msg.success, .msg.info { background: var(--info-bg); color: var(--info-fg); }
 
   .spinner {
     display: inline-block; width: 14px; height: 14px;
@@ -546,6 +555,7 @@
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Note and code analysis</div>
         <div class="group-hint" style="padding:0 0 10px">The AI reviews the repo's codebase before writing so it's more precise.</div></div>
+        <div id="genMsg" class="msg"></div>
         <div class="field">
           <label for="note">Note</label>
           <textarea id="note" rows="5" placeholder="Describe what you want…"></textarea>
@@ -564,6 +574,7 @@
 
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0">Review and publish</div></div>
+        <div id="publishMsg" class="msg"></div>
         <div class="field">
           <label for="issueTitle">Title</label>
           <input type="text" id="issueTitle" placeholder="Title…" />
@@ -573,7 +584,6 @@
           <textarea id="issueBody" rows="12" placeholder="Body in Markdown…"></textarea>
         </div>
         <div class="field"><button id="btnPublish" class="block">Publish issue</button></div>
-        <div id="publishMsg" class="msg"></div>
       </div>
     </section>
 
@@ -601,6 +611,7 @@
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">GitHub</div>
         <div class="group-hint" style="padding:0">Token and repository selection.</div></div>
+        <div id="repoMsg" class="msg"></div>
         <div class="field">
           <label for="ghToken">Personal Access Token</label>
           <input type="password" id="ghToken" placeholder="ghp_…" autocomplete="off" />
@@ -620,13 +631,13 @@
           <input type="text" id="repoManual" placeholder="owner/repo" autocomplete="off" />
           <div class="actions" style="margin-top:10px"><button id="btnAddRepo" class="secondary block">Add to the list</button></div>
         </div>
-        <div id="repoMsg" class="msg"></div>
       </div>
 
       <!-- 3. LLM provider (at the bottom) -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">LLM provider</div>
         <div class="group-hint" style="padding:0">OpenAI-compatible.</div></div>
+        <div id="llmMsg" class="msg"></div>
         <div class="field"><label for="llmBaseUrl">Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
         <div class="field"><label for="llmApiKey">API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
         <div class="field"><label for="llmModel">Model</label><input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" /></div>
@@ -671,6 +682,7 @@
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">Settings</div>
         <div class="group-hint" style="padding:0">Encrypted export/import of all settings (tokens, LLM, GitHub, language, theme). You need both the encrypted settings and their key.</div></div>
+        <div id="ioMsg" class="msg"></div>
         <div class="field">
           <label>Action</label>
           <div class="segmented" id="ioControl">
@@ -690,7 +702,6 @@
             <input type="text" id="ioExportKey" readonly spellcheck="false" autocomplete="off" placeholder="Press Export to generate…" />
             <button type="button" class="io-btn" id="ioCopyKey" aria-label="Copy key"></button>
           </div>
-          <div class="group-hint" id="ioExportMsg" style="padding:8px 0 0"></div>
         </div>
         <div class="pad" id="ioImport" style="display:none">
           <label for="ioImportText">Encrypted settings</label>
@@ -704,7 +715,6 @@
             <button type="button" class="io-btn" id="ioPasteKey" aria-label="Paste key"></button>
           </div>
           <button type="button" id="btnImport" class="block" style="margin-top:12px">Import</button>
-          <div class="group-hint" id="ioImportMsg" style="padding:8px 0 0"></div>
         </div>
       </div>
 
@@ -811,8 +821,17 @@
 
   // ----- DOM helpers -----
   function $(id) { return document.getElementById(id); }
-  function showMsg(el, type, html) { el.className = "msg show " + type; el.innerHTML = html; }
-  function hideMsg(el) { el.className = "msg"; el.innerHTML = ""; }
+  // Any explicit message (or hide) cancels a pending debounced "saved" note on
+  // the same zone, so it can't pop up over the progress/result of an action.
+  function cancelSavedNote(el) { if (el._savedTimer) { clearTimeout(el._savedTimer); el._savedTimer = null; } }
+  function showMsg(el, type, html) { cancelSavedNote(el); el.className = "msg show " + type; el.innerHTML = html; }
+  function hideMsg(el) { cancelSavedNote(el); el.className = "msg"; el.innerHTML = ""; }
+  // Section message zones (below each section title): blue = OK/info,
+  // yellow = warning, red = error; "work" adds a spinner for in-progress calls.
+  function msgInfo(el, text) { showMsg(el, "info", esc(text)); }
+  function msgWork(el, text) { showMsg(el, "info", '<span class="spinner"></span>' + esc(text)); }
+  function msgWarn(el, text) { showMsg(el, "warn", esc(text)); }
+  function msgError(el, text) { showMsg(el, "error", esc(text)); }
   // Centered modal spinner: blocks the screen during a change/load in progress.
   // Unified text across the whole system: "Loading…".
   function showBusy() { $("busyText").textContent = "Loading…"; $("busy").hidden = false; }
@@ -945,6 +964,24 @@
   $("llmBaseUrl").addEventListener("input", function () { persist(LS_KEYS.llmBaseUrl, this.value.trim()); });
   $("llmModel").addEventListener("input", function () { persist(LS_KEYS.llmModel, this.value.trim()); });
   $("ghToken").addEventListener("input", function () { ghTokenMem = this.value.trim(); persist(LS_KEYS.ghToken, ghTokenMem); });
+  // While typing credentials, confirm in that section's message zone that the
+  // value is stored locally (debounced on input, NOT on blur: a blur-time
+  // message would shift the layout right under the user's tap on a button).
+  (function () {
+    function savedNote(ids, msgEl, text) {
+      function ping() {
+        var el = this;
+        cancelSavedNote(msgEl);
+        msgEl._savedTimer = setTimeout(function () {
+          if (el.value.trim()) msgInfo(msgEl, text);
+          else hideMsg(msgEl);   // field cleared → no stale "saved" note
+        }, 900);
+      }
+      for (var i = 0; i < ids.length; i++) $(ids[i]).addEventListener("input", ping);
+    }
+    savedNote(["ghToken"], $("repoMsg"), "Token saved on this device. Press Connect GitHub to load your repositories.");
+    savedNote(["llmBaseUrl", "llmApiKey", "llmModel"], $("llmMsg"), "LLM settings saved on this device.");
+  })();
 
   // ----- Mode -----
   function buildToneControl(el, getVal, setVal) {
@@ -1170,54 +1207,57 @@
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle("active", bs[i].getAttribute("data-io") === mode);
     $("ioExport").style.display = (mode === "export") ? "" : "none";
     $("ioImport").style.display = (mode === "import") ? "" : "none";
+    hideMsg($("ioMsg"));   // each mode starts with a clean message zone
     // The export fields start empty: they're only filled when "Export" is pressed.
   }
   (function wireIo() {
     var bs = $("ioControl").querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setIoMode(this.getAttribute("data-io")); });
     function copyText(text, msgEl, okMsg) {
-      function done(ok) { msgEl.textContent = ok ? okMsg : "Couldn't copy automatically; copy it manually."; }
+      function done(ok) { if (ok) msgInfo(msgEl, okMsg); else msgWarn(msgEl, "Couldn't copy automatically — copy it manually."); }
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
         else done(false);
       } catch (e) { done(false); }
     }
     function pasteInto(input, msgEl) {
-      if (!(navigator.clipboard && navigator.clipboard.readText)) { msgEl.textContent = "Clipboard reading isn't available; paste manually."; return; }
-      navigator.clipboard.readText().then(function (t) { input.value = (t || "").trim(); msgEl.textContent = ""; },
-        function () { msgEl.textContent = "Couldn't read the clipboard; paste manually."; });
+      if (!(navigator.clipboard && navigator.clipboard.readText)) { msgWarn(msgEl, "Clipboard reading isn't available — paste manually."); return; }
+      navigator.clipboard.readText().then(function (t) { input.value = (t || "").trim(); msgInfo(msgEl, "Pasted from the clipboard."); },
+        function () { msgWarn(msgEl, "Couldn't read the clipboard — paste manually."); });
     }
     // Export: generates the encrypted settings + their key into the two fields.
     $("btnDoExport").addEventListener("click", function () {
-      var msg = $("ioExportMsg");
-      if (!cryptoReady()) { msg.textContent = "Encryption isn't available here."; alert("Encryption isn't available in this context (it needs HTTPS)."); return; }
+      var msg = $("ioMsg");
+      if (!cryptoReady()) { msgError(msg, "Encryption isn't available here (it needs HTTPS)."); alert("Encryption isn't available in this context (it needs HTTPS)."); return; }
+      msgWork(msg, "Encrypting your settings…");
       encryptSettings(buildSettingsExport()).then(function (r) {
         $("ioExportText").value = r.payload; $("ioExportKey").value = r.key;
-        msg.textContent = "Encrypted settings generated.";
+        msgInfo(msg, "Encrypted settings generated — copy BOTH values below.");
         alert("Encrypted settings generated. Copy the encrypted settings AND the encryption key below — you'll need both to import.");
-      }).catch(function (err) { msg.textContent = err.message; alert("Couldn't encrypt the settings: " + err.message); });
+      }).catch(function (err) { msgError(msg, "Couldn't encrypt the settings: " + err.message); alert("Couldn't encrypt the settings: " + err.message); });
     });
     $("ioCopyData").innerHTML = svg("copy", 17);
     $("ioCopyData").addEventListener("click", function () {
-      var v = $("ioExportText").value; var msg = $("ioExportMsg");
-      if (!v) { msg.textContent = "Press Export first."; return; }
+      var v = $("ioExportText").value; var msg = $("ioMsg");
+      if (!v) { msgWarn(msg, "Press Export first."); return; }
       copyText(v, msg, "Encrypted settings copied to the clipboard.");
     });
     $("ioCopyKey").innerHTML = svg("copy", 17);
     $("ioCopyKey").addEventListener("click", function () {
-      var v = $("ioExportKey").value; var msg = $("ioExportMsg");
-      if (!v) { msg.textContent = "Press Export first."; return; }
+      var v = $("ioExportKey").value; var msg = $("ioMsg");
+      if (!v) { msgWarn(msg, "Press Export first."); return; }
       copyText(v, msg, "Encryption key copied to the clipboard.");
     });
     // Import: paste the encrypted settings and their key, then decrypt and load.
     $("ioPasteData").innerHTML = svg("paste", 17);
-    $("ioPasteData").addEventListener("click", function () { pasteInto($("ioImportText"), $("ioImportMsg")); });
+    $("ioPasteData").addEventListener("click", function () { pasteInto($("ioImportText"), $("ioMsg")); });
     $("ioPasteKey").innerHTML = svg("paste", 17);
-    $("ioPasteKey").addEventListener("click", function () { pasteInto($("ioImportKey"), $("ioImportMsg")); });
+    $("ioPasteKey").addEventListener("click", function () { pasteInto($("ioImportKey"), $("ioMsg")); });
     $("btnImport").addEventListener("click", function () {
-      var msg = $("ioImportMsg"), payload = $("ioImportText").value.trim(), keyB64 = $("ioImportKey").value.trim();
-      if (!payload || !keyB64) { msg.textContent = "Paste the encrypted settings and their key."; alert("Paste both the encrypted settings and the encryption key before importing."); return; }
-      if (!cryptoReady()) { msg.textContent = "Encryption isn't available here."; alert("Encryption isn't available in this context (it needs HTTPS)."); return; }
+      var msg = $("ioMsg"), payload = $("ioImportText").value.trim(), keyB64 = $("ioImportKey").value.trim();
+      if (!payload || !keyB64) { msgWarn(msg, "Paste the encrypted settings and their key first."); alert("Paste both the encrypted settings and the encryption key before importing."); return; }
+      if (!cryptoReady()) { msgError(msg, "Encryption isn't available here (it needs HTTPS)."); alert("Encryption isn't available in this context (it needs HTTPS)."); return; }
+      msgWork(msg, "Decrypting and validating your settings…");
       decryptSettings(payload, keyB64).then(function (data) {
         if (!data || typeof data !== "object") throw new Error("The decrypted settings are not valid.");
         var n = 0;
@@ -1229,10 +1269,10 @@
           persist(LS_KEYS[k], v);
           n++;
         }
-        msg.textContent = "Imported " + n + " settings. Reloading…";
+        msgInfo(msg, "Imported " + n + " settings — reloading the app…");
         alert(n + " settings were imported successfully. The app will reload to apply them.");
         setTimeout(function () { location.reload(); }, 300);
-      }).catch(function (err) { msg.textContent = err.message; alert("Couldn't import: " + err.message); });
+      }).catch(function (err) { msgError(msg, "Couldn't import: " + err.message); alert("Couldn't import: " + err.message); });
     });
     setIoMode("export");
   })();
@@ -1507,12 +1547,23 @@
   }
   $("repoSearch").addEventListener("input", renderRepoOptions);
 
+  // Maps a GitHub API error to a short, actionable message for the user.
+  function ghErrorText(err) {
+    var m = String(err && err.message || err);
+    if (/\b401\b/.test(m)) return "Invalid or expired token — create a new one and try again.";
+    if (/\b403\b/.test(m)) return "Access denied or rate limit reached — check the token permissions or wait a few minutes.";
+    if (/\b404\b/.test(m)) return "Not found — the token can't see this resource (permissions, SAML SSO or a typo).";
+    if (/failed to fetch|network/i.test(m)) return "No connection to GitHub — check your network and try again.";
+    return m;
+  }
   $("btnConnect").addEventListener("click", function () {
     var btn = this, msg = $("repoMsg"); hideMsg(msg);
-    if (!ghTokenMem) { showMsg(msg, "error", "Enter your GitHub Personal Access Token."); return; }
+    if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub Personal Access Token first."); return; }
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Connecting…';
+    msgWork(msg, "Connecting to GitHub and loading your repositories…");
     fetchAllPages(function (page) { return GH_API + "/user/repos?per_page=100&affiliation=owner,collaborator,organization_member&page=" + page; })
       .then(function (userRepos) {
+        msgWork(msg, "Loading your organizations' repositories…");
         return ghFetch(GH_API + "/user/orgs?per_page=100").then(function (orgs) {
           orgs = Array.isArray(orgs) ? orgs : [];
           var byOrg = [];
@@ -1531,17 +1582,19 @@
         $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();
         renderRecents(); renderFavs();   // now with loadedRepos: paints the lock on private ones
         var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
-        showMsg(msg, "success", "Loaded " + loadedRepos.length + " repositories." + (matched ? " Restored: <strong>" + esc(stored) + "</strong>." : ""));
-      }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
+        if (!loadedRepos.length) msgWarn(msg, "Connected, but no repositories are visible to this token.");
+        else showMsg(msg, "success", "Connected — " + loadedRepos.length + " repositories loaded." + (matched ? " Restored: <strong>" + esc(stored) + "</strong>." : ""));
+      }).catch(function (err) { msgError(msg, ghErrorText(err)); })
       .then(function () { btn.disabled = false; btn.textContent = "Connect GitHub"; });
   });
 
   $("btnAddRepo").addEventListener("click", function () {
     var btn = this, msg = $("repoMsg"); hideMsg(msg);
     var full = $("repoManual").value.trim().replace(/^\/+|\/+$/g, "");
-    if (!ghTokenMem) { showMsg(msg, "error", "Enter your GitHub Personal Access Token."); return; }
-    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) { showMsg(msg, "error", "Write the repository as owner/repo."); return; }
+    if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub Personal Access Token first."); return; }
+    if (!full || full.split("/").length !== 2 || !full.split("/")[0] || !full.split("/")[1]) { msgWarn(msg, "Write the repository as owner/repo."); return; }
     btn.disabled = true; var prev = btn.textContent; btn.innerHTML = '<span class="spinner"></span>Verifying…';
+    msgWork(msg, "Checking " + full + " on GitHub…");
     ghFetch(GH_API + "/repos/" + full).then(function (r) {
       var exists = loadedRepos.some(function (x) { return x.full_name === r.full_name; });
       if (!exists) { loadedRepos.push({ full_name: r.full_name, private: !!r.private }); loadedRepos.sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); }); }
@@ -1843,6 +1896,7 @@
           labelsHtml(userLabels(issue)) +
           (issue.body ? renderMd(issue.body) : '<div class="md" style="color:var(--muted)">(no description)</div>') +
           '<div style="margin-top:14px"><div class="group-title" style="padding:0 0 6px">Status</div>' +
+            '<div id="statusMsg" class="msg"></div>' +
             '<div class="strows" id="statusRow">' + STATUSES.map(function (s) {
               var on = statusOf(issue) === s.name;
               var rc = statusRowColors(s);
@@ -1856,7 +1910,8 @@
             '<button id="btnToggleState" class="block btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Close" : "Reopen") + "</button>" +
           "</div>" +
         "</div>" +
-        '<div class="pad"><div class="group-title" style="padding:0">Comments (<span id="commentsCount">' + comments.length + "</span>)</div></div>";
+        '<div class="pad"><div class="group-title" style="padding:0">Comments (<span id="commentsCount">' + comments.length + '</span>)</div></div>' +
+        '<div id="commentsMsg" class="msg"></div>';
 
       html += '<div id="commentsList">';
       if (comments.length === 0) html += '<div class="empty-state" id="noComments">No comments.</div>';
@@ -1867,6 +1922,7 @@
       html +=
         '<div class="group" style="margin-top:14px">' +
           '<div class="pad"><div class="group-title" style="padding:0">New comment with AI</div></div>' +
+          '<div id="commentMsg" class="msg"></div>' +
           '<div class="field"><label for="commentNote">Proposed text</label>' +
             '<textarea id="commentNote" rows="3" placeholder="Write your comment…"></textarea></div>' +
           '<div class="field"><label>Generate with AI</label><div class="segmented" id="commentToneControl">' +
@@ -1876,7 +1932,6 @@
           '<div class="field"><label for="commentGenerated">Generated text (editable, this is what gets published)</label>' +
             '<textarea id="commentGenerated" rows="5" placeholder="The generated comment appears here…"></textarea></div>' +
           '<div class="field"><button id="btnPostComment" class="block">Publish comment</button></div>' +
-          '<div id="commentMsg" class="msg"></div>' +
         "</div>";
 
       box.innerHTML = html;
@@ -1891,12 +1946,17 @@
       for (var k = 0; k < stbtns.length; k++) stbtns[k].addEventListener("click", function () {
         var name = this.getAttribute("data-st");
         if (name === statusOf(issue)) return;
+        var smsg = $("statusMsg");
         var prevLabels = (issue.labels || []).slice();   // to revert if it fails
         showBusy();
+        msgWork(smsg, "Updating status to " + name + " on GitHub…");
         var p = applyStatus(repo, issue, name);   // mutates issue.labels synchronously
         refreshDetailStatus(issue);                // reflects the new status instantly
-        p.then(function () { syncIssue(repo, number, { labels: issue.labels.slice() }); })
-          .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); alert(err.message); })
+        p.then(function () {
+          syncIssue(repo, number, { labels: issue.labels.slice() });
+          msgInfo(smsg, "Status updated to " + name + ".");
+        })
+          .catch(function (err) { issue.labels = prevLabels; refreshDetailStatus(issue); msgError(smsg, "Couldn't update the status: " + ghErrorText(err)); })
           .then(function () { hideBusy(); });
       });
       // Tapping a mode selects it AND generates the comment with it.
@@ -1921,13 +1981,16 @@
   }
   function deleteComment(cid) {
     if (!currentIssue) return;
+    var msg = $("commentsMsg");
     showBusy();
+    msgWork(msg, "Deleting the comment on GitHub…");
     ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/comments/" + cid, { method: "DELETE" })
       .then(function () {
         var el = commentEl(cid); if (el && el.parentNode) el.parentNode.removeChild(el);
         var cc = $("commentsCount"); if (cc) cc.textContent = Math.max(0, (parseInt(cc.textContent, 10) || 1) - 1);
         syncIssue(currentIssue.repo, currentIssue.number, { commentsInc: -1 });
-      }).catch(function (err) { alert(err.message); }).then(function () { hideBusy(); });
+        msgInfo(msg, "Comment deleted.");
+      }).catch(function (err) { msgError(msg, "Couldn't delete the comment: " + ghErrorText(err)); }).then(function () { hideBusy(); });
   }
 
   // =================== GENERIC EDITOR (a single view, one element at a time) ===================
@@ -2010,17 +2073,21 @@
   }
   function toggleIssueState() {
     if (!currentIssue) return;
+    var msg = $("statusMsg");
     var prevState = currentIssue.state;
     var newState = prevState === "open" ? "closed" : "open";
     // Optimistic: updates the UI instantly; modal spinner until confirmed.
     currentIssue.state = newState; updateStateUI(newState);
     showBusy();
+    msgWork(msg, (newState === "closed" ? "Closing" : "Reopening") + " the issue on GitHub…");
     ghFetch(GH_API + "/repos/" + currentIssue.repo + "/issues/" + currentIssue.number, {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: newState })
     }).then(function () {
       syncIssue(currentIssue.repo, currentIssue.number, { state: newState });
+      msgInfo(msg, newState === "closed" ? "Issue closed." : "Issue reopened.");
     }).catch(function (err) {
-      currentIssue.state = prevState; updateStateUI(prevState); alert(err.message);
+      currentIssue.state = prevState; updateStateUI(prevState);
+      msgError(msg, "Couldn't change the issue state: " + ghErrorText(err));
     }).then(function () { hideBusy(); });
   }
 
@@ -2037,11 +2104,11 @@
     var msg = $("commentMsg"); hideMsg(msg);
     var note = $("commentNote").value.trim();
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM in Settings."); return; }
-    if (!note) { showMsg(msg, "error", "Write a proposed text for the comment."); return; }
+    if (!baseUrl || !apiKey || !model) { msgWarn(msg, "Configure the LLM in Settings first."); return; }
+    if (!note) { msgWarn(msg, "Write a proposed text for the comment first."); return; }
     setToneBusy($("commentToneControl"), true);
-    // Progress shares the message slot below Publish comment (same as results).
-    function setStat(t) { if (t) showMsg(msg, "info", '<span class="spinner"></span>' + esc(t)); else hideMsg(msg); }
+    // Progress shares the section's message zone (below "New comment with AI").
+    function setStat(t) { if (t) msgWork(msg, t); else hideMsg(msg); }
     setStat("Generating…");
 
     var thread = (comments || []).slice(-6).map(function (c) { return (c.user ? c.user.login : "?") + ": " + (c.body || ""); }).join("\n---\n");
@@ -2064,18 +2131,19 @@
     work.then(function (content) {
       $("commentGenerated").value = cleanText(content);
       setStat("");
-      showMsg(msg, "success", "Comment generated. Edit it if you want and press Publish.");
+      msgInfo(msg, "Comment generated — edit it if you want and press Publish.");
     }).catch(function (err) {
-      setStat(""); showMsg(msg, "error", esc(err.message));
+      setStat(""); msgError(msg, err.message);
     }).then(function () { setToneBusy($("commentToneControl"), false); });
   }
 
   function postComment(repo, number) {
     var msg = $("commentMsg"); hideMsg(msg);
     var body = $("commentGenerated").value.trim();
-    if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
-    if (!body) { showMsg(msg, "error", "There's no generated text to publish."); return; }
+    if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub token in Settings first."); return; }
+    if (!body) { msgWarn(msg, "There's no generated text to publish yet."); return; }
     showBusy();
+    msgWork(msg, "Publishing the comment to GitHub…");
     ghFetch(GH_API + "/repos/" + repo + "/issues/" + number + "/comments", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body })
     }).then(function (created) {
@@ -2087,10 +2155,10 @@
       $("commentGenerated").value = ""; $("commentNote").value = "";
       syncIssue(repo, number, { commentsInc: 1 });
       hideBusy();
-      showMsg(msg, "success", "Comment published.");
+      msgInfo(msg, "Comment published.");
       $("content").scrollTop = $("content").scrollHeight;   // scrolls down to the new comment
     }).catch(function (err) {
-      hideBusy(); showMsg(msg, "error", esc(err.message));
+      hideBusy(); msgError(msg, "Couldn't publish the comment: " + ghErrorText(err));
     });
   }
 
@@ -2477,11 +2545,11 @@
   // =================== COMPOSER: ANALYZE AND WRITE ===================
   var IGNORE_DIRS = /(^|\/)(node_modules|\.git|dist|build|vendor|\.next|coverage)(\/|$)/;
   var BINARY_EXT = /\.(png|jpe?g|gif|svg|ico|webp|bmp|tiff?|pdf|zip|gz|tar|rar|7z|exe|dll|so|dylib|bin|woff2?|ttf|eot|otf|mp[34]|mov|avi|mkv|wav|ogg|class|jar|wasm|lock|map|min\.js|min\.css)$/i;
-  // Generation progress shares the message slot below Publish issue: it shows
-  // as an info banner with a spinner, and results/errors replace it in place.
+  // Generation progress shows in the "Note and code analysis" message zone
+  // (below the section title); results/errors replace it in place.
   function setStatus(text) {
-    if (text) showMsg($("publishMsg"), "info", '<span class="spinner"></span>' + esc(text));
-    else hideMsg($("publishMsg"));
+    if (text) msgWork($("genMsg"), text);
+    else hideMsg($("genMsg"));
   }
 
   function b64ToUtf8(b64) {
@@ -2554,15 +2622,15 @@
 
   // Generation is triggered by tapping a mode in the segmented control.
   function generateIssue() {
-    // Generation messages (validations, errors, success) show below the
-    // Publish issue button, same as the comment composer does.
-    var msg = $("publishMsg"); hideMsg(msg); setStatus("");
+    // Generation messages (validations, progress, errors, success) show in
+    // the "Note and code analysis" message zone, below its section title.
+    var msg = $("genMsg"); hideMsg(msg); hideMsg($("publishMsg"));
     var repo = getSelectedRepo(), note = $("note").value.trim();
-    if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Select a repository in Settings."); return; }
-    if (!note) { showMsg(msg, "error", "Write a note describing the issue."); return; }
+    if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub token in Settings first."); return; }
+    if (!repo || repo.indexOf("/") === -1) { msgWarn(msg, "Select a repository in Settings first."); return; }
+    if (!note) { msgWarn(msg, "Write a note describing the issue first."); return; }
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
-    if (!baseUrl || !apiKey || !model) { showMsg(msg, "error", "Configure the LLM Base URL, API key and Model."); return; }
+    if (!baseUrl || !apiKey || !model) { msgWarn(msg, "Configure the LLM Base URL, API key and Model in Settings first."); return; }
 
     rememberRepo(); addRecent(repo); setToneBusy($("toneControl"), true); setStatus("Analyzing…");
     var parts = repo.split("/"), owner = parts[0], name = parts[1];
@@ -2585,9 +2653,9 @@
       var title = (obj && obj.title) ? String(obj.title) : "", body = (obj && obj.body) ? String(obj.body) : "";
       if (!title && !body) throw new Error("The LLM didn't return title/body.");
       $("issueTitle").value = title; $("issueBody").value = body; setStatus("");
-      showMsg(msg, "success", "Issue written. Review it below and publish it.");
+      msgInfo(msg, "Issue drafted below — review it and publish it.");
       $("issueTitle").scrollIntoView({ behavior: "smooth", block: "center" });
-    }).catch(function (err) { setStatus(""); showMsg(msg, "error", esc(err.message)); })
+    }).catch(function (err) { setStatus(""); msgError(msg, err.message); })
       .then(function () { setToneBusy($("toneControl"), false); });
   }
 
@@ -2595,10 +2663,11 @@
   $("btnPublish").addEventListener("click", function () {
     var btn = this, msg = $("publishMsg"); hideMsg(msg);
     var repo = getSelectedRepo(), title = $("issueTitle").value.trim(), body = $("issueBody").value;
-    if (!ghTokenMem) { showMsg(msg, "error", "Enter your token in Settings."); return; }
-    if (!repo || repo.indexOf("/") === -1) { showMsg(msg, "error", "Select a repository in Settings."); return; }
-    if (!title) { showMsg(msg, "error", "The title can't be empty."); return; }
+    if (!ghTokenMem) { msgWarn(msg, "Enter your GitHub token in Settings first."); return; }
+    if (!repo || repo.indexOf("/") === -1) { msgWarn(msg, "Select a repository in Settings first."); return; }
+    if (!title) { msgWarn(msg, "The title can't be empty."); return; }
     rememberRepo(); addRecent(repo); showBusy();
+    msgWork(msg, "Publishing the issue to " + repo + "…");
     var parts = repo.split("/");
     var createUrl = GH_API + "/repos/" + parts[0] + "/" + parts[1] + "/issues";
     // New issues land at the TOP of the kanban's pending column: the labels
@@ -2622,10 +2691,10 @@
       issuesState.repo = null; KAN.repo = null;   // new issue → reload list/board when opening them
       // Close the composer (clean for the next use), return to the origin view
       // (kanban/list) and confirm with a toast under the nav bar.
-      $("note").value = ""; $("issueTitle").value = ""; $("issueBody").value = ""; setStatus("");
+      $("note").value = ""; $("issueTitle").value = ""; $("issueBody").value = ""; setStatus(""); hideMsg(msg);
       showView(composerOrigin);
       showToast(svg("issue", 15) + "<span>Issue <b>#" + issue.number + "</b> created · " + esc(issue.title || title) + "</span>");
-    }).catch(function (err) { showMsg(msg, "error", esc(err.message)); })
+    }).catch(function (err) { msgError(msg, ghErrorText(err)); })
       .then(function () { hideBusy(); });
   });
 
