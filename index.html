@@ -2333,13 +2333,13 @@
     else renderKanban();                                             // already loaded → cache (with changes)
   }
 
-  // Board pages: like the list, the board loads page by page. The scroller is
-  // shared by every column, so each new page feeds all the columns at once.
-  var KAN_PER_PAGE = 100;
+  // Board pages: like the list, the board loads page by page with the same
+  // standard page size (PER_PAGE). The scroller is shared by every column,
+  // so each new page feeds all the columns at once.
   function kanbanPageUrl(repo, page) {
     // With a query, use the GitHub Search API (server-side) and filter the board.
-    if (KAN.query) return GH_API + "/search/issues?q=" + encodeURIComponent("repo:" + repo + " type:issue " + KAN.query) + "&sort=updated&order=desc&per_page=" + KAN_PER_PAGE + "&page=" + page;
-    return GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + KAN_PER_PAGE + "&sort=updated&direction=desc&page=" + page;
+    if (KAN.query) return GH_API + "/search/issues?q=" + encodeURIComponent("repo:" + repo + " type:issue " + KAN.query) + "&sort=updated&order=desc&per_page=" + PER_PAGE + "&page=" + page;
+    return GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + PER_PAGE + "&sort=updated&direction=desc&page=" + page;
   }
   function loadKanban() {
     var repo = getSelectedRepo();
@@ -2355,12 +2355,15 @@
         if (myToken !== KAN.token) return;   // stale response → ignore
         var items = KAN.query ? (data && data.items) : data;
         items = Array.isArray(items) ? items : [];
-        KAN.page = 1; KAN.done = items.length < KAN_PER_PAGE;
+        KAN.page = 1; KAN.done = items.length < PER_PAGE;
         KAN.issues = items.filter(function (it) { return !it.pull_request; });
         renderKanban();
-        maybeFillKanban();   // short board + more pages → keep loading
       }).catch(function (err) { if (myToken !== KAN.token) return; $("kanbanBoard").innerHTML = stateBlock(esc(err.message), "error"); })
-      .then(function () { if (myToken === KAN.token) KAN.loading = false; });
+      .then(function () {
+        if (myToken !== KAN.token) return;
+        KAN.loading = false;
+        maybeFillKanban();   // short board + more pages → keep loading (after the flag clears)
+      });
   }
 
   // Shows/hides the standard pagination row at the bottom of every column.
@@ -2383,17 +2386,21 @@
         if (myToken !== KAN.token) return;
         var items = KAN.query ? (data && data.items) : data;
         items = Array.isArray(items) ? items : [];
-        KAN.page++; KAN.done = items.length < KAN_PER_PAGE;
+        KAN.page++; KAN.done = items.length < PER_PAGE;
         var known = {};
         KAN.issues.forEach(function (it) { known[it.number] = 1; });
         items.forEach(function (it) { if (!it.pull_request && !known[it.number]) KAN.issues.push(it); });
         renderKanban();   // re-render replaces the loader rows with the cards
-        maybeFillKanban();
       }).catch(function (err) {
         if (myToken !== KAN.token) return;
         setColumnLoaders(false);
+        KAN.done = true;   // stop paginating (same as the list); reload retries
         showMsg($("kanbanMsg"), "error", esc(err.message));
-      }).then(function () { if (myToken === KAN.token) KAN.loadingMore = false; });
+      }).then(function () {
+        if (myToken !== KAN.token) return;
+        KAN.loadingMore = false;
+        maybeFillKanban();   // after the flag clears, so short pages keep chaining
+      });
   }
   // If the loaded pages don't fill the screen yet (e.g. lots of PRs filtered
   // out) there's nothing to scroll, so the next page is requested directly.

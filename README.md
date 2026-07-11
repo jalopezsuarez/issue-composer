@@ -73,7 +73,7 @@ Board by **status**, one column per fixed status. Each card shows the title, a 2
 
 Issues published from the app land at the **top of the *pending* column** (created with `status:pending` + `order:0` in the same request).
 
-The board loads **page by page** (100 issues per page): scrolling near the bottom fetches the next page for **all columns at once** (the vertical scroll is shared), and while it loads each column shows a **transparent pagination row with a centered loader** at its bottom. If the loaded pages don't fill the screen (e.g. many PRs filtered out), the next page is requested automatically.
+The board loads **page by page** (25 issues per page, the same standard size as the list): scrolling near the bottom fetches the next page for **all columns at once** (the vertical scroll is shared), and while it loads each column shows a **transparent pagination row with a centered loader** at its bottom. If the loaded pages don't fill the screen, the next page is requested automatically until it does (or there's nothing left). Pagination works the same while searching (Search API pages).
 
 ### 📋 Issues
 List with **infinite scroll** (25 per page). Issues render as **two groups — open first, closed always at the end** — each ordered by date. Each row shows the `open/closed` capsule + the status chip, then `#no · user · comments · date`. The **sort** toggle (Newest / Oldest) lives inside the search bar.
