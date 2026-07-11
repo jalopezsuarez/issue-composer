@@ -65,7 +65,7 @@
   :root[data-theme="dark"] .kcol.kover { background: #30363d; }
   :root[data-theme="dark"] .btnstate.close { background: rgba(248,81,73,.15); color: #ff7b72; }
   :root[data-theme="dark"] .btnstate.reopen { background: rgba(63,185,80,.15); color: #3fb950; }
-  :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-close:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
+  :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-close:active, :root[data-theme="dark"] .fab-share:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Typography enlarged from the default (19px instead of 16). */
   /* White base on html/body: the safe-area strip (and the background behind the keyboard);
@@ -114,7 +114,7 @@
      Common base: almost no background (minimal) while keeping the blur, faint white border,
      light weight. Back (left, in detail/create); in list/kanban reload
      (left) and add (right, mirrored layout). */
-  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav, .fab-search, .fab-close {
+  .fab-back, .fab-reload, .fab-add, .fab-save, .fab-fav, .fab-search, .fab-close, .fab-share {
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px + var(--vvtop, 0px)); z-index: 60;
     width: 44px; height: 44px; border-radius: 50%;
@@ -128,10 +128,13 @@
   .fab-back, .fab-reload { left: 12px; }
   .fab-search { right: 12px; }                  /* search toggle: rightmost in kanban/list */
   .fab-add { right: 64px; }                     /* add: to the left of the search fab */
-  .fab-save, .fab-fav, .fab-close { right: 12px; }   /* editor/settings/assistant: rightmost */
-  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active, .fab-close:active { background: rgba(255,255,255,.5); }
-  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden], .fab-close[hidden] { display: none; }
+  .fab-save, .fab-fav, .fab-close, .fab-share { right: 12px; }   /* editor/settings/assistant/detail: rightmost */
+  .fab-back:active, .fab-reload:active, .fab-add:active, .fab-save:active, .fab-fav:active, .fab-search:active, .fab-close:active, .fab-share:active { background: rgba(255,255,255,.5); }
+  .fab-back[hidden], .fab-reload[hidden], .fab-add[hidden], .fab-save[hidden], .fab-fav[hidden], .fab-search[hidden], .fab-close[hidden], .fab-share[hidden] { display: none; }
   .fab-close svg { width: 25px; height: 25px; }
+  /* Share (issue detail, top right): opens the issue on GitHub. */
+  .fab-share { text-decoration: none; }
+  .fab-share svg { width: 20px; height: 20px; }
   .fab-search.on { background: rgba(255,255,255,.6); }
   .fab-search svg { width: 20px; height: 20px; }
   /* Favorite fab (settings, right): filled heart, marks the active repo. */
@@ -503,6 +506,8 @@
   <!-- Favorite toggle for the active repo (settings, top right) -->
   <button id="favFab" class="fab-fav" hidden aria-label="Add to favorites"></button>
   <button id="btnSaveEdit" class="fab-save" hidden aria-label="Save"></button>
+  <!-- Share (issue detail, top right): opens the issue on GitHub -->
+  <a id="shareFab" class="fab-share" hidden target="_blank" rel="noopener" aria-label="Open on GitHub"></a>
   <!-- Close the AI assistant (top right); returns to the previous view -->
   <button id="assistantClose" class="fab-close" hidden aria-label="Close assistant"></button>
   <!-- Toast below the nav bar (e.g. "issue created"); tap or wait to dismiss -->
@@ -753,6 +758,7 @@
     issue: "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     issueclosed: "M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z|M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
     star: "M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z",
+    share: "M7.47.72a.75.75 0 0 1 1.06 0l2.75 2.75a.75.75 0 1 1-1.06 1.06L8.75 3.06v7.19a.75.75 0 0 1-1.5 0V3.06L5.78 4.53a.75.75 0 0 1-1.06-1.06Z|M3.75 6.5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5a.25.25 0 0 0-.25-.25h-1.5a.75.75 0 0 1 0-1.5h1.5c.966 0 1.75.784 1.75 1.75v5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5c0-.966.784-1.75 1.75-1.75Z",
     lock: "M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 1 0-5 0v2Z",
     plus: "M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z",
     up: "M3.47 7.78a.75.75 0 0 1 0-1.06l4.25-4.25a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1-1.06 1.06L8.75 4.81v7.44a.75.75 0 0 1-1.5 0V4.81L4.53 7.78a.75.75 0 0 1-1.06 0Z",
@@ -858,6 +864,7 @@
     $("navcap").hidden = (name === "edit" || name === "assistant");   // hidden while editing / in the assistant
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
     $("assistantClose").hidden = (name !== "assistant");   // close (top-right) only in the assistant
+    $("shareFab").hidden = true;   // share (top-right) only while an issue detail is open
     // View color (painted by #viewbg below the safe area): white in every view.
     document.documentElement.style.setProperty("--cbg", "var(--surface)");
     // Desktop width: kanban/issues span the full browser width; the reading/editing
@@ -1300,6 +1307,7 @@
     fab.hidden = !(repo && repo.indexOf("/") !== -1 && $("view-config").classList.contains("active"));
   }
   $("favFab").innerHTML = svg("star", 22);
+  $("shareFab").innerHTML = svg("share", 20);
   $("favFab").addEventListener("click", function () {
     var repo = getSelectedRepo();
     if (repo && repo.indexOf("/") !== -1 && !isFav(repo)) addFav(repo);
@@ -1625,7 +1633,7 @@
   function showIssuesList() {
     $("issuesListWrap").style.display = ""; $("issueDetailWrap").style.display = "none";
     document.documentElement.style.setProperty("--appmax", "100%");   // list spans the full width
-    $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false; $("viewSearch").hidden = false; applySearchState("issues");
+    $("navBack").hidden = true; $("viewReload").hidden = false; $("viewAdd").hidden = false; $("viewSearch").hidden = false; $("shareFab").hidden = true; applySearchState("issues");
     if (issuesState.items.length) renderIssuesList();   // re-paints from cache (reflects changes on return)
     updateActiveRepoBanners();
   }
@@ -1845,7 +1853,6 @@
                 '<span class="stcheck">' + svg("check", 16) + "</span></button>";
             }).join("") + "</div></div>" +
           '<div class="actions" style="margin-top:14px">' +
-            '<a class="linkbtn" href="' + esc(issue.html_url) + '" target="_blank" rel="noopener">' + svg("external", 14) + "GitHub</a>" +
             '<button id="btnEditIssue" style="margin-left:auto" class="secondary">Edit</button>' +
             '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Close" : "Reopen") + "</button>" +
           "</div>" +
@@ -1874,6 +1881,8 @@
         "</div>";
 
       box.innerHTML = html;
+      // Share fab (top right): opens this issue on GitHub.
+      $("shareFab").href = issue.html_url; $("shareFab").hidden = false;
 
       // detail wiring
       $("btnToggleState").addEventListener("click", toggleIssueState);
@@ -1943,7 +1952,7 @@
     markActiveView("issues");
     document.documentElement.style.setProperty("--appmax", "720px");   // back to the detail (reading view)
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; syncRepoTag();
+    $("navBack").hidden = false; $("viewReload").hidden = true; $("viewAdd").hidden = true; $("viewSearch").hidden = true; $("shareFab").hidden = false; syncRepoTag();
   }
   // Shortcuts to avoid repeating the PATCH plumbing on every call.
   function editIssueField(repo, number, field, value) {
