@@ -274,7 +274,6 @@ Web Crypto, **AES-256-GCM**:
 - **Empty/loading/error states:** one shared centered block (`stateBlock`) with identical wording across the board and the list.
 - **Infinite-scroll pagination:** one standard everywhere — a transparent `.pageloader` row with a centered spinner, built by `pageLoader()`, shown below the issues list and at the bottom of every kanban column while the next page loads; one shared scroll trigger on the content scroller paginates whichever view is active.
 - **Icons:** inline monochrome octicons from a `PATHS` map rendered by `svg(name, size)` (16×16 viewBox, `currentColor`).
-- **Destructive row actions:** the ✕ remove button in the recents/favorites tables is permanently red (`var(--danger)`), with a danger-tinted press state.
 
 ### Section message zones (feedback standard)
 
