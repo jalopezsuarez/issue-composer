@@ -200,6 +200,8 @@ Any **OpenAI-compatible** `POST {baseURL}/chat/completions` with `Authorization:
 - `llmComplete(messages)` — plain text/JSON completions for issue & comment writing (`max_tokens: 1500`, `temperature: 0.3`).
 - `llmChatRaw(messages, tools)` — the assistant's calls, with `tools` + `tool_choice: "auto"` (`temperature: 0.2`).
 
+Both build their headers with `llmHeaders(baseUrl, apiKey)`: when the provider is **Anthropic (Claude)** — base URL on `anthropic.com` or an `sk-ant-` key — it adds `anthropic-dangerous-direct-browser-access: true`, which Anthropic requires before it will serve CORS headers to a browser (without it every call fails as "Failed to fetch" even with valid credentials). Anthropic's OpenAI-compatible endpoint (`https://api.anthropic.com/v1`) then works directly, including assistant tool-calling.
+
 **Code-review pipeline** (Feature/Bug modes), in `reviewCodebase(owner, name, query)`:
 1. `getRepoBase` (cached per repo/session): default branch → README (first 5000 chars) → full recursive file tree, filtered by `IGNORE_DIRS` (node_modules, dist, …) and `BINARY_EXT`.
 2. One LLM call picks **up to 5 relevant paths** from the tree (strict JSON array output, validated against the real tree).
