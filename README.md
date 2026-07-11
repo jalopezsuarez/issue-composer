@@ -71,7 +71,7 @@ Board by **status**, one column per fixed status. Each card shows the title, a 2
 - **Reordering within a column** by dragging vertically (persistent manual order).
 - Tapping a card to open its **detail**.
 
-Issues published from the app land at the **top of the *pending* column** (created with `status:pending` + `order:0` in the same request).
+Issues published from the app land at the **top of the *pending* column** (created with `status:pending` + `order:0` in the same request). The created issue is inserted **optimistically** into the local board and list caches straight from the POST response — GitHub's listing can lag a few seconds behind a just-created issue, so no refetch is needed for it to appear instantly.
 
 The board loads **page by page** (25 issues per page, the same standard size as the list): scrolling near the bottom fetches the next page for **all columns at once** (the vertical scroll is shared), and while it loads each column shows a **transparent pagination row with a centered loader** at its bottom. If the loaded pages don't fill the screen, the next page is requested automatically until it does (or there's nothing left). Pagination works the same while searching (Search API pages).
 
@@ -198,12 +198,17 @@ Reads use `cache: "no-store"` (GitHub serves `max-age=60`, which otherwise made 
 
 ### LLM integration
 
-Any **OpenAI-compatible** `POST {baseURL}/chat/completions` with `Authorization: Bearer`. Two client functions:
+Any **OpenAI-compatible** `POST {baseURL}/chat/completions` with `Authorization: Bearer`. Two thin client functions sit on one shared transport, `llmPost(baseUrl, apiKey, body)`:
 
 - `llmComplete(messages)` — plain text/JSON completions for issue & comment writing (`max_tokens: 1500`, `temperature: 0.3`).
 - `llmChatRaw(messages, tools)` — the assistant's calls, with `tools` + `tool_choice: "auto"` (`temperature: 0.2`).
 
-Both build their headers with `llmHeaders(baseUrl, apiKey)`: when the provider is **Anthropic (Claude)** — base URL on `anthropic.com` or an `sk-ant-` key — it adds `anthropic-dangerous-direct-browser-access: true`, which Anthropic requires before it will serve CORS headers to a browser (without it every call fails as "Failed to fetch" even with valid credentials). Anthropic's OpenAI-compatible endpoint (`https://api.anthropic.com/v1`) then works directly, including assistant tool-calling.
+`llmPost` provides two compatibility layers:
+
+- **Headers** (`llmHeaders`): when the provider is **Anthropic (Claude)** — base URL on `anthropic.com` or an `sk-ant-` key — it adds `anthropic-dangerous-direct-browser-access: true`, which Anthropic requires before it will serve CORS headers to a browser (without it every call fails as "Failed to fetch" even with valid credentials). Anthropic's OpenAI-compatible endpoint (`https://api.anthropic.com/v1`) then works directly, including assistant tool-calling.
+- **Adaptive parameters**: optional parameters vary across models — some reject `temperature`, others demand `max_completion_tokens` instead of `max_tokens`. On a `400` whose message names one of them, `llmPost` drops it (`temperature`, `tool_choice`) or renames it (`max_tokens` → `max_completion_tokens`) and retries; each retry removes a distinct parameter so chains terminate, and genuine 400s surface unchanged.
+
+The Settings **Test LLM** button makes one tiny round-trip through this same path and reports the result (with latency) in the section's message zone.
 
 **Code-review pipeline** (Feature/Bug modes), in `reviewCodebase(owner, name, query)`:
 1. `getRepoBase` (cached per repo/session): default branch → README (first 5000 chars) → full recursive file tree, filtered by `IGNORE_DIRS` (node_modules, dist, …) and `BINARY_EXT`.
@@ -257,8 +262,8 @@ Internal helpers outside export/import: `ic_repo_priv` (per-repo public/private 
 ### Encrypted settings export/import
 
 Web Crypto, **AES-256-GCM**:
-- **Export** generates a random 256-bit key, encrypts `JSON.stringify(settings)` with a random 12-byte IV, and outputs two base64 strings: the **payload** (`IV ‖ ciphertext`) and the **key** (raw 32 bytes) — shown in two fields with copy buttons.
-- **Import** takes both (each field has a paste-from-clipboard button), decrypts, validates and writes only known `LS_KEYS`, then reloads. A wrong key fails with a clear message; nothing plaintext ever leaves the field.
+- **Export my settings** generates a random 256-bit key, encrypts `JSON.stringify(settings)` with a random 12-byte IV, and outputs two base64 strings: the **payload** (`IV ‖ ciphertext`) and the **key** (raw 32 bytes) — shown in two fields with copy buttons, the action button below them.
+- **Import my settings** takes both (each field has a paste-from-clipboard button), decrypts, validates and writes only known `LS_KEYS`, then reloads. A wrong key fails with a clear message; nothing plaintext ever leaves the field. All progress/results report in the section's message zone (no JS alerts).
 
 ### UI conventions
 
@@ -269,6 +274,7 @@ Web Crypto, **AES-256-GCM**:
 - **Empty/loading/error states:** one shared centered block (`stateBlock`) with identical wording across the board and the list.
 - **Infinite-scroll pagination:** one standard everywhere — a transparent `.pageloader` row with a centered spinner, built by `pageLoader()`, shown below the issues list and at the bottom of every kanban column while the next page loads; one shared scroll trigger on the content scroller paginates whichever view is active.
 - **Icons:** inline monochrome octicons from a `PATHS` map rendered by `svg(name, size)` (16×16 viewBox, `currentColor`).
+- **Destructive row actions:** the ✕ remove button in the recents/favorites tables is permanently red (`var(--danger)`), with a danger-tinted press state.
 
 ### Section message zones (feedback standard)
 
