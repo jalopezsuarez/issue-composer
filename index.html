@@ -317,6 +317,9 @@
   .rtable td.num { color: var(--muted); width: 34px; }
   .rtable td.repo { display: flex; align-items: center; gap: 7px; word-break: break-all; }
   .rtable td.repo svg { width: 14px; height: 14px; color: var(--muted); flex: none; }
+  /* Active-repo dot next to the name: green = private, yellow = public
+     (same meaning as the repo banner). Only the selected row shows it. */
+  .rtable .seldot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .rtable tbody tr { cursor: pointer; }
   .rtable tbody tr:active { background: var(--bg); }
   .rtable tbody tr.sel td { font-weight: 700; }
@@ -1312,6 +1315,7 @@
     }
     syncRepoTag();
     syncFavFab();
+    renderRecents(); renderFavs();   // highlight + dot always follow the active repo
   }
   // Floating label of the active repo, next to the top-left fab (reload in
   // kanban/list, back in create/detail). In settings there's no fab, so it sits
@@ -1386,29 +1390,35 @@
     $("repoSelect").value = full;            // syncs the select ("" if not loaded)
     persist(LS_KEYS.repo, full);
     addRecent(full);
-    updateActiveRepoBanners();
-    renderRecents(); renderFavs();            // refreshes the highlight in both
+    updateActiveRepoBanners();               // also refreshes both tables' highlight
   }
   function removeRecent(full) {
     persist(LS_KEYS.recent, JSON.stringify(getRecents().filter(function (x) { return x !== full; })));
     renderRecents();
   }
-  function renderRecents() {
-    var el = $("recentList"); if (!el) return;
-    var list = getRecents();
-    if (!list.length) { el.innerHTML = '<div class="rt-empty">You haven\'t used any repository yet.</div>'; return; }
+  // Shared row/table builder for the recents and favorites tables. The active
+  // repo row is highlighted and gets a colored dot after the name: green if
+  // the repo is private, yellow if public (same meaning as the repo banner).
+  function renderRepoTable(el, list, emptyText, removeLabel, onRemove) {
+    if (!el) return;
+    if (!list.length) { el.innerHTML = '<div class="rt-empty">' + emptyText + "</div>"; return; }
     var cur = getSelectedRepo();
     var rows = list.map(function (full, i) {
-      return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
+      var on = full === cur, priv = isPrivateRepo(full);
+      var dot = on ? ' <span class="seldot" style="background:' + (priv ? "#1f883d" : "#f6d84a") + '"></span>' : "";
+      return '<tr class="' + (on ? "sel" : "") + '" data-full="' + esc(full) + '">' +
         '<td class="num">' + (i + 1) + "</td>" +
-        '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
-        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Remove from recent">' + svg("x", 16) + "</button></td></tr>";
+        '<td class="repo">' + svg(priv ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span>" + dot + "</td>" +
+        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="' + removeLabel + '">' + svg("x", 16) + "</button></td></tr>";
     }).join("");
     el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
     var trs = el.querySelectorAll("tbody tr");
     for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
     var dels = el.querySelectorAll(".rdel");
-    for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeRecent(this.getAttribute("data-full")); });
+    for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); onRemove(this.getAttribute("data-full")); });
+  }
+  function renderRecents() {
+    renderRepoTable($("recentList"), getRecents(), "You haven't used any repository yet.", "Remove from recent", removeRecent);
   }
 
   // ----- Favorite repositories (local use in Issue Composer), max 10 -----
@@ -1430,21 +1440,7 @@
   // Favorites table: kept in the order they're added (no reordering).
   // Tapping a row selects the repo; the ✕ removes it.
   function renderFavs() {
-    var el = $("favList"); if (!el) return;
-    var list = getFavs();
-    if (!list.length) { el.innerHTML = '<div class="rt-empty">No favorites. Add them with the star on the active repo.</div>'; return; }
-    var cur = getSelectedRepo();
-    var rows = list.map(function (full, i) {
-      return '<tr class="' + (full === cur ? "sel" : "") + '" data-full="' + esc(full) + '">' +
-        '<td class="num">' + (i + 1) + "</td>" +
-        '<td class="repo">' + svg(isPrivateRepo(full) ? "lock" : "repo", 14) + "<span>" + esc(full) + "</span></td>" +
-        '<td class="del"><button class="rdel" type="button" data-full="' + esc(full) + '" aria-label="Remove from favorites">' + svg("x", 16) + "</button></td></tr>";
-    }).join("");
-    el.innerHTML = '<table class="rtable"><thead><tr><th class="num">#</th><th>Repository</th><th></th></tr></thead><tbody>' + rows + "</tbody></table>";
-    var trs = el.querySelectorAll("tbody tr");
-    for (var i = 0; i < trs.length; i++) trs[i].addEventListener("click", function () { selectRepo(this.getAttribute("data-full")); });
-    var dels = el.querySelectorAll(".rdel");
-    for (var j = 0; j < dels.length; j++) dels[j].addEventListener("click", function (e) { e.stopPropagation(); removeFav(this.getAttribute("data-full")); });
+    renderRepoTable($("favList"), getFavs(), "No favorites. Add them with the star on the active repo.", "Remove from favorites", removeFav);
   }
   // Recent | Favorites segment
   function setRepoTab(tab) {
@@ -1616,8 +1612,7 @@
         var seen = {};
         loadedRepos = allRepos.filter(function (r) { if (!r || !r.full_name || seen[r.full_name]) return false; seen[r.full_name] = true; return true; })
           .sort(function (a, b) { return a.full_name.toLowerCase().localeCompare(b.full_name.toLowerCase()); });
-        $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();
-        renderRecents(); renderFavs();   // now with loadedRepos: paints the lock on private ones
+        $("repoSearch").disabled = false; renderRepoOptions(); updateActiveRepoBanners();   // re-renders both tables with loadedRepos privacy
         var stored = getStoredRepo(), matched = loadedRepos.some(function (r) { return r.full_name === stored; });
         if (!loadedRepos.length) msgWarn(msg, "Connected, but no repositories are visible to this token.");
         else showMsg(msg, "success", "Connected — " + loadedRepos.length + " repositories loaded." + (matched ? " Restored: <strong>" + esc(stored) + "</strong>." : ""));
