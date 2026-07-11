@@ -2685,15 +2685,22 @@
       return create({ title: title, body: body }).then(function (issue) {
         return putIssueLabels(repo, { number: issue.number, labels: [] }, newLabels)
           .catch(function () {})
-          .then(function () { return issue; });
+          .then(function () { setLocalLabels(issue, "pending", 0); return issue; });
       });
     }).then(function (issue) {
-      issuesState.repo = null; KAN.repo = null;   // new issue → reload list/board when opening them
+      // Insert the created issue into the local caches (optimistic): GitHub's
+      // listing can lag a few seconds behind a just-created issue, so an
+      // immediate refetch may not include it yet. The POST response is the
+      // full issue (status:pending + order:0 → top of the pending column).
+      if (KAN.repo === repo) { KAN.issues.unshift(issue); }
+      else { KAN.repo = null; }                              // board not loaded for this repo → reload on open
+      if (issuesState.repo === repo) { issuesState.items.unshift(issue); }
+      else { issuesState.repo = null; }                      // list not loaded for this repo → reload on open
       // Close the composer (clean for the next use), return to the origin view
       // (kanban/list) and confirm with a toast under the nav bar.
       $("note").value = ""; $("issueTitle").value = ""; $("issueBody").value = ""; setStatus(""); hideMsg(msg);
       showView(composerOrigin);
-      showToast(svg("issue", 15) + "<span>Issue <b>#" + issue.number + "</b> created · " + esc(issue.title || title) + "</span>");
+      showToast(svg("issue", 15) + "<span>Issue <b>#" + issue.number + "</b> created · " + esc(issue.title || title) + "</span>", 7000);
     }).catch(function (err) { msgError(msg, ghErrorText(err)); })
       .then(function () { hideBusy(); });
   });
