@@ -73,7 +73,7 @@
   :root[data-theme="dark"] .navcap-btn.active { background: rgba(255,255,255,.10); }
   :root[data-theme="dark"] .navcap-btn:active { background: rgba(255,255,255,.14); }
   :root[data-theme="dark"] .kcol.kover { background: #30363d; }
-  :root[data-theme="dark"] .fab:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
+  :root[data-theme="dark"] .fab:active, :root[data-theme="dark"] .fab-search.on, :root[data-theme="dark"] .fab-dock.on { background: rgba(255,255,255,.18); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Typography enlarged from the default (19px instead of 16). */
   /* White base on html/body: the safe-area strip (and the background behind the keyboard);
@@ -533,6 +533,37 @@
   .chat-send:disabled { opacity: .4; cursor: default; }
   .chat-send svg { width: 17px; height: 17px; }
 
+  /* ===== Docked assistant (VS Code-style right sidebar) =====
+     html.chatdock pins the chat panel to the right edge and the rest of the app
+     (scroller, right-anchored fabs, capsule nav, toast) lays out in the space
+     that remains. Wide screens only: below the breakpoint the class is inert
+     and the assistant keeps behaving as a full-screen view. */
+  .fab-dock { right: 64px; }
+  .fab-dock.on { background: rgba(255,255,255,.6); }
+  .fab-dock svg { width: 20px; height: 20px; }
+  @media (max-width: 767.98px) {
+    .fab-dock { display: none; }   /* a phone has no room for a sidebar */
+  }
+  @media (min-width: 768px) {
+    :root.chatdock { --dockw: 360px; }
+    :root.chatdock .content { margin-right: var(--dockw); }
+    :root.chatdock #view-assistant {
+      display: flex; flex-direction: column;
+      left: auto; right: 0; transform: none; width: var(--dockw);
+      border-left: 1px solid var(--border);
+    }
+    /* The chat column hugs the panel instead of centering against the viewport. */
+    :root.chatdock .chat-scroll { padding-left: 14px; padding-right: 14px; }
+    :root.chatdock .chat-composer { padding-left: 12px; padding-right: 12px; }
+    /* Right-anchored chrome of the main area steps left of the panel (the
+       assistant's own dock/close fabs and the full-screen editor stay put). */
+    :root.chatdock .fab-search, :root.chatdock .fab-fav, :root.chatdock .fab-share { right: calc(var(--dockw) + 12px); }
+    :root.chatdock .fab-add { right: calc(var(--dockw) + 64px); }
+    :root.chatdock .navcap { right: calc(var(--dockw) + 12px); }
+    :root.chatdock .toast { left: calc((100% - var(--dockw)) / 2); }
+    :root.chatdock .view-repo-tag { max-width: calc(100% - var(--dockw) - 124px); }
+  }
+
   /* ===== Encrypted settings export/import: input + round action button rows ===== */
   .io-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
   .io-row input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .78rem; }
@@ -558,6 +589,8 @@
   <button id="btnSaveEdit" class="fab fab-save" hidden aria-label="Save"></button>
   <!-- Share (issue detail, top right): opens the issue on GitHub -->
   <a id="shareFab" class="fab fab-share" hidden target="_blank" rel="noopener" aria-label="Open on GitHub"></a>
+  <!-- Dock the assistant as a right sidebar (wide screens only); left of the ✕ -->
+  <button id="assistantDock" class="fab fab-dock" hidden aria-label="Dock assistant to the side"></button>
   <!-- Close the AI assistant (top right); returns to the previous view -->
   <button id="assistantClose" class="fab fab-close" hidden aria-label="Close assistant"></button>
   <!-- Toast below the nav bar (e.g. "issue created"); tap or wait to dismiss -->
@@ -848,7 +881,8 @@
     repo: "M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z",
     project: "M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25ZM11.75 3a.75.75 0 0 1 .75.75v7.5a.75.75 0 0 1-1.5 0v-7.5a.75.75 0 0 1 .75-.75Zm-8.25.75a.75.75 0 0 1 1.5 0v5.5a.75.75 0 0 1-1.5 0Zm4.25-.75a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 7.75 3Z",
     list: "M2 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm3.75-1.5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5Zm0 5a.75.75 0 0 0 0 1.5h8.5a.75.75 0 0 0 0-1.5h-8.5ZM3 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-1 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z",
-    x: "M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"
+    x: "M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z",
+    sidebar: "M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25H9.5v-13H1.75a.25.25 0 0 0-.25.25Z"
   };
   function svg(name, size) {
     size = size || 24;
@@ -863,7 +897,7 @@
     ghToken: "ic_gh_token", llmApiKey: "ic_llm_api_key", llmBaseUrl: "ic_llm_base_url",
     llmModel: "ic_llm_model", repo: "ic_repo", tone: "ic_tone", tab: "ic_tab",
     recent: "ic_recent", favs: "ic_favs", lang: "ic_lang", repoTab: "ic_repo_tab",
-    theme: "ic_theme", fontSize: "ic_font"
+    theme: "ic_theme", fontSize: "ic_font", chatDock: "ic_chat_dock"
   };
   // Keys whose value is a JSON array (recent/favorites): exported/imported as a list.
   var ARRAY_KEYS = { recent: 1, favs: 1 };
@@ -938,14 +972,22 @@
 
   // ====================== VIEW NAVIGATION ======================
   var VIEWS = ["kanban", "issues", "composer", "config", "edit", "assistant"];
+  // Docked assistant: on wide screens the chat can pin itself to the right edge
+  // (html.chatdock) and stay open beside the other views. Phones ignore it.
+  var dockMQ = window.matchMedia("(min-width: 768px)");
+  var chatDock = false;
+  var activeViewName = "kanban";   // last view marked active (the dock chrome re-syncs against it)
+  function chatDocked() { return chatDock && dockMQ.matches; }
   // Marks a view (and its capsule button) as active, without reloading its content.
   function markActiveView(name) {
+    activeViewName = name;
     VIEWS.forEach(function (v) { $("view-" + v).classList.toggle("active", v === name); });
     var tb = $("navcap").querySelectorAll(".navcap-btn");
     for (var i = 0; i < tb.length; i++) tb[i].classList.toggle("active", tb[i].getAttribute("data-view") === name);
     $("navcap").hidden = (name === "edit" || name === "assistant");   // hidden while editing / in the assistant
     $("btnSaveEdit").hidden = (name !== "edit");   // Save (top-right fab) only while editing
-    $("assistantClose").hidden = (name !== "assistant");   // close (top-right) only in the assistant
+    $("assistantClose").hidden = !(name === "assistant" || chatDocked());   // ✕: assistant view or docked sidebar
+    $("assistantDock").hidden = !(name === "assistant" || chatDocked());    // dock toggle: next to the ✕
     $("shareFab").hidden = true;   // share (top-right) only while an issue detail is open
     // View color (painted by #viewbg below the safe area): white in every view.
     document.documentElement.style.setProperty("--cbg", "var(--surface)");
@@ -971,6 +1013,7 @@
     syncRepoTag();
   }
   function showView(name) {
+    if (name === "assistant" && chatDocked()) { onAssistantShown(); return; }   // already open as the docked sidebar: just focus it
     if (name === "assistant" && !$("view-assistant").classList.contains("active")) assistantOrigin = currentActiveView();
     markActiveView(name);
     var isList = (name === "issues" || name === "kanban");
@@ -3169,6 +3212,7 @@
       }
       setChatBusy(false);
       addAiBubble(msg.content || "(no response)");
+      refreshDockedMain();
     }).catch(function (err) { setChatBusy(false); addAiBubble("⚠️ " + esc(err.message)); });
   }
 
@@ -3184,7 +3228,40 @@
     setTimeout(function () { try { $("chatInput").focus(); } catch (e) {} }, 60);
   }
   $("assistantClose").innerHTML = svg("x", 25);
-  $("assistantClose").addEventListener("click", function () { showView(assistantOrigin || "kanban"); });
+  $("assistantClose").addEventListener("click", function () {
+    if (chatDocked()) { setChatDock(false); markActiveView(activeViewName); return; }   // close the docked sidebar, stay put
+    showView(assistantOrigin || "kanban");
+  });
+
+  // ----- Docked mode (VS Code-style right sidebar; wide screens only) -----
+  function setChatDock(on) {
+    chatDock = on;
+    persist(LS_KEYS.chatDock, on ? "1" : "");
+    document.documentElement.classList.toggle("chatdock", on);
+    $("assistantDock").classList.toggle("on", on);
+  }
+  $("assistantDock").innerHTML = svg("sidebar", 20);
+  $("assistantDock").addEventListener("click", function () {
+    if (chatDocked()) { setChatDock(false); showView("assistant"); return; }   // undock: back to full screen
+    setChatDock(true); showView(assistantOrigin || "kanban"); onAssistantShown();
+  });
+  // While docked, changes made by the assistant's tools show up on the view
+  // beside the chat without a manual reload (the auto-loaders only refetch
+  // when a mutating tool invalidated the caches).
+  function refreshDockedMain() {
+    if (!chatDocked()) return;
+    if ($("view-kanban").classList.contains("active")) maybeAutoLoadKanban();
+    else if ($("view-issues").classList.contains("active")) maybeAutoLoadIssues();
+  }
+  // Crossing the breakpoint: a full-screen chat becomes the sidebar (freeing
+  // the main area) and the dock chrome (✕ / dock fabs) re-syncs both ways.
+  function onDockMQChange() {
+    if (!chatDock) return;
+    if (dockMQ.matches && $("view-assistant").classList.contains("active")) showView(assistantOrigin || "kanban");
+    else markActiveView(activeViewName);
+  }
+  if (dockMQ.addEventListener) dockMQ.addEventListener("change", onDockMQChange);
+  else if (dockMQ.addListener) dockMQ.addListener(onDockMQChange);
 
   // ===== Pinch-zoom block (in and out) on iOS Safari =====
   ["gesturestart", "gesturechange", "gestureend"].forEach(function (ev) {
@@ -3229,9 +3306,15 @@
   renderRecents();   // paints the saved recents table
   // Restores the last used tab (localStorage); if none, opens Kanban (with repo) or Settings.
   // "composer" is no longer a tab: it's opened with the + button and isn't remembered.
+  // Restores the docked-assistant preference (wide screens show the sidebar immediately).
+  (function restoreChatDock() {
+    var on = false; try { on = localStorage.getItem(LS_KEYS.chatDock) === "1"; } catch (e) {}
+    if (on) setChatDock(true);
+  })();
   (function restoreTab() {
     var saved = ""; try { saved = localStorage.getItem(LS_KEYS.tab) || ""; } catch (e) {}
     var valid = { kanban: 1, issues: 1, config: 1, assistant: 1 };
+    if (saved === "assistant" && chatDocked()) saved = "";   // the sidebar is already open: land on a main view
     showView(valid[saved] ? saved : (getSelectedRepo() ? "kanban" : "config"));
   })();
 })();
