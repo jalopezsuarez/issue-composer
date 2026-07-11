@@ -63,8 +63,6 @@
   :root[data-theme="dark"] .navcap-btn.active { background: rgba(255,255,255,.10); }
   :root[data-theme="dark"] .navcap-btn:active { background: rgba(255,255,255,.14); }
   :root[data-theme="dark"] .kcol.kover { background: #30363d; }
-  :root[data-theme="dark"] .btnstate.close { background: rgba(248,81,73,.15); color: #ff7b72; }
-  :root[data-theme="dark"] .btnstate.reopen { background: rgba(63,185,80,.15); color: #3fb950; }
   :root[data-theme="dark"] .fab-back:active, :root[data-theme="dark"] .fab-reload:active, :root[data-theme="dark"] .fab-add:active, :root[data-theme="dark"] .fab-save:active, :root[data-theme="dark"] .fab-fav:active, :root[data-theme="dark"] .fab-search:active, :root[data-theme="dark"] .fab-close:active, :root[data-theme="dark"] .fab-share:active, :root[data-theme="dark"] .fab-search.on { background: rgba(255,255,255,.18); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   /* Typography enlarged from the default (19px instead of 16). */
@@ -402,8 +400,9 @@
   .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
   .linkbtn { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text); text-decoration: none; padding: 7px 12px; border-radius: 8px; background: var(--bg); }
   /* Close/Reopen button with its own background */
-  .btnstate.close { background: #fff1f0; color: #cf222e; }
-  .btnstate.reopen { background: #eaf7ee; color: #1a7f37; }
+  /* Solid state colors with light text (same in light and dark). */
+  .btnstate.close { background: #cf222e; color: #fff; }
+  .btnstate.reopen { background: #1f883d; color: #fff; }
 
   /* Labels (read-only) */
   .lblrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -1852,9 +1851,9 @@
                 '<span class="stname">' + esc(s.name) + "</span>" +
                 '<span class="stcheck">' + svg("check", 16) + "</span></button>";
             }).join("") + "</div></div>" +
-          '<div class="actions" style="margin-top:14px">' +
-            '<button id="btnEditIssue" style="margin-left:auto" class="secondary">Edit</button>' +
-            '<button id="btnToggleState" class="btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Close" : "Reopen") + "</button>" +
+          '<div class="actions" style="margin-top:14px;flex-direction:column">' +
+            '<button id="btnEditIssue" class="secondary block">Edit details</button>' +
+            '<button id="btnToggleState" class="block btnstate ' + (issue.state === "open" ? "close" : "reopen") + '">' + (issue.state === "open" ? "Close" : "Reopen") + "</button>" +
           "</div>" +
         "</div>" +
         '<div class="pad"><div class="group-title" style="padding:0">Comments (<span id="commentsCount">' + comments.length + "</span>)</div></div>";
@@ -2005,7 +2004,7 @@
   // Updates the state area in place (open/closed badge + button text).
   function updateStateUI(state) {
     var btn = $("btnToggleState");
-    if (btn) { btn.textContent = state === "open" ? "Close" : "Reopen"; btn.className = "btnstate " + (state === "open" ? "close" : "reopen"); }
+    if (btn) { btn.textContent = state === "open" ? "Close" : "Reopen"; btn.className = "block btnstate " + (state === "open" ? "close" : "reopen"); }
     var badge = document.querySelector(".detail-meta .statechip");
     if (badge) { var c = stateChipColors(state); badge.style.background = "#" + c.bg; badge.style.color = "#fff"; badge.innerHTML = stateChipInner(state); }
   }
