@@ -1349,10 +1349,11 @@
       $("view-issues").classList.contains("active") || $("view-composer").classList.contains("active");
     tag.hidden = !inRepoView;
     tag.classList.toggle("at-left", inConfig || inAssistant);   // no left fab in settings/assistant
-    // With a repo: its name (+ lock if private). Without: the app name.
+    // With a repo: its name (+ lock if private). Without: the app name with
+    // the issue icon (the same circle-with-dot used in the issues list).
     if (inRepoView) tag.innerHTML = ok
       ? svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>"
-      : "<span>Issue Composer</span>";
+      : svg("issue", 15) + "<span>Issue Composer</span>";
   }
   // Tapping the floating repo label triggers the action of the left fab:
   // back (detail/create) or reload (kanban/list). No-op when neither is shown.
