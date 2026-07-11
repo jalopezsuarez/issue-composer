@@ -349,6 +349,9 @@
   .repo-banner b { font-weight: 700; color: #1f2328; }
   /* Private repos: "open" green with a lock, text and icons in white. */
   .repo-banner[hidden] { display: none; }   /* no repo selected → no banner */
+  /* Without the banner, the first section title sits right under the nav bar:
+     trim its default 20px top margin so there's no dead gap. */
+  .repo-banner[hidden] + .group .group-title { margin-top: 6px; }
   .repo-banner.priv { background: #1f883d; color: #fff; }
   /* Star icon before "Favorites" in the Recent|Favorites segmented control. */
   #repoTabControl svg { width: 12px; height: 12px; vertical-align: -1px; margin-right: 5px; }
@@ -1353,7 +1356,7 @@
     // the issue icon (the same circle-with-dot used in the issues list).
     if (inRepoView) tag.innerHTML = ok
       ? svg(isPrivateRepo(repo) ? "lock" : "repo", 15) + "<span>" + esc(repo) + "</span>"
-      : svg("issue", 15) + "<span>Issue Composer</span>";
+      : svg("issue", 15) + "<span>GH Issue Composer</span>";
   }
   // Tapping the floating repo label triggers the action of the left fab:
   // back (detail/create) or reload (kanban/list). No-op when neither is shown.
