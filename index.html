@@ -641,6 +641,7 @@
         <div class="field"><label for="llmBaseUrl">Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
         <div class="field"><label for="llmApiKey">API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
         <div class="field"><label for="llmModel">Model</label><input type="text" id="llmModel" placeholder="gpt-4o-mini" autocomplete="off" /></div>
+        <div class="field"><button id="btnTestLlm" class="block">Test LLM</button></div>
       </div>
 
       <!-- 4. Generation language (below the LLM) -->
@@ -1607,6 +1608,22 @@
         : " — check the name, the token permissions and SAML SSO authorization if applicable.";
       showMsg(msg, "error", esc(err.message) + extra);
     }).then(function () { btn.disabled = false; btn.textContent = prev; });
+  });
+
+  // Test LLM: one tiny round-trip to the configured endpoint, reported in the
+  // LLM section's message zone (warn = missing config, blue = works + latency,
+  // red = provider/network error).
+  $("btnTestLlm").addEventListener("click", function () {
+    var btn = this, msg = $("llmMsg"); hideMsg(msg);
+    var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
+    if (!baseUrl || !apiKey || !model) { msgWarn(msg, "Configure the LLM Base URL, API key and Model first."); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Testing…';
+    msgWork(msg, "Contacting " + model + " at the configured endpoint…");
+    var t0 = Date.now();
+    llmComplete([{ role: "user", content: "Reply with the single word: OK" }]).then(function () {
+      msgInfo(msg, "LLM connection works — " + model + " replied in " + ((Date.now() - t0) / 1000).toFixed(1) + "s.");
+    }).catch(function (err) { msgError(msg, err.message); })
+      .then(function () { btn.disabled = false; btn.textContent = "Test LLM"; });
   });
 
   // =================== ISSUES: LIST + INFINITE SCROLL ===================
