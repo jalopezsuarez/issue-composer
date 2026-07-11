@@ -73,6 +73,8 @@ Board by **status**, one column per fixed status. Each card shows the title, a 2
 
 Issues published from the app land at the **top of the *pending* column** (created with `status:pending` + `order:0` in the same request).
 
+The board loads **page by page** (100 issues per page): scrolling near the bottom fetches the next page for **all columns at once** (the vertical scroll is shared), and while it loads each column shows a **transparent pagination row with a centered loader** at its bottom. If the loaded pages don't fill the screen (e.g. many PRs filtered out), the next page is requested automatically.
+
 ### 📋 Issues
 List with **infinite scroll** (25 per page). Issues render as **two groups — open first, closed always at the end** — each ordered by date. Each row shows the `open/closed` capsule + the status chip, then `#no · user · comments · date`. The **sort** toggle (Newest / Oldest) lives inside the search bar.
 
@@ -179,7 +181,7 @@ New issues are created with `order:0` (manual orders start at 1), so they appear
 - Loaded 25/page (`per_page`), sorted by `updated` in the chosen direction; **pull requests are filtered out**.
 - Rendering always paints **two stable groups**: open first, closed last (a stable sort by state preserves the date order inside each group, even across pages).
 - With a query, the list switches to the **Search API** (`GET /search/issues`, `q=repo:{repo} type:issue {query}`) which returns `{items}` instead of an array.
-- First page shows a centered loader; later pages use a small footer loader. No-token / no-repo / empty / error states render as uniform centered blocks shared with the kanban.
+- First page shows a centered loader; later pages show a **transparent pagination row with a centered spinner** below the list (the kanban uses the same pattern per column via `.kload`). No-token / no-repo / empty / error states render as uniform centered blocks shared with the kanban.
 
 ### GitHub integration
 

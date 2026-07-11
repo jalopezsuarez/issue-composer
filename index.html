@@ -368,7 +368,9 @@
   /* The state (open/closed) and status badges use the same style as the
      kanban header capsule (.kchip / .kdot). */
 
-  .loader { text-align: center; color: var(--muted); padding: 18px; font-size: .85rem; }
+  /* Infinite-scroll pagination rows: transparent, just a centered loader. */
+  .loader { display: flex; justify-content: center; align-items: center; background: transparent; color: var(--muted); padding: 14px 0; font-size: .85rem; }
+  .kload { display: flex; justify-content: center; align-items: center; background: transparent; color: var(--muted); padding: 12px 0; }
   .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centered within the board flex */
   .empty-state { text-align: center; color: var(--muted); padding: 44px 16px; font-size: .9rem; }
   .empty-state.err { color: var(--danger); }
@@ -1843,7 +1845,7 @@
     // First page: centered loader in the list body (uniform with kanban).
     // Later pages (infinite scroll): the small loader below the list.
     if (firstLoad) { ul.innerHTML = stateBlock("", "loading"); }
-    else { var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>Loading…'; }
+    else { var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>'; }
 
     // With a query we use the GitHub Search API (server-side, more efficient);
     // otherwise the plain repo issues listing. Response shape differs (items vs array).
@@ -1879,12 +1881,16 @@
     });
   }
 
-  // Infinite scroll over the content container.
+  // Infinite scroll over the content container (issues list and kanban board:
+  // the board's scroll is shared, so one trigger paginates all columns).
   $("content").addEventListener("scroll", function () {
+    var el = this;
+    var nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 240;
+    if (!nearBottom) return;
+    if ($("view-kanban").classList.contains("active")) { loadMoreKanban(); return; }
     if (!$("view-issues").classList.contains("active")) return;
     if ($("issuesListWrap").style.display === "none") return;
-    var el = this;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 240) loadMoreIssues();
+    loadMoreIssues();
   });
 
   // =================== DETAIL + COMMENTS ===================
@@ -2192,7 +2198,7 @@
   }
 
   // =================== KANBAN (board by status, drag to move) ===================
-  var KAN = { repo: null, loading: false, issues: [], dragging: false, query: "" };
+  var KAN = { repo: null, loading: false, loadingMore: false, page: 0, done: false, issues: [], dragging: false, query: "" };
   // FIXED statuses (not editable). In GitHub they're stored as a "status:<key>" label.
   var STATUS_PREFIX = "status:";
   // color: chip pastel; dot: colored dot (stronger) of the header.
@@ -2319,31 +2325,71 @@
     else renderKanban();                                             // already loaded → cache (with changes)
   }
 
+  // Board pages: like the list, the board loads page by page. The scroller is
+  // shared by every column, so each new page feeds all the columns at once.
+  var KAN_PER_PAGE = 100;
+  function kanbanPageUrl(repo, page) {
+    // With a query, use the GitHub Search API (server-side) and filter the board.
+    if (KAN.query) return GH_API + "/search/issues?q=" + encodeURIComponent("repo:" + repo + " type:issue " + KAN.query) + "&sort=updated&order=desc&per_page=" + KAN_PER_PAGE + "&page=" + page;
+    return GH_API + "/repos/" + repo + "/issues?state=all&per_page=" + KAN_PER_PAGE + "&sort=updated&direction=desc&page=" + page;
+  }
   function loadKanban() {
     var repo = getSelectedRepo();
     if (!ghTokenMem) { $("kanbanBoard").innerHTML = stateBlock("Enter your token in Settings."); return; }
     if (!repo || repo.indexOf("/") === -1) { $("kanbanBoard").innerHTML = stateBlock("Select a repository in Settings."); return; }
     hideMsg($("kanbanMsg"));
-    KAN.repo = repo; KAN.loading = true; addRecent(repo);
+    KAN.repo = repo; KAN.loading = true; KAN.loadingMore = false; KAN.page = 0; KAN.done = false; addRecent(repo);
     KAN.token = (KAN.token || 0) + 1;   // discard stale responses from previous searches
     var myToken = KAN.token;
     $("kanbanBoard").innerHTML = stateBlock("", "loading");
-    // With a query, use the GitHub Search API (server-side) and filter the board.
-    var searching = !!KAN.query, url;
-    if (searching) {
-      url = GH_API + "/search/issues?q=" + encodeURIComponent("repo:" + repo + " type:issue " + KAN.query) + "&sort=updated&order=desc&per_page=100";
-    } else {
-      url = GH_API + "/repos/" + repo + "/issues?state=all&per_page=100&sort=updated&direction=desc";
-    }
-    ghFetch(url)
+    ghFetch(kanbanPageUrl(repo, 1))
       .then(function (data) {
         if (myToken !== KAN.token) return;   // stale response → ignore
-        var items = searching ? (data && data.items) : data;
+        var items = KAN.query ? (data && data.items) : data;
         items = Array.isArray(items) ? items : [];
+        KAN.page = 1; KAN.done = items.length < KAN_PER_PAGE;
         KAN.issues = items.filter(function (it) { return !it.pull_request; });
         renderKanban();
+        maybeFillKanban();   // short board + more pages → keep loading
       }).catch(function (err) { if (myToken !== KAN.token) return; $("kanbanBoard").innerHTML = stateBlock(esc(err.message), "error"); })
       .then(function () { if (myToken === KAN.token) KAN.loading = false; });
+  }
+
+  // Next board page (infinite scroll): while it loads, every column shows a
+  // transparent row with a centered loader at its bottom.
+  function loadMoreKanban() {
+    if (KAN.loading || KAN.loadingMore || KAN.done || !KAN.repo) return;
+    KAN.loadingMore = true;
+    var myToken = KAN.token;
+    var bodies = document.querySelectorAll("#kanbanBoard .kcol-body");
+    for (var i = 0; i < bodies.length; i++) {
+      var d = document.createElement("div");
+      d.className = "kload"; d.innerHTML = '<span class="spinner"></span>';
+      bodies[i].appendChild(d);
+    }
+    ghFetch(kanbanPageUrl(KAN.repo, KAN.page + 1))
+      .then(function (data) {
+        if (myToken !== KAN.token) return;
+        var items = KAN.query ? (data && data.items) : data;
+        items = Array.isArray(items) ? items : [];
+        KAN.page++; KAN.done = items.length < KAN_PER_PAGE;
+        var known = {};
+        KAN.issues.forEach(function (it) { known[it.number] = 1; });
+        items.forEach(function (it) { if (!it.pull_request && !known[it.number]) KAN.issues.push(it); });
+        renderKanban();   // re-render replaces the loader rows with the cards
+        maybeFillKanban();
+      }).catch(function (err) {
+        if (myToken !== KAN.token) return;
+        var ls = document.querySelectorAll("#kanbanBoard .kload");
+        for (var j = 0; j < ls.length; j++) ls[j].parentNode.removeChild(ls[j]);
+        showMsg($("kanbanMsg"), "error", esc(err.message));
+      }).then(function () { if (myToken === KAN.token) KAN.loadingMore = false; });
+  }
+  // If the loaded pages don't fill the screen yet (e.g. lots of PRs filtered
+  // out) there's nothing to scroll, so the next page is requested directly.
+  function maybeFillKanban() {
+    var c = $("content");
+    if (!KAN.done && $("view-kanban").classList.contains("active") && c.scrollHeight <= c.clientHeight + 40) loadMoreKanban();
   }
 
   function renderKanban() {
