@@ -85,7 +85,7 @@ List with **infinite scroll** (25 per page). Issues render as **two groups — o
 3. Review/edit the generated title + body and **Publish**. The composer closes, you return to the board/list, and a **toast** under the nav bar confirms the new issue (tap it or wait to dismiss). Progress and validation messages appear below the Publish button.
 
 ### 🔍 Issue detail
-- Description rendered in **Markdown** (headings, lists, checklists, code, quotes, links, tables…), via a dependency-free, escape-first renderer. GFM tables support column alignment and inline formatting inside cells, and scroll horizontally inside their own wrapper when wider than the phone. The same renderer is used for comments and the assistant's answers.
+- Description rendered in **Markdown** (headings, lists, checklists, code, quotes, links, tables…), via a dependency-free, escape-first renderer. GFM tables support column alignment and inline formatting inside cells, and lay out at their **natural width**: a table that fits changes nothing, a wider one scrolls horizontally inside its own wrapper (columns are never squeezed into word-per-line slivers), and runaway prose cells are width-capped so they wrap instead of producing an endless scroll. The same renderer is used for comments and the assistant's answers.
 - The user's **labels** (internal `status:`/`order:` labels stay hidden).
 - **Status**: a row of options to change it instantly (single labels call).
 - **Edit details** (opens the full-screen editor for the body) and a solid **Close / Reopen** button, stacked full-width.
