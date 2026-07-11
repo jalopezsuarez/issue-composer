@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Issue Composer app icon: black circle + the GitHub "issue opened" octicon -->
+  <circle cx="32" cy="32" r="30" fill="#17191c"/>
+  <g transform="translate(17.6 17.6) scale(1.8)" fill="#ffffff">
+    <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/>
+    <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/>
+  </g>
+</svg>
