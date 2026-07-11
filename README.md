@@ -268,6 +268,7 @@ Web Crypto, **AES-256-GCM**:
 ### UI conventions
 
 - **Borderless design:** no divider or container borders anywhere; sections are separated only by their uppercase title (with top margin). The *only* lines are the per-row `border-bottom` inside genuine lists — issues, comments, recents/favorites and the status selector.
+- **Section rhythm:** a uniform 32px between sections (20px title margin + 12px pad). The Settings top is the one tuned spot: the first title sits 6px under the nav area, and the repo banner (when visible) carries the margin that restores the standard 32px before REPOSITORIES.
 - **Capsules:** the settings repo banner, search inputs, chips and the toast are fully-rounded; the fabs and the nav are frosted glass (`backdrop-filter`).
 - **Toast:** a single fixed capsule below the top bar (`showToast(html, ms)`), auto-hides in ~7 s, tap to dismiss — used for "issue created".
 - **Dates:** one format everywhere (`fmtShort`): `04 jul 11:38`, adding the year only when it differs from the current one.
