@@ -30,7 +30,7 @@ Everything Issue Composer creates is a plain GitHub issue, label or comment. You
 ## Quick start (60 seconds)
 
 1. **Open the app** — https://jalopezsuarez.github.io/issue-composer/ (or add it to your home screen as a web app).
-2. **Connect GitHub** — in *Settings*, paste a Personal Access Token (the app links you to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens/new) and lists the exact permissions: fine-grained with *Issues read & write* + *Metadata read*, or classic with the `repo` scope) and press **Connect GitHub**.
+2. **Connect GitHub** — in *Settings*, paste a Personal Access Token (the app links you to [github.com/settings/personal-access-tokens](https://github.com/settings/personal-access-tokens/new) and lists the exact permissions: fine-grained with *Issues read & write* + *Contents read* + *Metadata read* — Contents is what lets the AI read your code, essential on private repos — or classic with the `repo` scope) and press **Connect GitHub**.
 3. **Configure your LLM** — any OpenAI-compatible API: Base URL, API key and model (e.g. `https://api.openai.com/v1` + `gpt-4o-mini`).
 4. **Ship your first issue** — press **+**, write a note, tap a mode (Simple / Feature / Bug) and the AI writes it; review and **Publish**. It lands at the top of your *pending* column.
 
@@ -336,8 +336,15 @@ To self-host: copy `index.html` (optionally `web/index.html` and the workflow), 
 ├── index.html                     # The whole app (HTML + CSS + JS + inline icons, no build)
 ├── web/
 │   └── index.html                 # Marketing landing page (self-contained)
+├── LICENSE                        # MIT
 ├── README.md
 └── .github/
     └── workflows/
         └── static.yml             # Deployment to GitHub Pages
 ```
+
+---
+
+## License
+
+[MIT](LICENSE) — free to use, modify and redistribute.
