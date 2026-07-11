@@ -1709,19 +1709,16 @@
     if (/anthropic\.com/i.test(baseUrl) || /^sk-ant-/.test(apiKey)) h["anthropic-dangerous-direct-browser-access"] = "true";
     return h;
   }
-  // Single POST to {base}/chat/completions with automatic compatibility
-  // retries: optional parameters vary across providers/models (e.g. some
-  // reject temperature, others want max_completion_tokens instead of
-  // max_tokens). On a 400 that names one of them, it is dropped or renamed
-  // and the call retried — one generic path instead of per-provider rules.
+  // Single POST to {base}/chat/completions. Requests carry ONLY model +
+  // messages (+ tools): optional sampling/limit parameters vary wildly across
+  // providers/models, so none are sent by default. If a provider's 400 demands
+  // one (reasoning_effort with tools, a required max_tokens), it is added and
+  // the call retried — one generic path instead of per-provider rules.
   function llmPost(baseUrl, apiKey, body) {
     function adapt(b, errText) {
-      var m = String(errText);
-      function without(key) { var c = JSON.parse(JSON.stringify(b)); delete c[key]; return c; }
-      if (b.temperature !== undefined && /temperature/i.test(m)) return without("temperature");
-      if (b.max_tokens !== undefined && /max_tokens/i.test(m)) { var c = without("max_tokens"); c.max_completion_tokens = b.max_tokens; return c; }
-      if (b.max_completion_tokens !== undefined && /max_completion_tokens/i.test(m)) return without("max_completion_tokens");
-      if (b.tool_choice !== undefined && /tool_choice/i.test(m)) return without("tool_choice");
+      var m = String(errText), c = JSON.parse(JSON.stringify(b));
+      if (b.reasoning_effort === undefined && /reasoning_effort/i.test(m)) { c.reasoning_effort = "none"; return c; }
+      if (b.max_tokens === undefined && /max_tokens/i.test(m)) { c.max_tokens = 4096; return c; }
       return null;
     }
     function attempt(b) {
@@ -1752,7 +1749,7 @@
   function llmComplete(messages) {
     var c = llmReady();
     if (!c) return Promise.reject(new Error("Configure the LLM Base URL, API key and Model."));
-    return llmPost(c.baseUrl, c.apiKey, { model: c.model, messages: messages, max_tokens: 1500, temperature: 0.3 })
+    return llmPost(c.baseUrl, c.apiKey, { model: c.model, messages: messages })
       .then(function (message) { return message.content; });
   }
 
@@ -3039,8 +3036,8 @@
   function llmChatRaw(messages, tools) {
     var c = llmReady();
     if (!c) return Promise.reject(new Error("Configure the LLM in Settings."));
-    var body = { model: c.model, messages: messages, temperature: 0.2, max_tokens: 1500 };
-    if (tools && tools.length) { body.tools = tools; body.tool_choice = "auto"; }
+    var body = { model: c.model, messages: messages };
+    if (tools && tools.length) body.tools = tools;   // "auto" tool choice is every provider's default
     return llmPost(c.baseUrl, c.apiKey, body);
   }
 
