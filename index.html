@@ -368,10 +368,11 @@
   /* The state (open/closed) and status badges use the same style as the
      kanban header capsule (.kchip / .kdot). */
 
-  /* Infinite-scroll pagination rows: transparent, just a centered loader. */
-  .loader { display: flex; justify-content: center; align-items: center; background: transparent; color: var(--muted); padding: 14px 0; font-size: .85rem; }
-  .kload { display: flex; justify-content: center; align-items: center; background: transparent; color: var(--muted); padding: 12px 0; }
-  .kanban > .loader, .kanban > .empty-state { width: 100%; }   /* centered within the board flex */
+  /* Standard infinite-scroll pagination row (issues list footer and each
+     kanban column): transparent, just a centered spinner. */
+  .pageloader { display: flex; justify-content: center; align-items: center; background: transparent; color: var(--muted); padding: 12px 0; }
+  .pageloader[hidden] { display: none; }
+  .kanban > .empty-state { width: 100%; }   /* centered within the board flex */
   .empty-state { text-align: center; color: var(--muted); padding: 44px 16px; font-size: .9rem; }
   .empty-state.err { color: var(--danger); }
 
@@ -548,7 +549,7 @@
         </div>
         <div id="issuesMsg" class="msg"></div>
         <ul class="list" id="issuesList"></ul>
-        <div id="issuesLoader" class="loader" style="display:none"></div>
+        <div id="issuesLoader" class="pageloader" hidden><span class="spinner"></span></div>
       </div>
       <div id="issueDetailWrap" style="display:none">
         <div id="issueDetail"></div>
@@ -1653,6 +1654,14 @@
     if (kind === "loading") return '<div class="empty-state"><span class="spinner"></span>Loading…</div>';
     return '<div class="empty-state' + (kind === "error" ? " err" : "") + '">' + text + "</div>";
   }
+  // Standard infinite-scroll pagination row (shared by the issues list and
+  // every kanban column): transparent with a centered spinner.
+  function pageLoader() {
+    var d = document.createElement("div");
+    d.className = "pageloader";
+    d.innerHTML = '<span class="spinner"></span>';
+    return d;
+  }
   paintSortBtn();
   $("btnSort").addEventListener("click", function () { issuesState.dir = issuesState.dir === "asc" ? "desc" : "asc"; paintSortBtn(); resetAndLoadIssues(); });
   // Search box: queries the GitHub Search API (server-side), debounced.
@@ -1843,9 +1852,9 @@
     var page = issuesState.page + 1;
     var firstLoad = issuesState.page === 0;
     // First page: centered loader in the list body (uniform with kanban).
-    // Later pages (infinite scroll): the small loader below the list.
+    // Later pages (infinite scroll): the standard pagination row below the list.
     if (firstLoad) { ul.innerHTML = stateBlock("", "loading"); }
-    else { var loader = $("issuesLoader"); loader.style.display = ""; loader.innerHTML = '<span class="spinner"></span>'; }
+    else { $("issuesLoader").hidden = false; }
 
     // With a query we use the GitHub Search API (server-side, more efficient);
     // otherwise the plain repo issues listing. Response shape differs (items vs array).
@@ -1876,8 +1885,7 @@
     }).then(function () {
       if (myToken !== issuesState.token) return;   // a newer request owns the UI now
       issuesState.loading = false;
-      $("issuesLoader").style.display = issuesState.done ? "none" : "";
-      $("issuesLoader").innerHTML = "";
+      $("issuesLoader").hidden = true;
     });
   }
 
@@ -2355,18 +2363,21 @@
       .then(function () { if (myToken === KAN.token) KAN.loading = false; });
   }
 
-  // Next board page (infinite scroll): while it loads, every column shows a
-  // transparent row with a centered loader at its bottom.
+  // Shows/hides the standard pagination row at the bottom of every column.
+  function setColumnLoaders(on) {
+    var ls = document.querySelectorAll("#kanbanBoard .pageloader");
+    for (var i = 0; i < ls.length; i++) ls[i].parentNode.removeChild(ls[i]);
+    if (!on) return;
+    var bodies = document.querySelectorAll("#kanbanBoard .kcol-body");
+    for (var j = 0; j < bodies.length; j++) bodies[j].appendChild(pageLoader());
+  }
+  // Next board page (infinite scroll): while it loads, every column shows the
+  // standard pagination row at its bottom.
   function loadMoreKanban() {
     if (KAN.loading || KAN.loadingMore || KAN.done || !KAN.repo) return;
     KAN.loadingMore = true;
     var myToken = KAN.token;
-    var bodies = document.querySelectorAll("#kanbanBoard .kcol-body");
-    for (var i = 0; i < bodies.length; i++) {
-      var d = document.createElement("div");
-      d.className = "kload"; d.innerHTML = '<span class="spinner"></span>';
-      bodies[i].appendChild(d);
-    }
+    setColumnLoaders(true);
     ghFetch(kanbanPageUrl(KAN.repo, KAN.page + 1))
       .then(function (data) {
         if (myToken !== KAN.token) return;
@@ -2380,8 +2391,7 @@
         maybeFillKanban();
       }).catch(function (err) {
         if (myToken !== KAN.token) return;
-        var ls = document.querySelectorAll("#kanbanBoard .kload");
-        for (var j = 0; j < ls.length; j++) ls[j].parentNode.removeChild(ls[j]);
+        setColumnLoaders(false);
         showMsg($("kanbanMsg"), "error", esc(err.message));
       }).then(function () { if (myToken === KAN.token) KAN.loadingMore = false; });
   }

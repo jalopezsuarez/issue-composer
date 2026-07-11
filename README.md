@@ -181,7 +181,7 @@ New issues are created with `order:0` (manual orders start at 1), so they appear
 - Loaded 25/page (`per_page`), sorted by `updated` in the chosen direction; **pull requests are filtered out**.
 - Rendering always paints **two stable groups**: open first, closed last (a stable sort by state preserves the date order inside each group, even across pages).
 - With a query, the list switches to the **Search API** (`GET /search/issues`, `q=repo:{repo} type:issue {query}`) which returns `{items}` instead of an array.
-- First page shows a centered loader; later pages show a **transparent pagination row with a centered spinner** below the list (the kanban uses the same pattern per column via `.kload`). No-token / no-repo / empty / error states render as uniform centered blocks shared with the kanban.
+- First page shows a centered loader; later pages show the **standard pagination row** below the list. No-token / no-repo / empty / error states render as uniform centered blocks shared with the kanban.
 
 ### GitHub integration
 
@@ -266,6 +266,7 @@ Web Crypto, **AES-256-GCM**:
 - **Toast:** a single fixed capsule below the top bar (`showToast(html, ms)`), auto-hides in ~7 s, tap to dismiss — used for "issue created".
 - **Dates:** one format everywhere (`fmtShort`): `04 jul 11:38`, adding the year only when it differs from the current one.
 - **Empty/loading/error states:** one shared centered block (`stateBlock`) with identical wording across the board and the list.
+- **Infinite-scroll pagination:** one standard everywhere — a transparent `.pageloader` row with a centered spinner, built by `pageLoader()`, shown below the issues list and at the bottom of every kanban column while the next page loads; one shared scroll trigger on the content scroller paginates whichever view is active.
 - **Icons:** inline monochrome octicons from a `PATHS` map rendered by `svg(name, size)` (16×16 viewBox, `currentColor`).
 
 ### Section message zones (feedback standard)
