@@ -618,12 +618,9 @@
           <div class="group-hint" style="padding:8px 0 0">Create one at <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens</a>: a <b>fine-grained</b> token with access to your repos and the <b>Issues (read &amp; write)</b> and <b>Metadata (read)</b> permissions — or a <b>classic</b> token with the <b>repo</b> scope. If your organization uses SAML SSO, authorize the token for it.</div>
         </div>
         <div class="field">
-          <label for="repoSearch">Search repository</label>
+          <label for="repoSearch">Select a repository <span id="repoCount" class="pill" style="display:none"></span></label>
           <input type="text" id="repoSearch" placeholder="Filter by name…" autocomplete="off" disabled />
-        </div>
-        <div class="field">
-          <label for="repoSelect">Select a repository <span id="repoCount" class="pill" style="display:none"></span></label>
-          <select id="repoSelect"><option value="">— Connect to load your repos —</option></select>
+          <select id="repoSelect" style="margin-top:10px"><option value="">— Connect to load your repos —</option></select>
         </div>
         <div class="field"><button id="btnConnect" class="block">Connect GitHub</button></div>
       </div>
