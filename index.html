@@ -628,7 +628,7 @@
       <!-- 3. LLM provider (at the bottom) -->
       <div class="group">
         <div class="pad"><div class="group-title" style="padding:0 0 4px">LLM provider</div>
-        <div class="group-hint" style="padding:0">The AI that writes your issues and comments and powers the assistant. Any OpenAI-compatible provider works (OpenAI, Mistral, Groq, Ollama…): paste its Base URL, your API key and a model name, then press Test LLM to check everything is fine.</div></div>
+        <div class="group-hint" style="padding:0">The AI that writes your issues and comments and powers the assistant. Any OpenAI-compatible provider works (OpenAI, Anthropic Claude, Mistral, Groq, Ollama…): paste its Base URL, your API key and a model name, then press Test LLM to check everything is fine.</div></div>
         <div id="llmMsg" class="msg"></div>
         <div class="field"><label for="llmBaseUrl">Base URL</label><input type="text" id="llmBaseUrl" placeholder="https://api.openai.com/v1" autocomplete="off" /></div>
         <div class="field"><label for="llmApiKey">API key</label><input type="password" id="llmApiKey" placeholder="sk-…" autocomplete="off" /></div>
@@ -1482,13 +1482,22 @@
   }
 
   // ----- LLM -----
+  // Headers for the OpenAI-compatible endpoint. Anthropic (Claude) also
+  // requires an explicit opt-in header for direct browser (CORS) access:
+  // without it the response carries no CORS headers and fetch fails with
+  // "Failed to fetch" even though the key and endpoint are correct.
+  function llmHeaders(baseUrl, apiKey) {
+    var h = { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" };
+    if (/anthropic\.com/i.test(baseUrl) || /^sk-ant-/.test(apiKey)) h["anthropic-dangerous-direct-browser-access"] = "true";
+    return h;
+  }
   function llmComplete(messages) {
     var baseUrl = $("llmBaseUrl").value.trim(), apiKey = $("llmApiKey").value.trim(), model = $("llmModel").value.trim();
     if (!baseUrl || !apiKey || !model) return Promise.reject(new Error("Configure the LLM Base URL, API key and Model."));
     var url = baseUrl.replace(/\/+$/, "") + "/chat/completions";
     return fetch(url, {
       method: "POST",
-      headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
+      headers: llmHeaders(baseUrl, apiKey),
       body: JSON.stringify({ model: model, messages: messages, max_tokens: 1500, temperature: 0.3 })
     }).then(function (res) {
       return res.text().then(function (txt) {
@@ -2702,7 +2711,7 @@
     var body = { model: c.model, messages: messages, temperature: 0.2, max_tokens: 1500 };
     if (tools && tools.length) { body.tools = tools; body.tool_choice = "auto"; }
     return fetch(c.baseUrl.replace(/\/+$/, "") + "/chat/completions", {
-      method: "POST", headers: { "Authorization": "Bearer " + c.apiKey, "Content-Type": "application/json" }, body: JSON.stringify(body)
+      method: "POST", headers: llmHeaders(c.baseUrl, c.apiKey), body: JSON.stringify(body)
     }).then(function (res) {
       return res.text().then(function (txt) {
         var data = null; try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
