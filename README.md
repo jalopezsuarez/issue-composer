@@ -96,8 +96,7 @@ List with **infinite scroll** (25 per page). Issues render as **two groups — o
 A **ChatGPT-style** conversational view scoped to the **active repository's issues and code**. Using your configured LLM with **function/tool calling**, it can read and search issues, read source files, create issues, add/edit comments, change statuses and edit titles/descriptions. Each tool call shows as a small chip while it runs. Conversations are **not persisted**. A round **(X)** closes it and returns to the previous view.
 
 ### ⚙️ Settings
-- **Active repo banner** — a capsule pinned at the top: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached).
-- **Repositories** — a **Recent / Favorites** segmented list (max 25 each, app-local). Recents are ordered **most-recently-used first**: activating a repo from anywhere (the select, a recent, a favorite) moves it to the top. Tap a row to select (the active repo shows a green/yellow dot — private/public), ✕ removes, private repos show a lock; the **star fab** (top right) toggles the active repo as a favorite.
+- **Repositories** — a **Recent / ★ Favorites** segmented list (max 25 each, app-local). The **active repo banner** sits right below the section intro: **yellow** for public repos, **green with a lock** for private ones (privacy detected on selection and cached). Recents are ordered **most-recently-used first**: activating a repo from anywhere (the select, a recent, a favorite) moves it to the top. Tap a row to select (the active repo shows a green/yellow dot — private/public), ✕ removes, private repos show a lock; the **star fab** (top right) toggles the active repo as a favorite.
 - **100% local, 100% yours** — an informational card (title + text) above GitHub making the local-first design explicit: no backend, everything stored in the browser, requests go only to GitHub and the LLM provider. Rendered as a **rounded blue card**: sky-blue `#ddf0fb` with vivid blue text `#3267d6` in light mode, near-black blue-tinted `#060b14` with `#5b8def` text in dark mode.
 - **GitHub** — token (with inline guidance and a direct link to create one), repository search + select, and the **Connect GitHub** button below them.
 - **LLM provider** — Base URL, API key, Model (OpenAI-compatible), plus a **Test LLM** button that makes one tiny round-trip and reports the result (with latency) in the section's message zone.
@@ -335,7 +334,6 @@ To self-host: copy `index.html` (optionally `web/index.html` and the workflow), 
 ├── index.html                     # The whole app (HTML + CSS + JS, no build)
 ├── web/
 │   └── index.html                 # Marketing landing page (self-contained)
-├── favicon.svg                    # App icon (SVG only, no PNGs)
 ├── README.md
 └── .github/
     └── workflows/
