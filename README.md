@@ -100,7 +100,7 @@ A **ChatGPT-style** conversational view scoped to the **active repository's issu
 - **LLM provider** — Base URL, API key, Model (OpenAI-compatible), plus a **Test LLM** button that makes one tiny round-trip and reports the result (with latency) in the section's message zone.
 - **Generation language** — Spanish / English (for AI output; the UI is English).
 - **Appearance** — **Light / Dark / Auto** theme and a **font size** control (− / offset / +) that scales the whole app.
-- **Settings export/import** — everything encrypted (see [below](#encrypted-settings-exportimport)).
+- **Export &amp; import settings** — take your setup to another device or keep a safe copy, everything encrypted (see [below](#encrypted-settings-exportimport)).
 
 ### 🖊️ Full-screen editor
 A reusable, borderless full-screen `textarea` to edit **one element at a time**: the issue title, its body or a comment. Back (cancel) top left, save (↑) top right. It tracks the visible viewport so it fits exactly above the keyboard.
