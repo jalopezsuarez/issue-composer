@@ -1129,8 +1129,8 @@
   }
   var TONE_HINT = {
     simple: "Simple: cleans, structures and polishes your text using the project's context (README) — no code analysis, no code references.",
-    feature: "Feature: develops a new feature / user story (PBI); reviews the code to see whether it already exists or is yet to be implemented.",
-    bug: "Bug: bug report with reproduction, root cause and a proposed fix; reviews the code to validate the problem."
+    feature: "Feature: develops a new feature / user story (PBI); reviews the code to see whether it already exists or is yet to be implemented — the write-up itself never references files.",
+    bug: "Bug: bug report with reproduction, root cause and a proposed fix; reviews the code to validate the problem — the write-up itself never references files."
   };
   function paintToneHint() { var el = $("toneHint"); if (el) el.textContent = TONE_HINT[currentTone] || ""; }
   // Does this mode review the codebase?
@@ -1139,14 +1139,17 @@
   // ---- Prompts by CONTEXT (issue / comment) and MODE (simple/feature/bug) ----
   // Rules common to the modes that analyze the code (feature/bug).
   var GROUNDING = " Use clean Markdown (no code blocks wrapping everything). " +
-    "Ground yourself STRICTLY in the provided code and README: cite real paths and symbols; " +
-    "don't invent files, functions or behaviors, and if something isn't in the material, state it as an explicit assumption. " +
-    "Omit sections that don't apply instead of filling them with empty text.";
+    "Ground every claim STRICTLY in the provided code and README — never invent behaviors; if something isn't in the material, state it as an explicit assumption. " +
+    "IMPORTANT: the code analysis is for YOUR understanding only. The text you write must be CODE-AGNOSTIC: " +
+    "do NOT mention file paths, file names, directories, function/class/variable names or code snippets " +
+    "(they go stale as the code evolves and they bloat the issue); describe everything in terms of product behavior, " +
+    "features and user-visible concepts instead. Omit sections that don't apply instead of filling them with empty text.";
   // Prior code-analysis instruction: assess whether what the user describes
-  // is already implemented, partially, or pending, before writing.
-  var CODE_ASSESS = " BEFORE writing, analyze the provided code and README to assess whether what the user describes " +
+  // is already implemented, partially, or pending, before writing. The
+  // conclusion is reported as behavior — never as file/symbol references.
+  var CODE_ASSESS = " BEFORE writing, analyze the provided code and README in detail to assess whether what the user describes " +
     "makes sense and what state it's in (already implemented, partially implemented, or yet to be implemented); " +
-    "reflect this in the **Status in the code** section, citing real paths and symbols that justify it.";
+    "reflect that conclusion in the **Current status** section, described strictly as observable product behavior.";
   function issueSystemPrompt(tone) {
     var base = "You write clear, actionable GitHub issues. " +
       "You respond ONLY with a valid JSON object {\"title\",\"body\"} (no fences or text outside the JSON). " +
@@ -1162,21 +1165,21 @@
     } else if (tone === "feature") {
       base += "FEATURE MODE (you develop a NEW feature as a User Story / Product Backlog Item, not a bug). " +
         "The 'title' describes the feature in the imperative (e.g. 'Add…', 'Allow…')." + CODE_ASSESS +
-        " 'body' in Markdown with these sections (omit those that don't apply): " +
+        " 'body' in Markdown with these industry-standard User Story sections (omit those that don't apply): " +
         "**User story** (format 'As a <role>, I want <goal>, so that <benefit>'), " +
-        "**Description and context**, **Status in the code** (already implemented / partial / pending, with real paths and symbols), " +
-        "**Scope** (what's in and what's out), **Areas/files involved** (real paths from the reviewed code), " +
+        "**Description and context**, **Current status** (already implemented / partial / pending, as behavior), " +
+        "**Scope** (what's in and what's out), " +
         "**Acceptance criteria** as a verifiable, value-oriented '- [ ]' checklist, and " +
-        "**Technical notes and dependencies** (if applicable). " +
+        "**Technical notes and dependencies** (if applicable, behavior-level — no code references). " +
         "If it's already implemented, say so clearly and propose only what's missing or concrete improvements." + GROUNDING;
     } else { // bug
       base += "BUG MODE (report of a BUG/defect: describe it, diagnose it and propose how to fix it). " +
         "The 'title' summarizes the failure in the imperative (e.g. 'Fix…')." + CODE_ASSESS +
-        " 'body' in Markdown with these sections (omit those that don't apply): " +
+        " 'body' in Markdown with these industry-standard bug-report sections (omit those that don't apply): " +
         "**Description**, **Reproduction steps** (numbered), **Expected vs actual behavior**, " +
-        "**Status in the code** (is the failure consistent with the code? does it seem already fixed or still present?, with real paths/symbols), " +
-        "**Files involved** (real paths), **Probable root cause** (reasoned, referencing paths/symbols), " +
-        "**Impact**, **Edge cases**, **Proposed fix** (files to touch and concrete steps) and " +
+        "**Current status** (is the failure consistent with your code analysis? does it seem already fixed or still present? — as behavior), " +
+        "**Probable root cause** (reasoned at the behavior level, informed by your analysis), " +
+        "**Impact**, **Edge cases**, **Proposed fix** (concrete functional steps) and " +
         "**Acceptance criteria** as a verifiable '- [ ]' checklist." + GROUNDING;
     }
     return base + " " + langInstruction();
@@ -1207,12 +1210,12 @@
     } else if (tone === "feature") {
       base += "FEATURE MODE (you contribute or refine a feature / user story in the thread, not a bug)." + CODE_ASSESS +
         " Organize into **Summary**, **Feature proposal** (user story if applicable), " +
-        "**Status in the code** (already implemented / partial / pending, with real paths and symbols), " +
+        "**Current status** (already implemented / partial / pending, as behavior), " +
         "**Acceptance criteria** ('- [ ]') and **Next steps**." + GROUNDING;
     } else { // bug
       base += "BUG MODE (diagnosis of a bug, not just a summary)." + CODE_ASSESS +
-        " Organize into **Summary**, **Detail**, **Status in the code** (consistency of the failure with the code; resolved or present?), " +
-        "**Code references** (real reviewed paths and symbols), **Root cause**, **Impact** and **Next steps**." + GROUNDING;
+        " Organize into **Summary**, **Detail**, **Current status** (consistency of the failure with your analysis; resolved or present? — as behavior), " +
+        "**Root cause** (behavior-level), **Impact** and **Next steps**." + GROUNDING;
     }
     return base + " " + langInstruction();
   }
