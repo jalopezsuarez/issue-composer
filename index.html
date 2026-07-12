@@ -3144,7 +3144,7 @@
     toolFn("add_comment", "Add a comment to an issue.", { number: { type: "integer" }, body: { type: "string" } }, ["number", "body"]),
     toolFn("update_comment", "Edit an existing comment by its id.", { comment_id: { type: "integer" }, body: { type: "string" } }, ["comment_id", "body"]),
     toolFn("list_files", "List the source file paths of the repository.", {}),
-    toolFn("read_file", "Read the contents of a source file (truncated).", { path: { type: "string" } }, ["path"])
+    toolFn("read_file", "Read a source file. Large files return one chunk at a time: when the result carries truncated=true, call again with offset=next_offset to keep reading — do NOT draw conclusions about code you haven't read yet.", { path: { type: "string" }, offset: { type: "integer", description: "Character offset to continue from (default 0); use next_offset from the previous call." } }, ["path"])
   ];
 
   // ----- Tool executors: all scoped to the active repo -----
@@ -3215,10 +3215,17 @@
       return getRepoBase(r.owner, r.name, function () {}).then(function (base) { return { branch: base.branch, files: base.files.slice(0, 400) }; });
     },
     read_file: function (a) {
-      var r = activeRepoParts();
+      var r = activeRepoParts(), MAX = 12000, off = (a.offset > 0) ? Math.floor(a.offset) : 0;
       return getRepoBase(r.owner, r.name, function () {}).then(function (base) {
         return ghFetch(GH_API + "/repos/" + r.repo + "/contents/" + encodeURIComponent(a.path).replace(/%2F/g, "/") + "?ref=" + base.branch)
-          .then(function (c) { var t = ""; try { t = b64ToUtf8(c.content).slice(0, 6000); } catch (e) { t = "(couldn't decode)"; } return { path: a.path, content: t }; });
+          .then(function (c) {
+            var t; try { t = b64ToUtf8(c.content); } catch (e) { return { path: a.path, content: "(couldn't decode)" }; }
+            // Cursor pagination: one chunk per call plus enough metadata for
+            // the model to know there is more and how to fetch it.
+            var out = { path: a.path, total_chars: t.length, offset: off, content: t.slice(off, off + MAX) };
+            if (off + MAX < t.length) { out.truncated = true; out.next_offset = off + MAX; }
+            return out;
+          });
       });
     }
   };
@@ -3312,7 +3319,7 @@
     chatMessages.push({ role: "user", content: text });
     input.value = ""; autoGrowChat();
     setChatBusy(true);
-    runAssistantLoop(8);
+    runAssistantLoop(12);   // room for chunked file reads plus the usual issue tools
   }
   function runAssistantLoop(steps) {
     if (steps <= 0) { setChatBusy(false); addAiBubble("_(Stopped after too many steps.)_"); return; }
