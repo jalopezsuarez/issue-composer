@@ -139,7 +139,10 @@
   .fab-back, .fab-reload { left: 12px; }
   .fab-search { right: 12px; }                  /* search toggle: rightmost in kanban/list */
   .fab-add { right: 64px; }                     /* add: to the left of the search fab */
-  .fab-save, .fab-fav, .fab-close, .fab-share { right: 12px; }   /* editor/settings/assistant/detail: rightmost */
+  .fab-save, .fab-fav, .fab-close, .fab-share { right: 12px; }   /* editor/settings/assistant: rightmost */
+  /* Issue detail shows + and share together: + rightmost, share to its left. */
+  :root.issuedetail .fab-add { right: 12px; }
+  :root.issuedetail .fab-share { right: 64px; }
   .fab-close svg { width: 25px; height: 25px; }
   /* Share (issue detail, top right): opens the issue on GitHub. */
   .fab-share { text-decoration: none; }
@@ -559,6 +562,8 @@
        assistant's own dock/close fabs and the full-screen editor stay put). */
     :root.chatdock .fab-search, :root.chatdock .fab-fav, :root.chatdock .fab-share { right: calc(var(--dockw) + 12px); }
     :root.chatdock .fab-add { right: calc(var(--dockw) + 64px); }
+    :root.chatdock.issuedetail .fab-add { right: calc(var(--dockw) + 12px); }
+    :root.chatdock.issuedetail .fab-share { right: calc(var(--dockw) + 64px); }
     :root.chatdock .navcap { right: calc(var(--dockw) + 12px); }
     :root.chatdock .toast { left: calc((100% - var(--dockw)) / 2); }
     :root.chatdock .view-repo-tag { max-width: calc(100% - var(--dockw) - 124px); }
@@ -1019,6 +1024,9 @@
     $("viewAdd").hidden = !o.add;
     $("viewSearch").hidden = !o.search;
     if (o.share !== undefined) $("shareFab").hidden = !o.share;
+    // Issue detail is the one screen showing + and share together: there the
+    // + sits rightmost with share to its left (root class drives the CSS).
+    document.documentElement.classList.toggle("issuedetail", !!(o.share && o.add));
     syncRepoTag();
   }
   function showView(name) {
@@ -2276,7 +2284,8 @@
 
       box.innerHTML = html;
       // Share fab (top right): opens this issue on GitHub.
-      $("shareFab").href = issue.html_url; $("shareFab").hidden = false;
+      $("shareFab").href = issue.html_url;
+      setChrome({ back: true, share: true, add: true });   // detail chrome: + rightmost, share beside it
 
       // detail wiring
       $("btnToggleState").addEventListener("click", toggleIssueState);
@@ -2354,7 +2363,7 @@
     markActiveView("issues");
     document.documentElement.style.setProperty("--appmax", "720px");   // back to the detail (reading view)
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    setChrome({ back: true, share: true });
+    setChrome({ back: true, share: true, add: true });
   }
   // Shortcuts to avoid repeating the PATCH plumbing on every call.
   function editIssueField(repo, number, field, value) {
@@ -3266,6 +3275,8 @@
     var cfg = llmCfg();
     if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) { $("chatIntro").style.display = "none"; addAiBubble("Configure the LLM (Base URL, API key, Model) in **Settings** first."); return; }
     ensureChatStarted();
+    if (chatHist[chatHist.length - 1] !== text) chatHist.push(text);   // ↑/↓ history (skip immediate repeats)
+    chatHistPos = -1; chatDraft = "";
     $("chatIntro").style.display = "none";
     addUserBubble(text);
     chatMessages.push({ role: "user", content: text });
@@ -3298,8 +3309,33 @@
 
   // ----- Input wiring -----
   function autoGrowChat() { var t = $("chatInput"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 140) + "px"; }
-  $("chatInput").addEventListener("input", function () { autoGrowChat(); $("chatSend").disabled = chatBusy || !this.value.trim(); });
-  $("chatInput").addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } });
+  // Terminal-style input history: ↑/↓ walk everything sent this session.
+  // It only kicks in with the caret on the first/last line (no selection), so
+  // moving around a multi-line draft keeps working; the unsent draft is kept
+  // and restored when walking past the newest entry.
+  var chatHist = [], chatHistPos = -1, chatDraft = "";
+  function chatHistShow(text) {
+    var t = $("chatInput");
+    t.value = text; autoGrowChat();
+    $("chatSend").disabled = chatBusy || !text.trim();
+    try { t.setSelectionRange(text.length, text.length); } catch (e) {}
+  }
+  $("chatInput").addEventListener("input", function () { chatHistPos = -1; autoGrowChat(); $("chatSend").disabled = chatBusy || !this.value.trim(); });
+  $("chatInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); return; }
+    if ((e.key !== "ArrowUp" && e.key !== "ArrowDown") || this.selectionStart !== this.selectionEnd) return;
+    if (e.key === "ArrowUp") {
+      if (!chatHist.length || this.value.slice(0, this.selectionStart).indexOf("\n") !== -1) return;   // caret not on the first line
+      if (chatHistPos === -1) { chatDraft = this.value; chatHistPos = chatHist.length; }
+      if (chatHistPos === 0) { e.preventDefault(); return; }   // already at the oldest entry
+      chatHistPos--; e.preventDefault(); chatHistShow(chatHist[chatHistPos]);
+    } else {
+      if (chatHistPos === -1 || this.value.slice(this.selectionEnd).indexOf("\n") !== -1) return;      // not browsing / caret not on the last line
+      e.preventDefault(); chatHistPos++;
+      if (chatHistPos >= chatHist.length) { chatHistPos = -1; chatHistShow(chatDraft); }
+      else chatHistShow(chatHist[chatHistPos]);
+    }
+  });
   $("chatSend").innerHTML = svg("send", 17);
   $("chatSend").disabled = true;
   $("chatSend").addEventListener("click", sendChat);
