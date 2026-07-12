@@ -139,10 +139,7 @@
   .fab-back, .fab-reload { left: 12px; }
   .fab-search { right: 12px; }                  /* search toggle: rightmost in kanban/list */
   .fab-add { right: 64px; }                     /* add: to the left of the search fab */
-  .fab-save, .fab-fav, .fab-close, .fab-share { right: 12px; }   /* editor/settings/assistant: rightmost */
-  /* Issue detail shows + and share together: + rightmost, share to its left. */
-  :root.issuedetail .fab-add { right: 12px; }
-  :root.issuedetail .fab-share { right: 64px; }
+  .fab-save, .fab-fav, .fab-close, .fab-share { right: 12px; }   /* editor/settings/assistant/detail: rightmost */
   .fab-close svg { width: 25px; height: 25px; }
   /* Share (issue detail, top right): opens the issue on GitHub. */
   .fab-share { text-decoration: none; }
@@ -562,8 +559,6 @@
        assistant's own dock/close fabs and the full-screen editor stay put). */
     :root.chatdock .fab-search, :root.chatdock .fab-fav, :root.chatdock .fab-share { right: calc(var(--dockw) + 12px); }
     :root.chatdock .fab-add { right: calc(var(--dockw) + 64px); }
-    :root.chatdock.issuedetail .fab-add { right: calc(var(--dockw) + 12px); }
-    :root.chatdock.issuedetail .fab-share { right: calc(var(--dockw) + 64px); }
     :root.chatdock .navcap { right: calc(var(--dockw) + 12px); }
     :root.chatdock .toast { left: calc((100% - var(--dockw)) / 2); }
     :root.chatdock .view-repo-tag { max-width: calc(100% - var(--dockw) - 124px); }
@@ -1024,9 +1019,6 @@
     $("viewAdd").hidden = !o.add;
     $("viewSearch").hidden = !o.search;
     if (o.share !== undefined) $("shareFab").hidden = !o.share;
-    // Issue detail is the one screen showing + and share together: there the
-    // + sits rightmost with share to its left (root class drives the CSS).
-    document.documentElement.classList.toggle("issuedetail", !!(o.share && o.add));
     syncRepoTag();
   }
   function showView(name) {
@@ -2288,7 +2280,7 @@
       box.innerHTML = html;
       // Share fab (top right): opens this issue on GitHub.
       $("shareFab").href = issue.html_url;
-      setChrome({ back: true, share: true, add: true });   // detail chrome: + rightmost, share beside it
+      setChrome({ back: true, share: true });   // detail chrome: back + share (rightmost)
 
       // detail wiring
       $("btnToggleState").addEventListener("click", toggleIssueState);
@@ -2366,7 +2358,7 @@
     markActiveView("issues");
     document.documentElement.style.setProperty("--appmax", "720px");   // back to the detail (reading view)
     $("issuesListWrap").style.display = "none"; $("issueDetailWrap").style.display = "";
-    setChrome({ back: true, share: true, add: true });
+    setChrome({ back: true, share: true });
   }
   // Shortcuts to avoid repeating the PATCH plumbing on every call.
   function editIssueField(repo, number, field, value) {
