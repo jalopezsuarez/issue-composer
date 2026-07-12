@@ -237,9 +237,9 @@ The Settings **Test LLM** button makes one tiny round-trip through this same pat
 | `update_issue` | Patch title / body / open-closed state |
 | `set_issue_status` | Set the `status:` label (kanban machinery) |
 | `add_comment` / `update_comment` | Create / edit a comment |
-| `list_files` / `read_file` | Repo tree (cached) / file contents (truncated) |
+| `list_files` / `read_file` | Repo tree (cached) / file contents in 12k-char chunks with cursor pagination (`truncated` + `next_offset`, re-call with `offset` to continue) so large files can be read in full |
 
-- The loop (`runAssistantLoop`): call the LLM → if `tool_calls`, render label chips, execute all calls (errors return `{error}` payloads and tint the chip), append `role:"tool"` results, and iterate — up to **8 steps** — until a plain text answer arrives (rendered as Markdown). Mutating tools invalidate the list/board caches so they reload next visit.
+- The loop (`runAssistantLoop`): call the LLM → if `tool_calls`, render label chips, execute all calls (errors return `{error}` payloads and tint the chip), append `role:"tool"` results, and iterate — up to **12 steps** (room for chunked file reads) — until a plain text answer arrives (rendered as Markdown). Mutating tools invalidate the list/board caches so they reload next visit.
 
 ### Theming and typography
 
