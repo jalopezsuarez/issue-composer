@@ -521,6 +521,9 @@
   .msg-tool { align-self: stretch; display: flex; flex-wrap: wrap; gap: 6px; }
   .tool-chip { display: inline-flex; align-items: center; font-size: .74rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 3px 10px; font-weight: 500; }
   .tool-chip.err { color: var(--danger); }
+  /* "#123" mention chips inside assistant answers: tap to open that issue. */
+  .msg-ai .issueref { display: inline-block; background: var(--bg); border: none; border-radius: 6px; padding: 0 6px; margin: 0 1px; font: inherit; font-weight: 600; font-size: .92em; color: var(--text); cursor: pointer; }
+  .msg-ai .issueref:active { background: var(--border); }
   .chat-typing { align-self: flex-start; display: inline-flex; gap: 4px; }
   .chat-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; animation: chatdot 1s infinite; }
   .chat-typing i:nth-child(2) { animation-delay: .15s; } .chat-typing i:nth-child(3) { animation-delay: .3s; }
@@ -3242,7 +3245,38 @@
   // ----- Rendering -----
   function chatScrollBottom() { var s = $("chatScroll"); if (s) s.scrollTop = s.scrollHeight; }
   function addUserBubble(text) { var el = document.createElement("div"); el.className = "msg-user"; el.textContent = text; $("chatMessages").appendChild(el); chatScrollBottom(); }
-  function addAiBubble(md) { var el = document.createElement("div"); el.className = "msg-ai"; el.innerHTML = renderMd(md || ""); $("chatMessages").appendChild(el); chatScrollBottom(); }
+  function addAiBubble(md) { var el = document.createElement("div"); el.className = "msg-ai"; el.innerHTML = renderMd(md || ""); linkIssueRefs(el); $("chatMessages").appendChild(el); chatScrollBottom(); }
+  // "#123" mentions in the assistant's answers become tappable chips that open
+  // that issue's detail. Text nodes only — links, code and headings are left alone.
+  function linkIssueRefs(el) {
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes = [];
+    while (walker.nextNode()) if (/#\d+/.test(walker.currentNode.nodeValue)) nodes.push(walker.currentNode);
+    nodes.forEach(function (node) {
+      var p = node.parentNode;
+      if (p.closest && p.closest("a, code, pre")) return;
+      var frag = document.createDocumentFragment(), rest = node.nodeValue, m;
+      while ((m = rest.match(/#(\d+)\b/))) {
+        frag.appendChild(document.createTextNode(rest.slice(0, m.index)));
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "issueref"; b.textContent = "#" + m[1];
+        b.setAttribute("data-issue", m[1]); b.setAttribute("aria-label", "Open issue #" + m[1]);
+        frag.appendChild(b);
+        rest = rest.slice(m.index + m[0].length);
+      }
+      frag.appendChild(document.createTextNode(rest));
+      p.replaceChild(frag, node);
+    });
+  }
+  // Tapping a chip opens the detail: docked, it opens beside the chat; full
+  // screen, the chat closes back to its origin view first.
+  $("chatMessages").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".issueref") : null;
+    if (!b) return;
+    var n = parseInt(b.getAttribute("data-issue"), 10), repo = getSelectedRepo();
+    if (!repo || !n) return;
+    if (!chatDocked()) showView(assistantOrigin || "issues");
+    openIssue(repo, n, $("view-kanban").classList.contains("active") ? "kanban" : "issues");
+  });
   var TOOL_LABEL = { list_issues: "Listing issues", search_issues: "Searching issues", get_issue: "Reading issue", create_issue: "Creating issue", update_issue: "Updating issue", set_issue_status: "Changing status", add_comment: "Adding comment", update_comment: "Editing comment", list_files: "Listing files", read_file: "Reading file" };
   function addToolChips(calls) {
     var row = document.createElement("div"); row.className = "msg-tool";
