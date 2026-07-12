@@ -90,7 +90,7 @@ List with **infinite scroll** (25 per page). Issues render as **two groups — o
 - The user's **labels** (internal `status:`/`order:` labels stay hidden).
 - **Status**: a row of options to change it instantly (single labels call).
 - **Edit details** (opens the full-screen editor for the body) and a solid **Close / Reopen** button, stacked full-width.
-- Top-right chrome: the **+ fab** sits rightmost (create a new issue without leaving the detail) with the **share fab** (box-with-arrow, opens the issue on github.com) to its left.
+- A **share fab** (top right, box-with-arrow icon) opens the issue on github.com.
 - **Comments**: listed, created with AI (tap a mode to generate), and your own can be edited/deleted.
 - Tapping the **title** opens the editor to rename it.
 
