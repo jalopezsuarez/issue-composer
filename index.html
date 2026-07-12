@@ -2027,9 +2027,9 @@
   }
   function mdToHtml(src) {
     var lines = esc(String(src == null ? "" : src).replace(/\r\n/g, "\n")).split("\n");
-    var out = [], i = 0, listType = null, listTask = false, items = [], para = [];
+    var out = [], i = 0, listType = null, listTask = false, listStart = 1, items = [], para = [];
     var chkOn = '<span class="chk on">' + svg("check", 11) + "</span>", chkOff = '<span class="chk"></span>';
-    function flushList() { if (listType) { out.push("<" + listType + (listTask ? ' class="task"' : "") + ">" + items.join("") + "</" + listType + ">"); items = []; listType = null; listTask = false; } }
+    function flushList() { if (listType) { out.push("<" + listType + (listTask ? ' class="task"' : "") + (listType === "ol" && listStart !== 1 ? ' start="' + listStart + '"' : "") + ">" + items.join("") + "</" + listType + ">"); items = []; listType = null; listTask = false; listStart = 1; } }
     function flushPara() { if (para.length) { out.push("<p>" + mdInline(para.join(" ")) + "</p>"); para = []; } }
     while (i < lines.length) {
       var line = lines[i];
@@ -2049,8 +2049,10 @@
       if (task) { flushPara(); if (listType !== "ul" || !listTask) { flushList(); listType = "ul"; listTask = true; } items.push("<li>" + (/[xX]/.test(task[1]) ? chkOn : chkOff) + "<span>" + mdInline(task[2]) + "</span></li>"); i++; continue; }
       var bullet = line.match(/^\s*[-*]\s+(.*)$/);
       if (bullet) { flushPara(); if (listType !== "ul" || listTask) { flushList(); listType = "ul"; listTask = false; } items.push("<li>" + mdInline(bullet[1]) + "</li>"); i++; continue; }
-      var ol = line.match(/^\s*\d+\.\s+(.*)$/);
-      if (ol) { flushPara(); if (listType !== "ol") { flushList(); listType = "ol"; } items.push("<li>" + mdInline(ol[1]) + "</li>"); i++; continue; }
+      var ol = line.match(/^\s*(\d+)\.\s+(.*)$/);
+      // Ordered lists keep the source numbering (start attr), so a list split
+      // by blank lines — one <ol> per fragment — still counts 1, 2, 3…
+      if (ol) { flushPara(); if (listType !== "ol") { flushList(); listType = "ol"; listStart = parseInt(ol[1], 10) || 1; } items.push("<li>" + mdInline(ol[2]) + "</li>"); i++; continue; }
       var bq = line.match(/^&gt;\s?(.*)$/);  // ">" already comes escaped as "&gt;"
       if (bq) { flushList(); flushPara(); out.push("<blockquote>" + mdInline(bq[1]) + "</blockquote>"); i++; continue; }
       // GFM table: a header row with "|" followed by a separator row (| --- | :---: |).
