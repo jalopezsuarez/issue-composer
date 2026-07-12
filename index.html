@@ -521,8 +521,9 @@
   .msg-tool { align-self: stretch; display: flex; flex-wrap: wrap; gap: 6px; }
   .tool-chip { display: inline-flex; align-items: center; font-size: .74rem; color: var(--muted); background: var(--bg); border-radius: 999px; padding: 3px 10px; font-weight: 500; }
   .tool-chip.err { color: var(--danger); }
-  /* "#123" mention chips inside assistant answers: tap to open that issue. */
-  .msg-ai .issueref { display: inline-block; background: var(--bg); border: none; border-radius: 6px; padding: 0 6px; margin: 0 1px; font: inherit; font-weight: 600; font-size: .92em; color: var(--text); cursor: pointer; }
+  /* "#123" mention chips inside assistant answers: tap to open that issue.
+     A contrasting border makes them read as buttons, not plain text. */
+  .msg-ai .issueref { display: inline-block; background: var(--bg); border: 1px solid var(--muted); border-radius: 6px; padding: 0 6px; margin: 0 1px; font: inherit; font-weight: 600; font-size: .92em; color: var(--text); cursor: pointer; }
   .msg-ai .issueref:active { background: var(--border); }
   .chat-typing { align-self: flex-start; display: inline-flex; gap: 4px; }
   .chat-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; animation: chatdot 1s infinite; }
