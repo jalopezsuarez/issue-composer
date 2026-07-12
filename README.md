@@ -121,10 +121,10 @@ Available when creating issues and when writing comments — **tapping the mode 
 | Mode | Context used | What it produces |
 |------|:---:|-------------|
 | **Simple** | Project context only (README) | Cleans, structures and polishes your text so it reads well, adopting the project's own terminology. Never references code (no paths, symbols or snippets) and never invents details. Keeps your meaning and intent. |
-| **Feature** | README + code review | A **new feature** as a User Story / PBI: *User story, Description and context, Status in the code, Scope, Areas/files involved, Acceptance criteria, Technical notes and dependencies*. |
-| **Bug** | README + code review | A **bug report**: *Description, Reproduction steps, Expected vs actual behavior, Status in the code, Files involved, Probable root cause, Impact, Edge cases, Proposed fix, Acceptance criteria*. |
+| **Feature** | README + code review | A **new feature** as an industry-standard User Story / PBI: *User story, Description and context, Current status, Scope, Acceptance criteria, Technical notes and dependencies*. |
+| **Bug** | README + code review | An industry-standard **bug report**: *Description, Reproduction steps, Expected vs actual behavior, Current status, Probable root cause, Impact, Edge cases, Proposed fix, Acceptance criteria*. |
 
-In **Feature** and **Bug**, the AI first analyzes the code to assess whether what you describe is *already implemented, partial or pending*, and reflects it in a **Status in the code** section citing **real** paths and symbols. Comments also take the issue description and the previous thread into account.
+In **Feature** and **Bug**, the AI first analyzes the code in detail to assess whether what you describe is *already implemented, partial or pending*, and reflects that conclusion in a **Current status** section. The write-up itself is deliberately **code-agnostic**: no file paths, file names or symbols ever appear in the issue (they go stale as the code evolves and bloat the content) — the analysis informs the writing, but everything is described as product behavior. Comments also take the issue description and the previous thread into account.
 
 ---
 
@@ -221,7 +221,7 @@ The Settings **Test LLM** button makes one tiny round-trip through this same pat
 2. One LLM call picks **up to 5 relevant paths** from the tree (strict JSON array output, validated against the real tree).
 3. Those files are downloaded (≤5000 chars each) and passed as grounded context.
 
-**Prompt design:** system prompts per mode enforce structure and grounding — `GROUNDING` (cite only real paths/symbols; omit empty sections) and `CODE_ASSESS` (assess implemented/partial/pending before writing, reflected in a *Status in the code* section). **Simple** mode uses `projectContext()` (README only) and explicitly forbids code references. Issue writing must return strict JSON `{"title","body"}` (tolerant parser strips fences); comment writing returns raw Markdown. A language instruction (English/Spanish) is appended from settings.
+**Prompt design:** system prompts per mode enforce structure and grounding — `GROUNDING` (claims strictly grounded in the reviewed code, but the write-up is **code-agnostic**: no paths, file names, symbols or snippets ever appear in the text; omit empty sections) and `CODE_ASSESS` (assess implemented/partial/pending before writing, reflected in a *Current status* section described as behavior). **Simple** mode uses `projectContext()` (README only) and equally forbids code references. Issue writing must return strict JSON `{"title","body"}` (tolerant parser strips fences); comment writing returns raw Markdown. A language instruction (English/Spanish) is appended from settings.
 
 ### AI assistant (tool-calling)
 
