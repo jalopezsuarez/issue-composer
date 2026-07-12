@@ -90,12 +90,12 @@ List with **infinite scroll** (25 per page). Issues render as **two groups — o
 - The user's **labels** (internal `status:`/`order:` labels stay hidden).
 - **Status**: a row of options to change it instantly (single labels call).
 - **Edit details** (opens the full-screen editor for the body) and a solid **Close / Reopen** button, stacked full-width.
-- A **share fab** (top right, box-with-arrow icon) opens the issue on github.com.
+- Top-right chrome: the **+ fab** sits rightmost (create a new issue without leaving the detail) with the **share fab** (box-with-arrow, opens the issue on github.com) to its left.
 - **Comments**: listed, created with AI (tap a mode to generate), and your own can be edited/deleted.
 - Tapping the **title** opens the editor to rename it.
 
 ### ✨ AI assistant
-A **ChatGPT-style** conversational view scoped to the **active repository's issues and code**. Using your configured LLM with **function/tool calling**, it can read and search issues, read source files, create issues, add/edit comments, change statuses and edit titles/descriptions. Each tool call shows as a small chip while it runs. Conversations are **not persisted**. A round **(X)** closes it and returns to the previous view.
+A **ChatGPT-style** conversational view scoped to the **active repository's issues and code**. Using your configured LLM with **function/tool calling**, it can read and search issues, read source files, create issues, add/edit comments, change statuses and edit titles/descriptions. Each tool call shows as a small chip while it runs. The input has a **terminal-style history**: ↑/↓ walk everything you sent this session (only with the caret on the first/last line, so multi-line drafts stay editable; the unsent draft is restored when walking past the newest entry). Conversations are **not persisted**. A round **(X)** closes it and returns to the previous view.
 
 On **wide screens (≥ 768px — tablets and desktop)** a **dock button** (VS Code-style sidebar icon, left of the ✕) pins the assistant as a **360px right sidebar** so it stays open beside the Kanban, the list or Settings: navigation keeps working on the left, the right-anchored chrome (＋/🔍 fabs, capsule nav, toasts) steps left of the panel, and changes made by the assistant's tools refresh the visible board/list automatically. Tapping the dock button again returns to full screen; the ✕ closes the sidebar. The preference persists (`ic_chat_dock`) and degrades gracefully: below the breakpoint the sidebar folds away (the phone UI is untouched — the button doesn't even show) and it comes back when the window grows again.
 
